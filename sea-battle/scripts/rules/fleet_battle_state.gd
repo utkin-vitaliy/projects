@@ -118,6 +118,28 @@ func reachable_cells() -> Array[Vector2i]:
 	return cells
 
 
+func legal_targets() -> Array[FleetShipState]:
+	var attacker := selected_ship()
+	if attacker == null or is_game_over() or attacker.attack_used:
+		return []
+
+	var targets: Array[FleetShipState] = []
+	for target in opposing_fleet().ordered_ships():
+		if target.is_destroyed():
+			continue
+		var attack_distance := board.distance(attacker.cell, target.cell)
+		if attack_distance >= 0 and attack_distance <= attacker.definition.attack_range:
+			targets.append(target)
+	return targets
+
+
+func can_attack(target_id: StringName) -> bool:
+	for target in legal_targets():
+		if target.ship_id == target_id:
+			return true
+	return false
+
+
 func occupied_cells(except_ship_id: StringName = &"") -> Dictionary:
 	var occupied := {}
 	for fleet_value in fleets.values():
@@ -202,6 +224,56 @@ func move_selected_ship(destination: Vector2i) -> CommandResult:
 			"path": route,
 		}),
 	]
+	return CommandResult.success(events)
+
+
+func attack(target_id: StringName) -> CommandResult:
+	if is_game_over():
+		return CommandResult.failure(&"game_over")
+	var attacker := selected_ship()
+	if attacker == null:
+		return CommandResult.failure(&"selection_required")
+	if attacker.attack_used:
+		return CommandResult.failure(&"attack_used")
+	var target := _ship_by_id(target_id)
+	if target == null or target.player == attacker.player or target.is_destroyed():
+		return CommandResult.failure(&"invalid_target")
+	if not can_attack(target_id):
+		return CommandResult.failure(&"out_of_range")
+
+	attacker.attack_used = true
+	target.hull = maxi(0, target.hull - attacker.definition.damage)
+	var events: Array[BattleEvent] = [
+		_event(&"ship_attacked", {
+			"attacker_id": attacker.ship_id,
+			"target_id": target.ship_id,
+		}),
+		_event(&"ship_damaged", {
+			"ship_id": target.ship_id,
+			"hull": target.hull,
+			"max_hull": target.definition.max_hull,
+			"damage": attacker.definition.damage,
+		}),
+	]
+	if target.is_destroyed():
+		events.append(_event(&"ship_sunk", {
+			"ship_id": target.ship_id,
+			"player": target.player,
+			"cell": target.cell,
+		}))
+
+	attacker.activation_used = true
+	events.append(_event(&"activation_completed", {
+		"ship_id": attacker.ship_id,
+		"player": attacker.player,
+	}))
+	selected_ship_id = &""
+	if opposing_fleet().is_defeated():
+		winner = attacker.player
+		events.append(_event(&"battle_won", {"winner": winner}))
+		return CommandResult.success(events)
+
+	_append_activation_handoff(events)
 	return CommandResult.success(events)
 
 

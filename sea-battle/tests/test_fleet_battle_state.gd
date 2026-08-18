@@ -13,6 +13,10 @@ const DEFAULT_STARTS := {
 	1: [Vector2i(-3, 3), Vector2i(-2, 3), Vector2i(-1, 3)],
 	2: [Vector2i(3, -3), Vector2i(2, -3), Vector2i(1, -3)],
 }
+const COMBAT_STARTS := {
+	1: [Vector2i(-2, 0), Vector2i(-2, 1), Vector2i(-1, 0)],
+	2: [Vector2i(1, 0), Vector2i(1, -1), Vector2i(0, -1)],
+}
 
 
 func run(t: TestContext, _tree: SceneTree) -> void:
@@ -25,6 +29,12 @@ func run(t: TestContext, _tree: SceneTree) -> void:
 	test_alternates_players_with_ready_ships(t)
 	test_allows_unmatched_consecutive_activations(t)
 	test_alternates_round_initiative(t)
+	test_attack_without_moving_targets_explicit_enemy(t)
+	test_rejects_friendly_sunk_and_out_of_range_targets(t)
+	test_attack_ends_activation_and_forbids_later_movement(t)
+	test_galleon_sinks_full_health_sloop(t)
+	test_sunk_ship_stops_occupying_cell(t)
+	test_last_enemy_ship_wins_immediately(t)
 	test_reset_restores_round_one(t)
 
 
@@ -225,6 +235,156 @@ func test_alternates_round_initiative(t: TestContext) -> void:
 	t.expect_eq(state.active_player, FleetBattleState.Player.ONE, "round three activates its starter")
 
 
+func test_attack_without_moving_targets_explicit_enemy(t: TestContext) -> void:
+	var state := make_state(COMBAT_STARTS, [Vector2i(0, 0)])
+	state.select_ship(&"p1_galleon")
+	t.expect_eq(ship_ids(state.legal_targets()), [
+		&"p2_sloop",
+		&"p2_frigate",
+		&"p2_galleon",
+	], "legal targets preserve opposing fleet class order")
+	t.expect_true(state.can_attack(&"p2_frigate"), "geometric range ignores blocked terrain")
+
+	var result := state.attack(&"p2_frigate")
+	t.expect_true(result.ok, "selected ship attacks an explicit enemy without moving")
+	t.expect_eq(state.fleets[FleetBattleState.Player.TWO].ship(&"p2_frigate").hull, 2, "heavy attack deals its fixed two damage")
+	t.expect_eq(state.fleets[FleetBattleState.Player.TWO].ship(&"p2_sloop").hull, 2, "non-target enemy remains undamaged")
+	t.expect_eq(event_types(result.events), [
+		&"ship_attacked",
+		&"ship_damaged",
+		&"activation_completed",
+		&"player_changed",
+	], "nonlethal attack completes activation before player change")
+	t.expect_eq(result.events[0].data, {
+		"attacker_id": &"p1_galleon",
+		"target_id": &"p2_frigate",
+	}, "attack event identifies both ships")
+	t.expect_eq(result.events[1].data, {
+		"ship_id": &"p2_frigate",
+		"hull": 2,
+		"max_hull": 4,
+		"damage": 2,
+	}, "damage event reports fixed damage and resulting hull")
+
+
+func test_rejects_friendly_sunk_and_out_of_range_targets(t: TestContext) -> void:
+	var state := make_state()
+	t.expect_eq(ship_ids(state.legal_targets()), [], "no selection has no legal targets")
+	var no_selection := state.attack(&"missing")
+	t.expect_eq(no_selection.reason, &"selection_required", "selection rejection precedes target lookup")
+
+	state.select_ship(&"p1_sloop")
+	var attacker := state.selected_ship()
+	var distant_target: FleetShipState = state.fleets[FleetBattleState.Player.TWO].ship(&"p2_sloop")
+	var sunk_target: FleetShipState = state.fleets[FleetBattleState.Player.TWO].ship(&"p2_frigate")
+	sunk_target.hull = 0
+	var original_player := state.active_player
+	var original_selection := state.selected_ship_id
+	var original_attacker_hull := attacker.hull
+	var original_target_hull := distant_target.hull
+
+	attacker.attack_used = true
+	t.expect_eq(state.attack(&"missing").reason, &"attack_used", "spent attack rejection precedes target lookup")
+	attacker.attack_used = false
+	t.expect_eq(state.attack(&"p1_frigate").reason, &"invalid_target", "friendly ship is not a target")
+	t.expect_eq(state.attack(&"p2_frigate").reason, &"invalid_target", "sunk enemy is not a target")
+	t.expect_eq(state.attack(&"missing").reason, &"invalid_target", "unknown ship ID is not a target")
+	t.expect_eq(state.attack(&"p2_sloop").reason, &"out_of_range", "living distant enemy is out of range")
+	t.expect_false(state.can_attack(&"p1_frigate"), "friendly ship cannot be attacked")
+	t.expect_false(state.can_attack(&"p2_frigate"), "sunk enemy cannot be attacked")
+	t.expect_false(state.can_attack(&"p2_sloop"), "distant enemy cannot be attacked")
+	t.expect_eq(ship_ids(state.legal_targets()), [], "friendly sunk and distant ships are absent from legal targets")
+	t.expect_eq(state.active_player, original_player, "rejected attacks preserve active player")
+	t.expect_eq(state.selected_ship_id, original_selection, "rejected attacks preserve selection")
+	t.expect_eq(attacker.hull, original_attacker_hull, "rejected attacks preserve attacker hull")
+	t.expect_eq(distant_target.hull, original_target_hull, "rejected attacks preserve target hull")
+	t.expect_false(attacker.attack_used, "rejected attacks do not spend attack")
+	t.expect_false(attacker.activation_used, "rejected attacks do not spend activation")
+
+
+func test_attack_ends_activation_and_forbids_later_movement(t: TestContext) -> void:
+	var state := make_state(COMBAT_STARTS)
+	state.select_ship(&"p1_sloop")
+	var attacker := state.selected_ship()
+	var result := state.attack(&"p2_galleon")
+	t.expect_true(result.ok, "in-range attack succeeds")
+	t.expect_true(attacker.attack_used, "attack spends the attack action")
+	t.expect_true(attacker.activation_used, "attack completes the ship activation")
+	t.expect_eq(state.selected_ship(), null, "attack completion clears selection")
+	t.expect_eq(state.active_player, FleetBattleState.Player.TWO, "attack hands control to ready opponent")
+	var later_move := state.move_selected_ship(Vector2i(-1, 0))
+	t.expect_eq(later_move.reason, &"selection_required", "attacker cannot move after firing")
+	t.expect_eq(attacker.cell, Vector2i(-2, 0), "failed later movement preserves attacker cell")
+
+
+func test_galleon_sinks_full_health_sloop(t: TestContext) -> void:
+	var state := make_state(COMBAT_STARTS)
+	state.select_ship(&"p1_galleon")
+	var result := state.attack(&"p2_sloop")
+	t.expect_eq(state.fleets[FleetBattleState.Player.TWO].ship(&"p2_sloop").hull, 0, "heavy hit sinks light ship")
+	t.expect_eq(event_types(result.events).slice(0, 3),
+		[&"ship_attacked", &"ship_damaged", &"ship_sunk"],
+		"sinking events preserve presentation order")
+	t.expect_eq(result.events[1].data, {
+		"ship_id": &"p2_sloop",
+		"hull": 0,
+		"max_hull": 2,
+		"damage": 2,
+	}, "lethal damage event reports clamped hull and fixed damage")
+	t.expect_eq(result.events[2].data, {
+		"ship_id": &"p2_sloop",
+		"player": FleetBattleState.Player.TWO,
+		"cell": Vector2i(1, 0),
+	}, "sink event preserves identity owner and cell")
+	t.expect_eq(event_types(result.events), [
+		&"ship_attacked",
+		&"ship_damaged",
+		&"ship_sunk",
+		&"activation_completed",
+		&"player_changed",
+	], "nonfinal sinking attack still performs normal handoff")
+
+
+func test_sunk_ship_stops_occupying_cell(t: TestContext) -> void:
+	var state := make_state(COMBAT_STARTS)
+	state.select_ship(&"p1_galleon")
+	state.attack(&"p2_sloop")
+	t.expect_false(state.occupied_cells().has(Vector2i(1, 0)), "sunk ship immediately releases its cell")
+	t.expect_false(state.fleets[FleetBattleState.Player.TWO].occupied_cells().has(Vector2i(1, 0)), "fleet occupancy excludes sunk ship")
+
+
+func test_last_enemy_ship_wins_immediately(t: TestContext) -> void:
+	var state := make_state(COMBAT_STARTS)
+	state.fleets[FleetBattleState.Player.TWO].ship(&"p2_sloop").hull = 1
+	state.fleets[FleetBattleState.Player.TWO].ship(&"p2_frigate").hull = 0
+	state.fleets[FleetBattleState.Player.TWO].ship(&"p2_galleon").hull = 0
+	state.select_ship(&"p1_galleon")
+	var result := state.attack(&"p2_sloop")
+	t.expect_eq(event_types(result.events), [
+		&"ship_attacked",
+		&"ship_damaged",
+		&"ship_sunk",
+		&"activation_completed",
+		&"battle_won",
+	], "final kill declares victory before any normal handoff")
+	t.expect_eq(result.events[1].data, {
+		"ship_id": &"p2_sloop",
+		"hull": 0,
+		"max_hull": 2,
+		"damage": 2,
+	}, "overkill damage clamps hull to zero while reporting fixed damage")
+	t.expect_eq(result.events[3].data, {
+		"ship_id": &"p1_galleon",
+		"player": FleetBattleState.Player.ONE,
+	}, "winning attack retains standard activation completion payload")
+	t.expect_eq(result.events[4].data, {"winner": FleetBattleState.Player.ONE}, "victory event identifies winner")
+	t.expect_eq(state.winner, FleetBattleState.Player.ONE, "last enemy ship gives attacker victory")
+	t.expect_eq(state.active_player, FleetBattleState.Player.ONE, "victory does not hand control to loser")
+	t.expect_eq(state.round_number, 1, "victory does not start a new round")
+	t.expect_eq(state.selected_ship(), null, "winning activation clears selection")
+	t.expect_eq(state.select_ship(&"p1_sloop").reason, &"game_over", "victory immediately rejects further commands")
+
+
 func test_reset_restores_round_one(t: TestContext) -> void:
 	var state := make_state()
 	state.select_ship(&"p1_sloop")
@@ -265,9 +425,12 @@ func load_definitions() -> Array[ShipDefinition]:
 	return definitions
 
 
-func make_state(starts: Dictionary = DEFAULT_STARTS) -> FleetBattleState:
+func make_state(
+	starts: Dictionary = DEFAULT_STARTS,
+	blocked: Array[Vector2i] = []
+) -> FleetBattleState:
 	var state := FleetBattleState.new()
-	var errors := state.setup(make_board(), load_definitions(), starts)
+	var errors := state.setup(make_board(blocked), load_definitions(), starts)
 	assert(errors.is_empty(), "Fleet battle test fixture must be valid")
 	return state
 
@@ -319,3 +482,10 @@ func event_types(events: Array[BattleEvent]) -> Array[StringName]:
 	for event in events:
 		types.append(event.type)
 	return types
+
+
+func ship_ids(ships: Array[FleetShipState]) -> Array[StringName]:
+	var ids: Array[StringName] = []
+	for ship in ships:
+		ids.append(ship.ship_id)
+	return ids
