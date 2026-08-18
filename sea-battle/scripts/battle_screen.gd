@@ -38,7 +38,6 @@ func _ready() -> void:
 		_report_invalid_setup(validation_errors)
 		return
 
-	_build_map()
 	board = HexBoard.new()
 	board.configure(map_definition.all_cells(), map_definition.blocked_cells, neighbors)
 	var setup_errors := state.setup(board, ship_definitions, {
@@ -49,6 +48,7 @@ func _ready() -> void:
 		_report_invalid_setup(setup_errors)
 		return
 
+	_build_map()
 	_spawn_ship_views()
 	refresh_from_state()
 	battlefield_panel.resized.connect(_center_board)
@@ -181,7 +181,10 @@ func handle_cell_hover(cell: Vector2i) -> void:
 	):
 		highlights.show_path([])
 		highlights.show_hovered_target(cell)
-		sidebar.show_message("Attack · %d damage" % selected.definition.damage)
+		sidebar.show_message("Attack %s · %d damage" % [
+			hovered_ship.definition.display_name,
+			selected.definition.damage,
+		])
 		return
 
 	highlights.clear_hovered_target()
@@ -264,6 +267,10 @@ func _report_invalid_setup(errors: Array[StringName]) -> void:
 		&"incorrect_fleet_size": "each fleet requires three ships and starts",
 		&"duplicate_class": "fleet classes must be unique",
 		&"definition_missing": "a ship definition is missing",
+		&"incorrect_class_order": "fleet classes must be ordered sloop, frigate, galleon",
+		&"visual_profile_missing": "a ship visual profile is missing",
+		&"visual_hull_missing": "a ship visual profile has no drawable hull",
+		&"visual_icon_mismatch": "a ship visual icon does not match its class",
 		&"duplicate_start": "fleet starts overlap",
 		&"start_outside_map": "a fleet start is outside the map",
 		&"blocked_outside_map": "a blocked cell is outside the map",
@@ -276,7 +283,7 @@ func _report_invalid_setup(errors: Array[StringName]) -> void:
 		&"board_missing": "the rules board is missing",
 	}
 	input_locked = true
-	sidebar.show_message("Invalid fleet battle setup")
+	sidebar.show_message("Invalid battlefield data")
 	sidebar.end_turn_button.disabled = true
 	for code in errors:
 		push_error("Invalid fleet battle setup: %s (%s)" % [descriptions.get(code, code), code])

@@ -21,6 +21,12 @@ const COMBAT_STARTS := {
 
 func run(t: TestContext, _tree: SceneTree) -> void:
 	test_rejects_invalid_setup_without_partial_state(t)
+	test_setup_rejects_wrong_unique_class_ids_without_mutation(t)
+	test_setup_rejects_wrong_class_order_without_mutation(t)
+	test_setup_rejects_null_visual_profiles_without_mutation(t)
+	test_setup_rejects_empty_visual_silhouettes_without_mutation(t)
+	test_setup_rejects_mismatched_visual_icon_identities_without_mutation(t)
+	test_setup_definition_errors_have_deterministic_order(t)
 	test_aggregates_null_board_and_invalid_start_type(t)
 	test_empty_board_reports_starts_outside_map(t)
 	test_selects_any_ready_active_ship(t)
@@ -51,6 +57,7 @@ func test_rejects_invalid_setup_without_partial_state(t: TestContext) -> void:
 		&"definition_missing",
 		&"incorrect_fleet_size",
 		&"duplicate_class",
+		&"incorrect_class_order",
 		&"duplicate_start",
 	], "setup aggregates configuration errors in deterministic order")
 	t.expect_true(state.fleets.is_empty(), "invalid first setup creates no partial fleets")
@@ -81,6 +88,84 @@ func test_rejects_invalid_setup_without_partial_state(t: TestContext) -> void:
 	t.expect_eq(errors_after_valid, [&"board_missing"], "later invalid setup still reports its error")
 	t.expect_true(state.fleets == original_fleets, "failed reconfiguration preserves existing fleets")
 	t.expect_true(state.board == original_board, "failed reconfiguration preserves existing board")
+
+
+func test_setup_rejects_wrong_unique_class_ids_without_mutation(t: TestContext) -> void:
+	var definitions := clone_definitions()
+	definitions[0].class_id = &"cutter"
+	definitions[0].visual_profile.icon_code = &"cutter"
+	_expect_invalid_definitions_preserve_state(
+		t,
+		definitions,
+		[&"incorrect_class_order"],
+		"wrong unique class IDs"
+	)
+
+
+func test_setup_rejects_wrong_class_order_without_mutation(t: TestContext) -> void:
+	var definitions := clone_definitions()
+	var first := definitions[0]
+	definitions[0] = definitions[1]
+	definitions[1] = first
+	_expect_invalid_definitions_preserve_state(
+		t,
+		definitions,
+		[&"incorrect_class_order"],
+		"wrong class order"
+	)
+
+
+func test_setup_rejects_null_visual_profiles_without_mutation(t: TestContext) -> void:
+	var definitions := clone_definitions()
+	definitions[1].visual_profile = null
+	_expect_invalid_definitions_preserve_state(
+		t,
+		definitions,
+		[&"visual_profile_missing"],
+		"null visual profile"
+	)
+
+
+func test_setup_rejects_empty_visual_silhouettes_without_mutation(t: TestContext) -> void:
+	var definitions := clone_definitions()
+	definitions[2].visual_profile.hull_points = PackedVector2Array()
+	_expect_invalid_definitions_preserve_state(
+		t,
+		definitions,
+		[&"visual_hull_missing"],
+		"empty visual silhouette"
+	)
+
+
+func test_setup_rejects_mismatched_visual_icon_identities_without_mutation(
+	t: TestContext
+) -> void:
+	var definitions := clone_definitions()
+	definitions[0].visual_profile.icon_code = &"frigate"
+	_expect_invalid_definitions_preserve_state(
+		t,
+		definitions,
+		[&"visual_icon_mismatch"],
+		"mismatched visual icon identity"
+	)
+
+
+func test_setup_definition_errors_have_deterministic_order(t: TestContext) -> void:
+	var definitions := clone_definitions()
+	definitions[0].class_id = &"cutter"
+	definitions[1].visual_profile = null
+	definitions[2].visual_profile.hull_points = PackedVector2Array()
+	_expect_invalid_definitions_preserve_state(
+		t,
+		definitions,
+		[
+			&"incorrect_class_order",
+			&"visual_profile_missing",
+			&"visual_hull_missing",
+			&"visual_icon_mismatch",
+		],
+		"combined authored definition errors"
+	)
 
 
 func test_aggregates_null_board_and_invalid_start_type(t: TestContext) -> void:
@@ -423,6 +508,39 @@ func load_definitions() -> Array[ShipDefinition]:
 		var definition: ShipDefinition = load(path)
 		definitions.append(definition)
 	return definitions
+
+
+func clone_definitions() -> Array[ShipDefinition]:
+	var definitions: Array[ShipDefinition] = []
+	for source in load_definitions():
+		var definition := source.duplicate() as ShipDefinition
+		definition.visual_profile = source.visual_profile.duplicate() as ShipVisualProfile
+		definitions.append(definition)
+	return definitions
+
+
+func _expect_invalid_definitions_preserve_state(
+	t: TestContext,
+	invalid_definitions: Array[ShipDefinition],
+	expected_errors: Array[StringName],
+	case_name: String
+) -> void:
+	var state := make_state()
+	var original_board := state.board
+	var original_fleets := state.fleets
+	var errors := state.setup(state.board, invalid_definitions, DEFAULT_STARTS)
+	t.expect_eq(errors, expected_errors, "%s has a stable setup code" % case_name)
+	t.expect_true(state.board == original_board, "%s preserves the configured board" % case_name)
+	t.expect_true(state.fleets == original_fleets, "%s preserves existing fleets" % case_name)
+	var current_ids: Array[StringName] = []
+	if state.fleets.has(FleetBattleState.Player.ONE):
+		for ship in state.fleets[FleetBattleState.Player.ONE].ordered_ships():
+			current_ids.append(ship.ship_id)
+	t.expect_eq(
+		current_ids,
+		[&"p1_sloop", &"p1_frigate", &"p1_galleon"],
+		"%s preserves exact existing class identities" % case_name
+	)
 
 
 func make_state(

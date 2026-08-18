@@ -44,8 +44,20 @@ func test_fleet_hex_map(t: TestContext) -> void:
 	if map == null:
 		return
 	t.expect_eq(map.all_cells().size(), 127, "seven-side hex has 127 cells")
-	t.expect_eq(map.player_one_starts.size(), 3, "player one has three starts")
-	t.expect_eq(map.player_two_starts.size(), 3, "player two has three starts")
+	t.expect_eq(map.player_one_starts, [
+		Vector2i(-2, 5), Vector2i(0, 6), Vector2i(2, 5),
+	], "player one starts preserve sloop frigate galleon formation")
+	t.expect_eq(map.player_two_starts, [
+		Vector2i(-2, -5), Vector2i(0, -6), Vector2i(2, -5),
+	], "player two starts preserve sloop frigate galleon formation")
+	t.expect_eq(map.blocked_cells, [
+		Vector2i(-3, -2), Vector2i(-2, -2),
+		Vector2i(-1, -1), Vector2i(0, -1),
+		Vector2i(2, -1), Vector2i(3, -1),
+		Vector2i(-2, 1), Vector2i(-1, 1),
+		Vector2i(1, 1), Vector2i(2, 1),
+		Vector2i(0, 2), Vector2i(1, 2),
+	], "production map preserves the authored broken central chain")
 	var starts: Array[Vector2i] = map.player_one_starts + map.player_two_starts
 	var unique := {}
 	for cell in starts:
@@ -53,6 +65,31 @@ func test_fleet_hex_map(t: TestContext) -> void:
 		t.expect_true(map.all_cells().has(cell), "start %s is playable" % cell)
 		t.expect_false(map.blocked_cells.has(cell), "start %s is walkable" % cell)
 	t.expect_eq(unique.size(), 6, "all fleet starts are distinct")
+
+	var tile_map := TileMapLayer.new()
+	tile_map.tile_set = load("res://resources/tiles/prototype_tileset.tres")
+	var valid_cells := {}
+	for cell in map.all_cells():
+		valid_cells[cell] = true
+	var visited := {Vector2i.ZERO: true}
+	var frontier: Array[Vector2i] = [Vector2i.ZERO]
+	var ring_sizes := [1]
+	for _radius in range(6):
+		var next_ring: Array[Vector2i] = []
+		for cell in frontier:
+			for neighbor in tile_map.get_surrounding_cells(cell):
+				if valid_cells.has(neighbor) and not visited.has(neighbor):
+					visited[neighbor] = true
+					next_ring.append(neighbor)
+		ring_sizes.append(next_ring.size())
+		frontier = next_ring
+	t.expect_eq(
+		ring_sizes,
+		[1, 6, 12, 18, 24, 30, 36],
+		"production cells form exact TileSet-derived radius-six rings"
+	)
+	t.expect_eq(visited.size(), 127, "TileSet-derived rings cover every production cell")
+	tile_map.free()
 
 
 func test_fleet_map_validation(

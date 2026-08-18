@@ -43,9 +43,11 @@ func render(ship: FleetShipState, status: String) -> void:
 	class_icon.tooltip_text = "%s class silhouette" % ship.definition.display_name
 	status_label.text = status
 	status_label.add_theme_color_override("font_color", _status_color())
-	disabled = status != READY
-	focus_mode = Control.FOCUS_NONE if disabled else Control.FOCUS_ALL
-	mouse_default_cursor_shape = Control.CURSOR_ARROW if disabled else Control.CURSOR_POINTING_HAND
+	disabled = status == ACTIVE
+	focus_mode = Control.FOCUS_ALL if status == READY else Control.FOCUS_NONE
+	mouse_default_cursor_shape = (
+		Control.CURSOR_POINTING_HAND if status == READY else Control.CURSOR_ARROW
+	)
 	tooltip_text = "%s · %s · HULL %d / %d" % [
 		ship.definition.display_name,
 		status,

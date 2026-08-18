@@ -46,6 +46,7 @@ func run(t: TestContext, tree: SceneTree) -> void:
 	await test_used_and_sunk_selection_feedback(t, tree, packed)
 	await test_invalid_map_export_locks_without_partial_fleet(t, tree, packed)
 	await test_invalid_ship_definitions_lock_without_partial_fleet(t, tree, packed)
+	await test_invalid_authored_ship_profiles_lock_without_spawning(t, tree, packed)
 	await test_real_movement_locks_during_animation(t, tree, packed)
 	await test_animated_sinking_owns_its_lock_and_restores_transform(t, tree, packed)
 	await test_complete_match_and_play_again(t, tree, packed)
@@ -205,7 +206,11 @@ func test_multiple_targets_and_attack(
 		first_target.cell,
 		"hover strengthens the selected target cue"
 	)
-	t.expect_eq(battle.sidebar.message_label.text, "Attack · 1 damage", "target hover shows exact damage")
+	t.expect_eq(
+		battle.sidebar.message_label.text,
+		"Attack Sloop · 1 damage",
+		"target hover shows target class and exact damage"
+	)
 	battle.handle_cell_hover(Vector2i(0, 0))
 	t.expect_false(battle.highlights.has_hovered_target, "leaving a target clears its stronger cue")
 
@@ -227,9 +232,16 @@ func test_used_and_sunk_selection_feedback(
 	tree: SceneTree,
 	packed: PackedScene
 ) -> void:
-	var battle := await _add_close_battle(tree, packed, true)
+	var viewport := SubViewport.new()
+	viewport.size = Vector2i(1280, 720)
+	tree.root.add_child(viewport)
+	var battle: BattleScreen = packed.instantiate()
+	battle.map_definition = load(CLOSE_MAP_PATH)
+	battle.skip_animations = true
+	viewport.add_child(battle)
+	await tree.process_frame
 	if not battle.state is FleetBattleState:
-		battle.queue_free()
+		viewport.queue_free()
 		await tree.process_frame
 		return
 
@@ -237,19 +249,29 @@ func test_used_and_sunk_selection_feedback(
 	await _attack_ship(battle, &"p1_galleon", &"p2_sloop")
 	var sunk: FleetShipState = _ship(fleet_state, &"p2_sloop")
 	var player_before: int = fleet_state.active_player
-	battle.handle_ship_selection(sunk.ship_id)
-	t.expect_eq(battle.state.selected_ship(), null, "sunk ship selection leaves rules selection unchanged")
-	t.expect_eq(battle.state.active_player, player_before, "sunk ship selection leaves player unchanged")
-	t.expect_eq(battle.sidebar.message_label.text, "Ship has sunk", "sunk ship feedback is exact")
+	var sunk_row: FleetRosterRow = battle.sidebar.row_for(sunk.ship_id)
+	t.expect_false(sunk_row.disabled, "sunk roster row accepts a real pointer attempt")
+	t.expect_eq(sunk_row.focus_mode, Control.FOCUS_NONE, "sunk roster row remains non-focusable")
+	await _click_control(tree, sunk_row)
+	t.expect_eq(battle.state.selected_ship(), null, "sunk row click leaves rules selection unchanged")
+	t.expect_eq(battle.state.active_player, player_before, "sunk row click leaves player unchanged")
+	t.expect_eq(battle.sidebar.message_label.text, "Ship has sunk", "sunk row click shows exact rules rejection")
 
 	await _end_ship_activation(tree, battle, &"p2_frigate")
 	var used: FleetShipState = _ship(fleet_state, &"p1_galleon")
 	player_before = fleet_state.active_player
-	await battle.handle_cell_click(used.cell)
-	t.expect_eq(battle.state.selected_ship(), null, "used ship selection leaves rules selection unchanged")
-	t.expect_eq(battle.state.active_player, player_before, "used ship selection leaves player unchanged")
-	t.expect_eq(battle.sidebar.message_label.text, "Ship already activated", "used ship feedback is exact")
-	battle.queue_free()
+	var used_row: FleetRosterRow = battle.sidebar.row_for(used.ship_id)
+	t.expect_false(used_row.disabled, "used roster row accepts a real pointer attempt")
+	t.expect_eq(used_row.focus_mode, Control.FOCUS_NONE, "used roster row remains non-focusable")
+	await _click_control(tree, used_row)
+	t.expect_eq(battle.state.selected_ship(), null, "used row click leaves rules selection unchanged")
+	t.expect_eq(battle.state.active_player, player_before, "used row click leaves player unchanged")
+	t.expect_eq(
+		battle.sidebar.message_label.text,
+		"Ship already activated",
+		"used row click shows exact rules rejection"
+	)
+	viewport.queue_free()
 	await tree.process_frame
 
 
@@ -268,7 +290,7 @@ func test_invalid_map_export_locks_without_partial_fleet(
 	t.expect_true(battle.state.fleets.is_empty(), "invalid map creates no partial rules fleets")
 	t.expect_eq(
 		battle.sidebar.message_label.text,
-		"Invalid fleet battle setup",
+		"Invalid battlefield data",
 		"invalid map reports setup failure in the real sidebar"
 	)
 	battle.queue_free()
@@ -291,6 +313,7 @@ func test_invalid_ship_definitions_lock_without_partial_fleet(
 	await _add_invalid_battle_without_expected_error_output(tree, battle)
 	t.expect_true(battle.input_locked, "invalid ship definitions lock battlefield input")
 	t.expect_true(battle.sidebar.end_turn_button.disabled, "invalid ship definitions disable activation completion")
+	t.expect_true(battle.tile_map.get_used_cells().is_empty(), "invalid ship definitions do not build map tiles")
 	t.expect_true(battle.ship_views.is_empty(), "invalid ship definitions spawn no ship views")
 	t.expect_eq(
 		battle.ship_container.get_child_count(),
@@ -300,11 +323,43 @@ func test_invalid_ship_definitions_lock_without_partial_fleet(
 	t.expect_true(battle.state.fleets.is_empty(), "invalid ship definitions create no partial rules fleets")
 	t.expect_eq(
 		battle.sidebar.message_label.text,
-		"Invalid fleet battle setup",
+		"Invalid battlefield data",
 		"invalid ship definitions report setup failure in the real sidebar"
 	)
 	battle.queue_free()
 	await tree.process_frame
+
+
+func test_invalid_authored_ship_profiles_lock_without_spawning(
+	t: TestContext,
+	tree: SceneTree,
+	packed: PackedScene
+) -> void:
+	for case in _invalid_authored_definition_cases():
+		var battle = packed.instantiate()
+		battle.ship_definitions = case.definitions
+		await _add_invalid_battle_without_expected_error_output(tree, battle)
+		var case_name: String = case.name
+		t.expect_true(battle.input_locked, "%s locks battlefield input" % case_name)
+		t.expect_true(battle.sidebar.end_turn_button.disabled, "%s disables activation completion" % case_name)
+		t.expect_true(
+			battle.tile_map.get_used_cells().is_empty(),
+			"%s does not build map tiles" % case_name
+		)
+		t.expect_true(battle.ship_views.is_empty(), "%s spawns no ship views" % case_name)
+		t.expect_eq(
+			battle.ship_container.get_child_count(),
+			0,
+			"%s spawns no partial fleet nodes" % case_name
+		)
+		t.expect_true(battle.state.fleets.is_empty(), "%s creates no partial rules fleets" % case_name)
+		t.expect_eq(
+			battle.sidebar.message_label.text,
+			"Invalid battlefield data",
+			"%s shows approved invalid-data copy" % case_name
+		)
+		battle.queue_free()
+		await tree.process_frame
 
 
 func test_real_movement_locks_during_animation(
@@ -548,6 +603,67 @@ func _add_close_battle(
 	tree.root.add_child(battle)
 	await tree.process_frame
 	return battle
+
+
+func _invalid_authored_definition_cases() -> Array[Dictionary]:
+	var wrong_ids := _clone_definitions()
+	wrong_ids[0].class_id = &"cutter"
+	wrong_ids[0].visual_profile.icon_code = &"cutter"
+
+	var wrong_order := _clone_definitions()
+	var first := wrong_order[0]
+	wrong_order[0] = wrong_order[1]
+	wrong_order[1] = first
+
+	var null_profile := _clone_definitions()
+	null_profile[1].visual_profile = null
+
+	var empty_silhouette := _clone_definitions()
+	empty_silhouette[2].visual_profile.hull_points = PackedVector2Array()
+
+	var mismatched_icon := _clone_definitions()
+	mismatched_icon[0].visual_profile.icon_code = &"frigate"
+
+	return [
+		{"name": "wrong unique class IDs", "definitions": wrong_ids},
+		{"name": "wrong class order", "definitions": wrong_order},
+		{"name": "null visual profile", "definitions": null_profile},
+		{"name": "empty visual silhouette", "definitions": empty_silhouette},
+		{"name": "mismatched visual icon identity", "definitions": mismatched_icon},
+	]
+
+
+func _clone_definitions() -> Array[ShipDefinition]:
+	var definitions: Array[ShipDefinition] = []
+	for path in [
+		"res://resources/ships/sloop.tres",
+		"res://resources/ships/frigate.tres",
+		"res://resources/ships/galleon.tres",
+	]:
+		var source: ShipDefinition = load(path)
+		var definition := source.duplicate() as ShipDefinition
+		definition.visual_profile = source.visual_profile.duplicate() as ShipVisualProfile
+		definitions.append(definition)
+	return definitions
+
+
+func _click_control(tree: SceneTree, control: Control) -> void:
+	var viewport := control.get_viewport()
+	var viewport_position := control.get_global_rect().get_center()
+	var motion := InputEventMouseMotion.new()
+	motion.position = viewport_position
+	motion.global_position = viewport_position
+	viewport.push_input(motion)
+	await tree.process_frame
+	for is_pressed in [true, false]:
+		var event := InputEventMouseButton.new()
+		event.button_index = MOUSE_BUTTON_LEFT
+		event.pressed = is_pressed
+		event.button_mask = MOUSE_BUTTON_MASK_LEFT if is_pressed else 0
+		event.position = viewport_position
+		event.global_position = viewport_position
+		viewport.push_input(event)
+		await tree.process_frame
 
 
 func _attack_ship(

@@ -3,6 +3,9 @@ extends RefCounted
 
 enum Player { ONE = 1, TWO = 2 }
 
+const REQUIRED_CLASS_IDS: Array[StringName] = [&"sloop", &"frigate", &"galleon"]
+const MINIMUM_DRAWABLE_HULL_POINTS := 3
+
 var board: HexBoard
 var fleets: Dictionary = {}
 var active_player := Player.ONE
@@ -20,17 +23,55 @@ func setup(
 	definitions: Array[ShipDefinition],
 	starts_by_player: Dictionary
 ) -> Array[StringName]:
+	var errors := _validate_setup(hex_board, definitions, starts_by_player)
+	if not errors.is_empty():
+		return errors
+
+	board = hex_board
+	_definitions.clear()
+	_definitions.append_array(definitions)
+	var player_one_starts: Array = starts_by_player[Player.ONE]
+	var player_two_starts: Array = starts_by_player[Player.TWO]
+	_starts_by_player = {
+		Player.ONE: _copy_starts(player_one_starts),
+		Player.TWO: _copy_starts(player_two_starts),
+	}
+	_restore_battle()
+	return errors
+
+
+func _validate_setup(
+	hex_board: HexBoard,
+	definitions: Array[ShipDefinition],
+	starts_by_player: Dictionary
+) -> Array[StringName]:
 	var errors: Array[StringName] = []
 	var definition_missing := false
 	var duplicate_class := false
+	var incorrect_class_order := false
+	var visual_profile_missing := false
+	var visual_hull_missing := false
+	var visual_icon_mismatch := false
 	var seen_classes := {}
-	for definition in definitions:
+	for index in definitions.size():
+		var definition := definitions[index]
 		if definition == null:
 			definition_missing = true
 			continue
 		if seen_classes.has(definition.class_id):
 			duplicate_class = true
 		seen_classes[definition.class_id] = true
+		if definitions.size() == REQUIRED_CLASS_IDS.size():
+			if definition.class_id != REQUIRED_CLASS_IDS[index]:
+				incorrect_class_order = true
+		var profile := definition.visual_profile
+		if profile == null:
+			visual_profile_missing = true
+			continue
+		if profile.hull_points.size() < MINIMUM_DRAWABLE_HULL_POINTS:
+			visual_hull_missing = true
+		if profile.icon_code != definition.class_id:
+			visual_icon_mismatch = true
 
 	var player_one_starts: Variant = starts_by_player.get(Player.ONE, [])
 	var player_two_starts: Variant = starts_by_player.get(Player.TWO, [])
@@ -71,23 +112,20 @@ func setup(
 		errors.append(&"incorrect_fleet_size")
 	if duplicate_class:
 		errors.append(&"duplicate_class")
+	if incorrect_class_order:
+		errors.append(&"incorrect_class_order")
+	if visual_profile_missing:
+		errors.append(&"visual_profile_missing")
+	if visual_hull_missing:
+		errors.append(&"visual_hull_missing")
+	if visual_icon_mismatch:
+		errors.append(&"visual_icon_mismatch")
 	if duplicate_start:
 		errors.append(&"duplicate_start")
 	if start_outside_map:
 		errors.append(&"start_outside_map")
 	if start_blocked:
 		errors.append(&"start_blocked")
-	if not errors.is_empty():
-		return errors
-
-	board = hex_board
-	_definitions.clear()
-	_definitions.append_array(definitions)
-	_starts_by_player = {
-		Player.ONE: _copy_starts(player_one_starts),
-		Player.TWO: _copy_starts(player_two_starts),
-	}
-	_restore_battle()
 	return errors
 
 
