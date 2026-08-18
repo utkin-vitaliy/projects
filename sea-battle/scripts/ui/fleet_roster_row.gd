@@ -8,8 +8,6 @@ const ACTIVE := "ACTIVE"
 const USED := "USED"
 const SUNK := "SUNK"
 const VALID_STATUSES := [READY, ACTIVE, USED, SUNK]
-const ICON_FILL := Color("e6d7b5")
-const ICON_OUTLINE := Color("0d222e")
 
 @onready var class_icon: Control = %ClassIcon
 @onready var class_label: Label = %ClassName
@@ -18,6 +16,7 @@ const ICON_OUTLINE := Color("0d222e")
 
 var ship_id: StringName = &""
 var icon_code: StringName = &""
+var icon_texture: Texture2D
 var hull_copy := ""
 var _visual_profile: ShipVisualProfile
 var _status := READY
@@ -34,6 +33,7 @@ func render(ship: FleetShipState, status: String) -> void:
 	ship_id = ship.ship_id
 	_visual_profile = ship.definition.visual_profile
 	icon_code = _visual_profile.icon_code if _visual_profile != null else &""
+	icon_texture = _visual_profile.texture_for_player(ship.player) if _visual_profile != null else null
 	_status = status
 	class_label.text = ship.definition.display_name.to_upper()
 	hull_bar.max_value = ship.definition.max_hull
@@ -84,26 +84,20 @@ func _draw() -> void:
 
 
 func _draw_class_icon() -> void:
-	if _visual_profile == null or _visual_profile.hull_points.is_empty() or class_icon == null:
+	if icon_texture == null or class_icon == null:
 		return
-	var source_bounds := Rect2(_visual_profile.hull_points[0], Vector2.ZERO)
-	for point in _visual_profile.hull_points:
-		source_bounds = source_bounds.expand(point)
-	if source_bounds.size.x <= 0.0 or source_bounds.size.y <= 0.0:
-		return
+	draw_texture_rect(icon_texture, get_icon_draw_rect(), false)
+
+
+func get_icon_draw_rect() -> Rect2:
+	if icon_texture == null or class_icon == null or _visual_profile == null:
+		return Rect2()
 	var available := class_icon.size - Vector2(8.0, 12.0)
-	var icon_scale := minf(available.x / source_bounds.size.x, available.y / source_bounds.size.y)
+	var texture_size := icon_texture.get_size()
+	var fit_scale := minf(available.x / texture_size.x, available.y / texture_size.y)
 	var target_center := _class_icon_center_in_row()
-	var points := PackedVector2Array()
-	for point in _visual_profile.hull_points:
-		points.append(target_center + (point - source_bounds.get_center()) * icon_scale)
-	draw_colored_polygon(points, ICON_FILL)
-	points.append(points[0])
-	draw_polyline(points, ICON_OUTLINE, 1.5, true)
-	var mast_top := target_center.y - class_icon.size.y * 0.35
-	for mast_offset in _visual_profile.mast_offsets:
-		var mast_x := target_center.x + mast_offset * icon_scale
-		draw_line(Vector2(mast_x, target_center.y), Vector2(mast_x, mast_top), ICON_OUTLINE, 1.5, true)
+	var draw_size := texture_size * fit_scale * _visual_profile.sprite_scale
+	return Rect2(target_center - draw_size * 0.5, draw_size)
 
 
 func _class_icon_center_in_row() -> Vector2:

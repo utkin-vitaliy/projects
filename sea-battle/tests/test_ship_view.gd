@@ -12,6 +12,26 @@ func run(t: TestContext, tree: SceneTree) -> void:
 	var frigate := _fleet_view(tree, &"frigate-one", 1, &"frigate")
 	var galleon := _fleet_view(tree, &"galleon-one", 1, &"galleon")
 	var opposing_sloop := _fleet_view(tree, &"sloop-two", 2, &"sloop")
+	var supports_ship_texture := sloop.has_method("get_ship_texture")
+	t.expect_true(supports_ship_texture, "ship view exposes its rendered owner texture")
+	if supports_ship_texture:
+		var player_one_texture := sloop.call("get_ship_texture") as Texture2D
+		var player_two_texture := opposing_sloop.call("get_ship_texture") as Texture2D
+		t.expect_not_null(player_one_texture, "Player 1 sloop renders a texture")
+		t.expect_not_null(player_two_texture, "Player 2 sloop renders a texture")
+		if player_one_texture != null:
+			t.expect_eq(
+				player_one_texture.resource_path,
+				"res://assets/ships/kenney/player_one_sloop.png",
+				"Player 1 ship view uses the blue sloop PNG"
+			)
+		if player_two_texture != null:
+			t.expect_eq(
+				player_two_texture.resource_path,
+				"res://assets/ships/kenney/player_two_sloop.png",
+				"Player 2 ship view uses the red sloop PNG"
+			)
+		t.expect_true(player_one_texture != player_two_texture, "owners render distinct colored PNGs")
 
 	t.expect_true(
 		sloop.get_visual_bounds().size.x < frigate.get_visual_bounds().size.x,
@@ -20,6 +40,14 @@ func run(t: TestContext, tree: SceneTree) -> void:
 	t.expect_true(
 		frigate.get_visual_bounds().size.x < galleon.get_visual_bounds().size.x,
 		"frigate silhouette is narrower than galleon"
+	)
+	t.expect_true(
+		sloop.get_visual_bounds().size.y < frigate.get_visual_bounds().size.y,
+		"sloop sprite is shorter than frigate"
+	)
+	t.expect_true(
+		frigate.get_visual_bounds().size.y < galleon.get_visual_bounds().size.y,
+		"frigate sprite is shorter than galleon"
 	)
 	t.expect_eq(sloop.mast_count(), 1, "sloop has one mast")
 	t.expect_eq(frigate.mast_count(), 2, "frigate has two masts")

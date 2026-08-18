@@ -39,6 +39,7 @@ func run(t: TestContext, _tree: SceneTree) -> void:
 	test_setup_rejects_wrong_class_order_without_mutation(t)
 	test_setup_rejects_null_visual_profiles_without_mutation(t)
 	test_setup_rejects_empty_visual_silhouettes_without_mutation(t)
+	test_setup_rejects_missing_owner_textures_without_mutation(t)
 	test_setup_rejects_mismatched_visual_icon_identities_without_mutation(t)
 	test_setup_definition_errors_have_deterministic_order(t)
 	test_aggregates_null_board_and_invalid_start_type(t)
@@ -159,6 +160,17 @@ func test_setup_rejects_empty_visual_silhouettes_without_mutation(t: TestContext
 		definitions,
 		[&"visual_hull_missing"],
 		"empty visual silhouette"
+	)
+
+
+func test_setup_rejects_missing_owner_textures_without_mutation(t: TestContext) -> void:
+	var definitions := clone_definitions()
+	definitions[1].visual_profile.player_two_texture = null
+	_expect_invalid_definitions_preserve_state(
+		t,
+		definitions,
+		[&"visual_texture_missing"],
+		"missing owner texture"
 	)
 
 

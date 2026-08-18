@@ -4,6 +4,8 @@ A deliberately small, desktop-first prototype for a local two-player naval battl
 
 The code separates authored map and ship resources, deterministic battle rules, and Godot presentation. The fleet map contains 127 handcrafted cells, including a broken central terrain chain that shapes movement without changing attack range.
 
+Ship artwork is adapted from Kenney's CC0 Pirate Pack. The six class/player PNGs used by the game and the original license are tracked under `sea-battle/assets/ships/kenney/`.
+
 ## Requirements and running
 
 Use Godot **4.7.1**. Open `sea-battle/project.godot` in the editor and run the project with **F5**, or run from this repository root:

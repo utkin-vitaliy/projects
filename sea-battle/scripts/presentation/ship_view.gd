@@ -1,11 +1,9 @@
 class_name ShipView
 extends Node2D
 
-const PLAYER_ONE_COLOR := Color("e2b65c")
-const PLAYER_TWO_COLOR := Color("c85f58")
+const PLAYER_ONE_COLOR := Color("5f8fbd")
+const PLAYER_TWO_COLOR := Color("cf5e58")
 const NEUTRAL_COLOR := Color("89979e")
-const HULL_OUTLINE_COLOR := Color("f7edd0")
-const MAST_COLOR := Color("4b3426")
 const SAIL_COLOR := Color("f2f0df")
 const ACTIVE_COLOR := Color("d5a653")
 const BAR_BACKGROUND_COLOR := Color("0d222e")
@@ -88,11 +86,17 @@ func set_sunk(sunk: bool) -> void:
 
 
 func get_visual_bounds() -> Rect2:
-	var points := definition.visual_profile.hull_points
-	var bounds := Rect2(points[0], Vector2.ZERO)
-	for point in points:
-		bounds = bounds.expand(point)
-	return bounds
+	var texture := get_ship_texture()
+	if texture == null:
+		return Rect2()
+	var size := texture.get_size() * definition.visual_profile.sprite_scale
+	return Rect2(-size * 0.5, size)
+
+
+func get_ship_texture() -> Texture2D:
+	if definition == null or definition.visual_profile == null:
+		return null
+	return definition.visual_profile.texture_for_player(player)
 
 
 func mast_count() -> int:
@@ -116,22 +120,13 @@ func _palette_color_for_owner(owner: int) -> Color:
 func _draw() -> void:
 	if definition == null or definition.visual_profile == null:
 		return
-	var profile := definition.visual_profile
-	var hull_points := profile.hull_points
-	if hull_points.is_empty():
+	var texture := get_ship_texture()
+	if texture == null:
 		return
-	var ship_color := get_ownership_color()
 	var bounds := get_visual_bounds()
 	if is_active:
 		draw_rect(bounds.grow(7.0), ACTIVE_COLOR, false, 3.0, true)
-	draw_colored_polygon(hull_points, ship_color)
-	var outline := hull_points.duplicate()
-	outline.append(hull_points[0])
-	draw_polyline(outline, HULL_OUTLINE_COLOR, 2.0, true)
-	if profile.raised_stern:
-		_draw_raised_stern(bounds, ship_color)
-	_draw_masts(profile.mast_offsets, bounds.position.y)
-	_draw_gun_ports(profile.gun_port_count, bounds)
+	draw_texture_rect(texture, bounds, false)
 	_draw_readiness_glyph(bounds)
 	var bar_width := clampf(bounds.size.x * 0.65, 44.0, 72.0)
 	var bar_rect := Rect2(
@@ -148,45 +143,6 @@ func _draw() -> void:
 		true
 	)
 	draw_rect(bar_rect, SAIL_COLOR, false, 1.0)
-
-
-func _draw_masts(offsets: PackedFloat32Array, hull_top: float) -> void:
-	for offset in offsets:
-		var mast_base := Vector2(offset, hull_top + 3.0)
-		var mast_top := Vector2(offset, hull_top - 30.0)
-		draw_line(mast_base, mast_top, MAST_COLOR, 3.0, true)
-		draw_colored_polygon(
-			PackedVector2Array([
-				mast_top + Vector2(2.0, 4.0),
-				mast_top + Vector2(18.0, 14.0),
-				mast_top + Vector2(2.0, 23.0),
-			]),
-			SAIL_COLOR
-		)
-
-
-func _draw_raised_stern(bounds: Rect2, ship_color: Color) -> void:
-	var stern := PackedVector2Array([
-		Vector2(bounds.position.x + 5.0, bounds.position.y + 2.0),
-		Vector2(bounds.position.x + 7.0, bounds.position.y - 15.0),
-		Vector2(bounds.position.x + 27.0, bounds.position.y - 15.0),
-		Vector2(bounds.position.x + 31.0, bounds.position.y),
-	])
-	draw_colored_polygon(stern, ship_color)
-	stern.append(stern[0])
-	draw_polyline(stern, HULL_OUTLINE_COLOR, 2.0, true)
-
-
-func _draw_gun_ports(count: int, bounds: Rect2) -> void:
-	if count <= 0:
-		return
-	var left := bounds.position.x + 24.0
-	var right := bounds.end.x - 21.0
-	for index in range(count):
-		var progress := 0.5 if count == 1 else float(index) / float(count - 1)
-		var port_position := Vector2(lerpf(left, right, progress), 3.0)
-		draw_circle(port_position, 3.2, BAR_BACKGROUND_COLOR)
-		draw_arc(port_position, 3.2, 0.0, TAU, 12, HULL_OUTLINE_COLOR, 1.0, true)
 
 
 func _draw_readiness_glyph(bounds: Rect2) -> void:

@@ -271,6 +271,7 @@ func _report_invalid_setup(errors: Array[StringName]) -> void:
 		&"incorrect_class_order": "fleet classes must be ordered sloop, frigate, galleon",
 		&"visual_profile_missing": "a ship visual profile is missing",
 		&"visual_hull_missing": "a ship visual profile has no drawable hull",
+		&"visual_texture_missing": "a ship visual profile is missing an owner texture",
 		&"visual_icon_mismatch": "a ship visual icon does not match its class",
 		&"duplicate_start": "fleet starts overlap",
 		&"start_outside_map": "a fleet start is outside the map",

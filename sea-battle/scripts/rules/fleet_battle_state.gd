@@ -56,6 +56,7 @@ func _validate_setup(
 	var incorrect_class_order := false
 	var visual_profile_missing := false
 	var visual_hull_missing := false
+	var visual_texture_missing := false
 	var visual_icon_mismatch := false
 	var seen_classes := {}
 	for index in definitions.size():
@@ -75,6 +76,8 @@ func _validate_setup(
 			continue
 		if profile.hull_points.size() < MINIMUM_DRAWABLE_HULL_POINTS:
 			visual_hull_missing = true
+		if profile.player_one_texture == null or profile.player_two_texture == null:
+			visual_texture_missing = true
 		if profile.icon_code != definition.class_id:
 			visual_icon_mismatch = true
 
@@ -123,6 +126,8 @@ func _validate_setup(
 		errors.append(&"visual_profile_missing")
 	if visual_hull_missing:
 		errors.append(&"visual_hull_missing")
+	if visual_texture_missing:
+		errors.append(&"visual_texture_missing")
 	if visual_icon_mismatch:
 		errors.append(&"visual_icon_mismatch")
 	if duplicate_start:

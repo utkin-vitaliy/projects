@@ -9,6 +9,7 @@ const CLASS_PATHS := [
 
 func run(t: TestContext, _tree: SceneTree) -> void:
 	test_fleet_classes(t)
+	test_kenney_ship_texture_profiles(t)
 	test_fleet_hex_map(t)
 	var fleet_map: MapDefinition = load("res://resources/maps/fleet_hex_map.tres")
 	test_fleet_map_validation(t, fleet_map.water_terrain, fleet_map.land_terrain)
@@ -36,6 +37,58 @@ func test_fleet_classes(t: TestContext) -> void:
 		)
 		t.expect_not_null(definition.visual_profile, "%s has visual profile" % definition.class_id)
 		t.expect_true(definition.visual_profile.hull_points.size() >= 6, "silhouette is drawable")
+
+
+func test_kenney_ship_texture_profiles(t: TestContext) -> void:
+	var expected := {
+		&"sloop": [
+			"res://assets/ships/kenney/player_one_sloop.png",
+			"res://assets/ships/kenney/player_two_sloop.png",
+			0.64,
+		],
+		&"frigate": [
+			"res://assets/ships/kenney/player_one_frigate.png",
+			"res://assets/ships/kenney/player_two_frigate.png",
+			0.78,
+		],
+		&"galleon": [
+			"res://assets/ships/kenney/player_one_galleon.png",
+			"res://assets/ships/kenney/player_two_galleon.png",
+			0.92,
+		],
+	}
+	for path in CLASS_PATHS:
+		var definition: ShipDefinition = load(path)
+		var profile := definition.visual_profile
+		var has_texture_contract := (
+			_has_property(profile, &"player_one_texture")
+			and _has_property(profile, &"player_two_texture")
+			and _has_property(profile, &"sprite_scale")
+		)
+		t.expect_true(has_texture_contract, "%s exposes owner ship textures and scale" % definition.class_id)
+		if not has_texture_contract:
+			continue
+		var class_expected: Array = expected[definition.class_id]
+		var player_one_texture := profile.get("player_one_texture") as Texture2D
+		var player_two_texture := profile.get("player_two_texture") as Texture2D
+		t.expect_not_null(player_one_texture, "%s loads Player 1 blue ship PNG" % definition.class_id)
+		t.expect_not_null(player_two_texture, "%s loads Player 2 red ship PNG" % definition.class_id)
+		if player_one_texture != null:
+			t.expect_eq(player_one_texture.resource_path, class_expected[0], "%s maps exact Player 1 PNG" % definition.class_id)
+		if player_two_texture != null:
+			t.expect_eq(player_two_texture.resource_path, class_expected[1], "%s maps exact Player 2 PNG" % definition.class_id)
+		t.expect_eq(profile.get("sprite_scale"), class_expected[2], "%s has approved map scale" % definition.class_id)
+	t.expect_true(
+		FileAccess.file_exists("res://assets/ships/kenney/LICENSE.txt"),
+		"tracked Kenney ship assets retain their CC0 license"
+	)
+
+
+func _has_property(object: Object, property_name: StringName) -> bool:
+	for property in object.get_property_list():
+		if property.name == property_name:
+			return true
+	return false
 
 
 func test_fleet_hex_map(t: TestContext) -> void:

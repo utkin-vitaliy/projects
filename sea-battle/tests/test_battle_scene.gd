@@ -735,12 +735,16 @@ func _invalid_authored_definition_cases() -> Array[Dictionary]:
 	var mismatched_icon := _clone_definitions()
 	mismatched_icon[0].visual_profile.icon_code = &"frigate"
 
+	var missing_owner_texture := _clone_definitions()
+	missing_owner_texture[1].visual_profile.player_two_texture = null
+
 	return [
 		{"name": "wrong unique class IDs", "definitions": wrong_ids},
 		{"name": "wrong class order", "definitions": wrong_order},
 		{"name": "null visual profile", "definitions": null_profile},
 		{"name": "empty visual silhouette", "definitions": empty_silhouette},
 		{"name": "mismatched visual icon identity", "definitions": mismatched_icon},
+		{"name": "missing owner texture", "definitions": missing_owner_texture},
 	]
 
 

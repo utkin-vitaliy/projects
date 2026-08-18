@@ -60,6 +60,33 @@ func run(t: TestContext, tree: SceneTree) -> void:
 	t.expect_eq(frigate_row.class_label.text, "FRIGATE", "second row is frigate")
 	t.expect_eq(galleon_row.class_label.text, "GALLEON", "third row is galleon")
 	t.expect_eq(sloop_row.icon_code, &"sloop", "row uses authored sloop visual identity")
+	var has_icon_texture := false
+	for property in sloop_row.get_property_list():
+		if property.name == &"icon_texture":
+			has_icon_texture = true
+			break
+	t.expect_true(has_icon_texture, "roster row exposes its rendered ship texture")
+	if has_icon_texture:
+		var icon_texture := sloop_row.get("icon_texture") as Texture2D
+		t.expect_not_null(icon_texture, "roster row renders a ship PNG")
+		if icon_texture != null:
+			t.expect_eq(
+				icon_texture.resource_path,
+				"res://assets/ships/kenney/player_one_sloop.png",
+				"Player 1 roster uses the blue sloop PNG"
+			)
+	var supports_scaled_icon_rects: bool = (
+		sloop_row.has_method("get_icon_draw_rect")
+		and frigate_row.has_method("get_icon_draw_rect")
+		and galleon_row.has_method("get_icon_draw_rect")
+	)
+	t.expect_true(supports_scaled_icon_rects, "roster rows expose their class-scaled icon bounds")
+	if supports_scaled_icon_rects:
+		var sloop_icon_rect: Rect2 = sloop_row.call("get_icon_draw_rect")
+		var frigate_icon_rect: Rect2 = frigate_row.call("get_icon_draw_rect")
+		var galleon_icon_rect: Rect2 = galleon_row.call("get_icon_draw_rect")
+		t.expect_true(sloop_icon_rect.size.y < frigate_icon_rect.size.y, "roster sloop icon is smaller than frigate")
+		t.expect_true(frigate_icon_rect.size.y < galleon_icon_rect.size.y, "roster frigate icon is smaller than galleon")
 	t.expect_eq(sloop_row.status_label.text, "READY", "unused ship is ready")
 	t.expect_false(sloop_row.disabled, "ready ship can be selected")
 	t.expect_eq(sloop_row.focus_mode, Control.FOCUS_ALL, "ready row accepts keyboard focus")
@@ -141,6 +168,15 @@ func run(t: TestContext, tree: SceneTree) -> void:
 	t.expect_eq(sidebar.message_label.text, "Ship has sunk", "sunk rejection uses fleet wording")
 	sidebar.show_rejection(&"invalid_target", FleetBattleState.Player.ONE)
 	t.expect_eq(sidebar.message_label.text, "Choose an enemy ship", "target rejection uses fleet wording")
+
+	state.active_player = FleetBattleState.Player.TWO
+	sidebar.render_fleet(state)
+	var player_two_sloop_row: FleetRosterRow = sidebar.roster_rows[0]
+	t.expect_eq(
+		player_two_sloop_row.icon_texture.resource_path,
+		"res://assets/ships/kenney/player_two_sloop.png",
+		"Player 2 roster uses the red sloop PNG"
+	)
 
 	sidebar.queue_free()
 	await tree.process_frame
