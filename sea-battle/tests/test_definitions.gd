@@ -29,6 +29,7 @@ func test_map_validation(
 	water: TerrainDefinition,
 	land: TerrainDefinition
 ) -> void:
+	var tile_set: TileSet = load("res://resources/tiles/prototype_tileset.tres")
 	var neighbors := {
 		Vector2i(0, 0): [Vector2i(1, 0)],
 		Vector2i(1, 0): [Vector2i(0, 0), Vector2i(2, 0)],
@@ -40,7 +41,7 @@ func test_map_validation(
 	definition.player_two_start = Vector2i(2, 0)
 	definition.water_terrain = water
 	definition.land_terrain = land
-	t.expect_eq(definition.validate(neighbors), [], "valid map has no validation codes")
+	t.expect_eq(definition.validate(neighbors, tile_set), [], "valid map has no validation codes")
 
 	definition.player_two_start = Vector2i(0, 0)
 	t.expect_eq(definition.validate(neighbors), [&"overlapping_starts"], "overlap has stable code")
@@ -62,4 +63,20 @@ func test_map_validation(
 		definition.validate(neighbors),
 		[&"terrain_definition_missing"],
 		"missing terrain has stable code"
+	)
+	var invalid_water: TerrainDefinition = water.duplicate(true)
+	invalid_water.source_ids = [999]
+	definition.water_terrain = invalid_water
+	definition.land_terrain = land
+	t.expect_eq(
+		definition.validate(neighbors, tile_set),
+		[&"terrain_tile_source_missing"],
+		"unknown tile source has stable code"
+	)
+	invalid_water.source_ids = [0]
+	invalid_water.atlas_coords = Vector2i(9, 9)
+	t.expect_eq(
+		definition.validate(neighbors, tile_set),
+		[&"terrain_tile_missing"],
+		"unknown atlas tile has stable code"
 	)

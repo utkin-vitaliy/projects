@@ -61,12 +61,14 @@ func _play_attack(event: BattleEvent, ship_views: Dictionary) -> void:
 
 func _play_damage(event: BattleEvent, ship_views: Dictionary) -> void:
 	var target: ShipView = ship_views[event.data["player"]]
-	target.set_hull(event.data["hull"], target.max_hull)
+	target.hull = event.data["hull"]
 	if skip_animations:
+		target.displayed_hull = event.data["hull"]
 		return
 	var original_modulate := target.modulate
 	target.modulate = Color(1.0, 0.38, 0.32, 1.0)
 	var tween := create_tween().set_parallel(true)
+	tween.tween_property(target, "displayed_hull", float(event.data["hull"]), 0.16)
 	tween.tween_property(target, "scale", Vector2(1.18, 1.18), 0.08)
 	tween.tween_property(target, "modulate", Color.WHITE, 0.08)
 	tween.chain().tween_property(target, "scale", Vector2.ONE, 0.08)

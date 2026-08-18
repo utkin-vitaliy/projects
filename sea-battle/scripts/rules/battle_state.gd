@@ -74,6 +74,19 @@ func reachable_cells() -> Array[Vector2i]:
 	return cells
 
 
+func cancel_selection() -> CommandResult:
+	if is_game_over():
+		return CommandResult.failure(&"game_over")
+	if not selected:
+		return CommandResult.failure(&"selection_required")
+	var ship := active_ship()
+	if ship.movement_used or ship.attack_used:
+		return CommandResult.failure(&"action_committed")
+	selected = false
+	var events: Array[BattleEvent] = [_event(&"selection_cancelled")]
+	return CommandResult.success(events)
+
+
 func move_active_ship(destination: Vector2i) -> CommandResult:
 	if is_game_over():
 		return CommandResult.failure(&"game_over")

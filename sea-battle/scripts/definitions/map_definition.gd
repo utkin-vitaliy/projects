@@ -21,7 +21,7 @@ func terrain_at(cell: Vector2i) -> TerrainDefinition:
 	return land_terrain if blocked_cells.has(cell) else water_terrain
 
 
-func validate(neighbors: Dictionary) -> Array[StringName]:
+func validate(neighbors: Dictionary, tile_set: TileSet = null) -> Array[StringName]:
 	var errors: Array[StringName] = []
 	var starts_overlap := player_one_start == player_two_start
 	var starts_inside := _contains(player_one_start) and _contains(player_two_start)
@@ -42,8 +42,35 @@ func validate(neighbors: Dictionary) -> Array[StringName]:
 			errors.append(&"starts_disconnected")
 	if water_terrain == null or land_terrain == null:
 		errors.append(&"terrain_definition_missing")
+	else:
+		var tile_errors := _validate_terrain_tiles(tile_set)
+		errors.append_array(tile_errors)
 	return errors
 
 
 func _contains(cell: Vector2i) -> bool:
 	return cell.x >= 0 and cell.y >= 0 and cell.x < size.x and cell.y < size.y
+
+
+func _validate_terrain_tiles(tile_set: TileSet) -> Array[StringName]:
+	var source_missing := false
+	var tile_missing := false
+	for terrain in [water_terrain, land_terrain]:
+		if terrain.source_ids.is_empty():
+			source_missing = true
+			continue
+		if tile_set == null:
+			continue
+		for source_id in terrain.source_ids:
+			if not tile_set.has_source(source_id):
+				source_missing = true
+				continue
+			var atlas_source := tile_set.get_source(source_id) as TileSetAtlasSource
+			if atlas_source == null or not atlas_source.has_tile(terrain.atlas_coords):
+				tile_missing = true
+	var errors: Array[StringName] = []
+	if source_missing:
+		errors.append(&"terrain_tile_source_missing")
+	if tile_missing:
+		errors.append(&"terrain_tile_missing")
+	return errors

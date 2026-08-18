@@ -5,18 +5,24 @@ var player: int
 var hull: int
 var max_hull: int
 var is_active := false
+var displayed_hull := 0.0:
+	set(value):
+		displayed_hull = value
+		queue_redraw()
 
 
 func configure(owner: int, definition: ShipDefinition) -> void:
 	player = owner
 	hull = definition.max_hull
 	max_hull = definition.max_hull
+	displayed_hull = hull
 	queue_redraw()
 
 
 func set_hull(current: int, maximum: int) -> void:
 	hull = current
 	max_hull = maximum
+	displayed_hull = current
 	queue_redraw()
 
 
@@ -55,3 +61,8 @@ func _draw() -> void:
 	)
 	if is_active:
 		draw_arc(Vector2.ZERO, 30.0, 0.0, TAU, 32, Color("d5a653"), 3.0, true)
+	var bar_rect := Rect2(-20, 23, 40, 5)
+	draw_rect(bar_rect, Color("0d222e"), true)
+	var hull_ratio := clampf(displayed_hull / maxf(max_hull, 1), 0.0, 1.0)
+	draw_rect(Rect2(bar_rect.position, Vector2(bar_rect.size.x * hull_ratio, bar_rect.size.y)), Color("69b978"), true)
+	draw_rect(bar_rect, Color("f2f0df"), false, 1.0)

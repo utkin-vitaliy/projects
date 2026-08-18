@@ -48,6 +48,11 @@ func run(t: TestContext, tree: SceneTree) -> void:
 	t.expect_eq(battle.highlights.path_cells.back(), destination, "hover previews destination")
 	await battle.handle_cell_click(destination)
 	t.expect_eq(battle.state.active_ship().cell, destination, "click commits movement")
+	t.expect_eq(
+		sidebar.message_label.text,
+		"Enemy out of range · end your turn",
+		"movement feedback does not advertise an unavailable target"
+	)
 	battle.cancel_selection()
 	t.expect_true(battle.state.selected, "committed movement cannot be cancelled")
 	t.expect_eq(
@@ -60,6 +65,12 @@ func run(t: TestContext, tree: SceneTree) -> void:
 		battle.tile_map.map_to_local(battle.state.ships[BattleState.Player.ONE].cell),
 		"player one view matches authoritative cell"
 	)
+	var configured_state: BattleState = battle.state
+	battle.input_locked = true
+	battle.state = null
+	battle.handle_cell_hover(Vector2i.ZERO)
+	t.expect_true(battle.input_locked, "locked invalid setup ignores hover safely")
+	battle.state = configured_state
 	battle.queue_free()
 	await tree.process_frame
 	await test_complete_match(t, tree, packed)
@@ -76,8 +87,18 @@ func test_complete_match(t: TestContext, tree: SceneTree, packed: PackedScene) -
 	battle.state.ships[BattleState.Player.TWO].cell = Vector2i(4, 4)
 	battle.refresh_from_state()
 
-	await attack_with_active_ship(battle)
+	await battle.handle_cell_click(battle.state.active_ship().cell)
+	battle.handle_cell_hover(battle.state.opposing_ship().cell)
+	t.expect_eq(battle.sidebar.message_label.text, "Attack · 1 damage", "target hover shows damage")
+	battle.handle_cell_hover(Vector2i(8, 7))
+	t.expect_eq(
+		battle.sidebar.message_label.text,
+		"Choose a destination or attack",
+		"leaving target restores contextual instructions"
+	)
+	await battle.handle_cell_click(battle.state.opposing_ship().cell)
 	t.expect_eq(battle.state.ships[BattleState.Player.TWO].hull, 2, "attack deals one damage")
+	t.expect_eq(battle.ship_views[BattleState.Player.TWO].displayed_hull, 2.0, "damage updates visible ship hull")
 	t.expect_eq(battle.state.active_player, BattleState.Player.TWO, "attack ends turn")
 	t.expect_eq(battle.sidebar.active_player_label.text, "PLAYER 2", "sidebar changes player")
 	t.expect_eq(battle.sidebar.message_label.text, "Select your ship", "next player receives selection prompt")

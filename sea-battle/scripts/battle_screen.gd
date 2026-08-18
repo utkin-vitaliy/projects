@@ -24,7 +24,7 @@ func _ready() -> void:
 	sidebar.play_again_pressed.connect(_on_play_again_pressed)
 	battlefield_panel.gui_input.connect(_on_battlefield_input)
 	var neighbors := _build_neighbors()
-	var validation_errors := map_definition.validate(neighbors)
+	var validation_errors := map_definition.validate(neighbors, tile_map.tile_set)
 	if not validation_errors.is_empty():
 		_report_invalid_map(validation_errors)
 		return
@@ -140,27 +140,33 @@ func handle_cell_click(cell: Vector2i) -> void:
 
 
 func handle_cell_hover(cell: Vector2i) -> void:
+	if input_locked:
+		highlights.show_path([])
+		return
 	if state.selected and cell == state.opposing_ship().cell and state.can_attack():
 		sidebar.show_message("Attack · %d damage" % state.active_ship().definition.damage)
 		highlights.show_path([])
 		return
-	if input_locked or not state.selected or state.active_ship().movement_used:
+	if not state.selected or state.active_ship().movement_used:
 		highlights.show_path([])
+		if state.selected:
+			_show_attack_target_or_movement_message()
 		return
 	if not state.reachable_cells().has(cell):
 		highlights.show_path([])
+		_show_attack_target_or_movement_message()
 		return
 	var occupied := {state.opposing_ship().cell: true}
 	highlights.show_path(state.board.path(state.active_ship().cell, cell, occupied))
+	_show_attack_target_or_movement_message()
 
 
 func cancel_selection() -> void:
 	if input_locked or not state.selected:
 		return
-	var ship := state.active_ship()
-	if ship.movement_used or ship.attack_used:
+	var result := state.cancel_selection()
+	if not result.ok:
 		return
-	state.selected = false
 	highlights.clear()
 	sidebar.show_message("Select your ship")
 
@@ -185,7 +191,10 @@ func _show_attack_target_or_movement_message() -> void:
 	else:
 		highlights.clear_target()
 	if state.active_ship().movement_used:
-		sidebar.show_message("Choose a target or end turn")
+		if state.can_attack():
+			sidebar.show_message("Choose a target or end turn")
+		else:
+			sidebar.show_message("Enemy out of range · end your turn")
 	else:
 		sidebar.show_message("Choose a destination or attack")
 
@@ -197,6 +206,8 @@ func _report_invalid_map(errors: Array[StringName]) -> void:
 		&"start_blocked": "a player start is blocked",
 		&"starts_disconnected": "player starts have no walkable route",
 		&"terrain_definition_missing": "a terrain definition is missing",
+		&"terrain_tile_source_missing": "a terrain tile source is missing",
+		&"terrain_tile_missing": "a terrain atlas tile is missing",
 	}
 	input_locked = true
 	sidebar.show_message("Invalid battlefield data")

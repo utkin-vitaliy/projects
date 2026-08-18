@@ -7,6 +7,7 @@ func run(t: TestContext, _tree: SceneTree) -> void:
 	test_starts_with_player_one(t)
 	test_rejects_inactive_player_selection(t)
 	test_moves_once_within_allowance(t)
+	test_cancels_only_before_committed_action(t)
 	test_rejects_blocked_and_distant_moves(t)
 	test_attack_ends_turn_before_another_move(t)
 	test_attack_without_moving(t)
@@ -50,6 +51,20 @@ func test_moves_once_within_allowance(t: TestContext) -> void:
 	var second_move := state.move_active_ship(Vector2i(3, 0))
 	t.expect_false(second_move.ok, "ship cannot move twice")
 	t.expect_eq(second_move.reason, &"movement_used", "second move rejection is stable")
+
+
+func test_cancels_only_before_committed_action(t: TestContext) -> void:
+	var state := make_state(Vector2i(0, 0), Vector2i(4, 0))
+	state.select_ship(BattleState.Player.ONE)
+	var cancelled := state.cancel_selection()
+	t.expect_true(cancelled.ok, "selection cancels before an action")
+	t.expect_eq(event_types(cancelled.events), [&"selection_cancelled"], "cancel emits typed event")
+	t.expect_false(state.selected, "rules clear cancelled selection")
+	state.select_ship(BattleState.Player.ONE)
+	state.move_active_ship(Vector2i(1, 0))
+	var committed := state.cancel_selection()
+	t.expect_eq(committed.reason, &"action_committed", "committed move cannot cancel")
+	t.expect_true(state.selected, "rejected cancel preserves selection")
 
 
 func test_rejects_blocked_and_distant_moves(t: TestContext) -> void:
