@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=8 format=3]
 
 [ext_resource type="Script" path="res://scripts/battle_screen.gd" id="1_battle"]
 [ext_resource type="TileSet" path="res://resources/tiles/prototype_tileset.tres" id="2_tiles"]
@@ -6,6 +6,7 @@
 [ext_resource type="Resource" path="res://resources/ships/basic_ship.tres" id="4_ship"]
 [ext_resource type="PackedScene" path="res://scenes/components/tactical_sidebar.tscn" id="5_sidebar"]
 [ext_resource type="Theme" path="res://resources/themes/nautical_theme.tres" id="6_theme"]
+[ext_resource type="Script" path="res://scripts/presentation/highlight_layer.gd" id="7_highlights"]
 
 [node name="BattleScreen" type="Control"]
 layout_mode = 3
@@ -64,6 +65,7 @@ unique_name_in_owner = true
 
 [node name="Highlights" type="Node2D" parent="Margin/Layout/BattlefieldPanel/BoardRoot"]
 unique_name_in_owner = true
+script = ExtResource("7_highlights")
 
 [node name="Effects" type="Node2D" parent="Margin/Layout/BattlefieldPanel/BoardRoot"]
 unique_name_in_owner = true

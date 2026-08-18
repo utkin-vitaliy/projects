@@ -25,6 +25,32 @@ func run(t: TestContext, tree: SceneTree) -> void:
 			"sidebar shows exact stats"
 		)
 		t.expect_false(sidebar.end_turn_button.disabled, "end turn starts enabled")
+	var player_two_start: Vector2i = battle.state.ships[BattleState.Player.TWO].cell
+	await battle.handle_cell_click(player_two_start)
+	t.expect_false(battle.state.selected, "inactive ship does not select")
+	t.expect_eq(sidebar.message_label.text, "Player 1's turn", "inactive ship explains whose turn it is")
+
+	var player_one_start: Vector2i = battle.state.active_ship().cell
+	await battle.handle_cell_click(player_one_start)
+	t.expect_true(battle.state.selected, "click selects active ship")
+	t.expect_true(battle.highlights.reachable_cells.size() > 0, "selection displays reachable cells")
+	battle.cancel_selection()
+	t.expect_false(battle.state.selected, "selection cancels before an action")
+	t.expect_true(battle.highlights.reachable_cells.is_empty(), "cancel clears highlights")
+	await battle.handle_cell_click(player_one_start)
+
+	var destination := Vector2i(2, 4)
+	battle.handle_cell_hover(destination)
+	t.expect_eq(battle.highlights.path_cells.back(), destination, "hover previews destination")
+	await battle.handle_cell_click(destination)
+	t.expect_eq(battle.state.active_ship().cell, destination, "click commits movement")
+	battle.cancel_selection()
+	t.expect_true(battle.state.selected, "committed movement cannot be cancelled")
+	t.expect_eq(
+		battle.ship_views[BattleState.Player.ONE].position,
+		battle.tile_map.map_to_local(destination),
+		"view reaches destination"
+	)
 	t.expect_eq(
 		battle.ship_views[BattleState.Player.ONE].position,
 		battle.tile_map.map_to_local(battle.state.ships[BattleState.Player.ONE].cell),
