@@ -1,0 +1,299 @@
+class_name FleetBattleState
+extends RefCounted
+
+enum Player { ONE = 1, TWO = 2 }
+
+var board: HexBoard
+var fleets: Dictionary = {}
+var active_player := Player.ONE
+var round_starter := Player.ONE
+var round_number := 1
+var selected_ship_id: StringName = &""
+var winner := 0
+
+var _definitions: Array[ShipDefinition] = []
+var _starts_by_player: Dictionary = {}
+
+
+func setup(
+	hex_board: HexBoard,
+	definitions: Array[ShipDefinition],
+	starts_by_player: Dictionary
+) -> Array[StringName]:
+	var errors: Array[StringName] = []
+	var definition_missing := false
+	var duplicate_class := false
+	var seen_classes := {}
+	for definition in definitions:
+		if definition == null:
+			definition_missing = true
+			continue
+		if seen_classes.has(definition.class_id):
+			duplicate_class = true
+		seen_classes[definition.class_id] = true
+
+	var player_one_starts: Variant = starts_by_player.get(Player.ONE, [])
+	var player_two_starts: Variant = starts_by_player.get(Player.TWO, [])
+	var incorrect_fleet_size: bool = (
+		definitions.size() != 3
+		or not player_one_starts is Array
+		or not player_two_starts is Array
+		or player_one_starts.size() != 3
+		or player_two_starts.size() != 3
+	)
+
+	var duplicate_start := false
+	var start_outside_map := false
+	var start_blocked := false
+	var seen_starts := {}
+	for starts_value in [player_one_starts, player_two_starts]:
+		if not starts_value is Array:
+			continue
+		for start_value in starts_value:
+			if seen_starts.has(start_value):
+				duplicate_start = true
+			seen_starts[start_value] = true
+			if hex_board == null:
+				continue
+			if not start_value is Vector2i:
+				start_outside_map = true
+				continue
+			if not hex_board.has_cell(start_value):
+				start_outside_map = true
+			elif hex_board.is_blocked(start_value):
+				start_blocked = true
+
+	if hex_board == null:
+		errors.append(&"board_missing")
+	if definition_missing:
+		errors.append(&"definition_missing")
+	if incorrect_fleet_size:
+		errors.append(&"incorrect_fleet_size")
+	if duplicate_class:
+		errors.append(&"duplicate_class")
+	if duplicate_start:
+		errors.append(&"duplicate_start")
+	if start_outside_map:
+		errors.append(&"start_outside_map")
+	if start_blocked:
+		errors.append(&"start_blocked")
+	if not errors.is_empty():
+		return errors
+
+	board = hex_board
+	_definitions.clear()
+	_definitions.append_array(definitions)
+	_starts_by_player = {
+		Player.ONE: _copy_starts(player_one_starts),
+		Player.TWO: _copy_starts(player_two_starts),
+	}
+	_restore_battle()
+	return errors
+
+
+func selected_ship() -> FleetShipState:
+	if selected_ship_id == &"":
+		return null
+	return _ship_by_id(selected_ship_id)
+
+
+func active_fleet() -> FleetState:
+	return fleets.get(active_player) as FleetState
+
+
+func opposing_fleet() -> FleetState:
+	return fleets.get(_other_player(active_player)) as FleetState
+
+
+func reachable_cells() -> Array[Vector2i]:
+	var ship := selected_ship()
+	if ship == null or is_game_over() or ship.movement_used or ship.attack_used:
+		return []
+	var cells := board.reachable(
+		ship.cell,
+		ship.definition.movement,
+		occupied_cells(ship.ship_id)
+	)
+	cells.erase(ship.cell)
+	return cells
+
+
+func occupied_cells(except_ship_id: StringName = &"") -> Dictionary:
+	var occupied := {}
+	for fleet_value in fleets.values():
+		var fleet: FleetState = fleet_value
+		for ship in fleet.living_ships():
+			if ship.ship_id != except_ship_id:
+				occupied[ship.cell] = true
+	return occupied
+
+
+func is_game_over() -> bool:
+	return winner != 0
+
+
+func select_ship(ship_id: StringName) -> CommandResult:
+	if is_game_over():
+		return CommandResult.failure(&"game_over")
+	var ship := _ship_by_id(ship_id)
+	if ship == null:
+		return CommandResult.failure(&"invalid_target")
+	if ship.is_destroyed():
+		return CommandResult.failure(&"ship_sunk")
+	if ship.player != active_player:
+		return CommandResult.failure(&"inactive_player")
+	if ship.activation_used:
+		return CommandResult.failure(&"ship_already_used")
+	var current_ship := selected_ship()
+	if current_ship != null and (current_ship.movement_used or current_ship.attack_used):
+		return CommandResult.failure(&"action_committed")
+
+	ship.reset_for_activation()
+	selected_ship_id = ship.ship_id
+	var events: Array[BattleEvent] = [
+		_event(&"ship_selected", {
+			"ship_id": ship.ship_id,
+			"player": ship.player,
+		}),
+	]
+	return CommandResult.success(events)
+
+
+func cancel_selection() -> CommandResult:
+	if is_game_over():
+		return CommandResult.failure(&"game_over")
+	var ship := selected_ship()
+	if ship == null:
+		return CommandResult.failure(&"selection_required")
+	if ship.movement_used or ship.attack_used:
+		return CommandResult.failure(&"action_committed")
+
+	selected_ship_id = &""
+	var events: Array[BattleEvent] = [
+		_event(&"selection_cancelled", {"ship_id": ship.ship_id}),
+	]
+	return CommandResult.success(events)
+
+
+func move_selected_ship(destination: Vector2i) -> CommandResult:
+	if is_game_over():
+		return CommandResult.failure(&"game_over")
+	var ship := selected_ship()
+	if ship == null:
+		return CommandResult.failure(&"selection_required")
+	if ship.movement_used or ship.attack_used:
+		return CommandResult.failure(&"movement_used")
+	if destination == ship.cell:
+		return CommandResult.failure(&"out_of_range")
+
+	var occupied := occupied_cells(ship.ship_id)
+	if board.is_blocked(destination) or occupied.has(destination):
+		return CommandResult.failure(&"blocked")
+	var route := board.path(ship.cell, destination, occupied)
+	if route.is_empty() or route.size() - 1 > ship.definition.movement:
+		return CommandResult.failure(&"out_of_range")
+
+	ship.cell = destination
+	ship.movement_used = true
+	var events: Array[BattleEvent] = [
+		_event(&"ship_moved", {
+			"ship_id": ship.ship_id,
+			"player": ship.player,
+			"path": route,
+		}),
+	]
+	return CommandResult.success(events)
+
+
+func end_activation() -> CommandResult:
+	if is_game_over():
+		return CommandResult.failure(&"game_over")
+	var ship := selected_ship()
+	if ship == null:
+		return CommandResult.failure(&"selection_required")
+
+	ship.activation_used = true
+	var events: Array[BattleEvent] = [
+		_event(&"activation_completed", {
+			"ship_id": ship.ship_id,
+			"player": ship.player,
+		}),
+	]
+	selected_ship_id = &""
+	_append_activation_handoff(events)
+	return CommandResult.success(events)
+
+
+func reset() -> CommandResult:
+	_restore_battle()
+	var events: Array[BattleEvent] = [
+		_event(&"battle_reset", {
+			"round": round_number,
+			"player": active_player,
+		}),
+	]
+	return CommandResult.success(events)
+
+
+func _append_activation_handoff(events: Array[BattleEvent]) -> void:
+	var opponent := _other_player(active_player)
+	if fleets[opponent].has_ready_ship():
+		active_player = opponent
+		events.append(_event(&"player_changed", {"player": active_player}))
+		return
+	if active_fleet().has_ready_ship():
+		return
+
+	round_number += 1
+	round_starter = _other_player(round_starter)
+	for fleet_value in fleets.values():
+		var fleet: FleetState = fleet_value
+		fleet.reset_activations()
+	active_player = round_starter
+	events.append(_event(&"round_started", {
+		"round": round_number,
+		"player": active_player,
+	}))
+
+
+func _restore_battle() -> void:
+	active_player = Player.ONE
+	round_starter = Player.ONE
+	round_number = 1
+	selected_ship_id = &""
+	winner = 0
+	if _definitions.size() != 3 or _starts_by_player.is_empty():
+		fleets.clear()
+		return
+
+	var restored_fleets := {}
+	for player in [Player.ONE, Player.TWO]:
+		var fleet := FleetState.new()
+		var starts: Array[Vector2i] = _starts_by_player[player]
+		fleet.configure(player, _definitions, starts)
+		restored_fleets[player] = fleet
+	fleets = restored_fleets
+
+
+func _ship_by_id(ship_id: StringName) -> FleetShipState:
+	for fleet_value in fleets.values():
+		var fleet: FleetState = fleet_value
+		for ship in fleet.ordered_ships():
+			if ship.ship_id == ship_id:
+				return ship
+	return null
+
+
+func _copy_starts(values: Array) -> Array[Vector2i]:
+	var starts: Array[Vector2i] = []
+	for value in values:
+		starts.append(value)
+	return starts
+
+
+func _other_player(player: int) -> int:
+	return Player.TWO if player == Player.ONE else Player.ONE
+
+
+func _event(type: StringName, data: Dictionary = {}) -> BattleEvent:
+	return BattleEvent.new(type, data)
