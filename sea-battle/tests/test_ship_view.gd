@@ -12,6 +12,20 @@ func run(t: TestContext, tree: SceneTree) -> void:
 	var frigate := _fleet_view(tree, &"frigate-one", 1, &"frigate")
 	var galleon := _fleet_view(tree, &"galleon-one", 1, &"galleon")
 	var opposing_sloop := _fleet_view(tree, &"sloop-two", 2, &"sloop")
+	var supports_texture_rotation := sloop.has_method("get_ship_texture_rotation")
+	t.expect_true(
+		supports_texture_rotation,
+		"ship view exposes the rotation applied to its rendered texture"
+	)
+	if supports_texture_rotation:
+		t.expect_true(
+			is_equal_approx(float(sloop.call("get_ship_texture_rotation")), PI),
+			"Player 1 ship texture faces north"
+		)
+		t.expect_true(
+			is_zero_approx(float(opposing_sloop.call("get_ship_texture_rotation"))),
+			"Player 2 ship texture keeps its authored orientation"
+		)
 	var supports_ship_texture := sloop.has_method("get_ship_texture")
 	t.expect_true(supports_ship_texture, "ship view exposes its rendered owner texture")
 	if supports_ship_texture:
@@ -79,6 +93,7 @@ func run(t: TestContext, tree: SceneTree) -> void:
 	t.expect_false(sloop.is_ready, "used presentation clears ready state")
 	sloop.set_active(true)
 	t.expect_true(sloop.is_active, "active presentation is enabled")
+	await _expect_no_active_ship_border(t, tree, sloop)
 
 	var retained_definition: ShipDefinition = sloop.definition
 	sloop.set_sunk(true)
@@ -103,3 +118,35 @@ func _fleet_view(
 	tree.root.add_child(view)
 	view.configure(id, owner, load(CLASS_PATHS[class_id]))
 	return view
+
+
+func _expect_no_active_ship_border(
+	t: TestContext,
+	tree: SceneTree,
+	view: ShipView
+) -> void:
+	if DisplayServer.get_name() == "headless":
+		return
+	var viewport := SubViewport.new()
+	viewport.size = Vector2i(128, 128)
+	viewport.transparent_bg = true
+	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	tree.root.add_child(viewport)
+	view.reparent(viewport)
+	view.position = Vector2(64.0, 48.0)
+	await tree.process_frame
+	await tree.process_frame
+
+	var bounds := view.get_visual_bounds()
+	var border_sample := Vector2i(
+		roundi(view.position.x + bounds.position.x - 7.0),
+		roundi(view.position.y)
+	)
+	var image := viewport.get_texture().get_image()
+	t.expect_true(
+		image.get_pixelv(border_sample).a < 0.05,
+		"active ship draws no square selection border outside its sprite"
+	)
+
+	view.reparent(tree.root)
+	viewport.queue_free()

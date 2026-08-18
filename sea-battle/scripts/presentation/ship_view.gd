@@ -5,7 +5,6 @@ const PLAYER_ONE_COLOR := Color("5f8fbd")
 const PLAYER_TWO_COLOR := Color("cf5e58")
 const NEUTRAL_COLOR := Color("89979e")
 const SAIL_COLOR := Color("f2f0df")
-const ACTIVE_COLOR := Color("d5a653")
 const BAR_BACKGROUND_COLOR := Color("0d222e")
 const BAR_HULL_COLOR := Color("69b978")
 
@@ -99,6 +98,10 @@ func get_ship_texture() -> Texture2D:
 	return definition.visual_profile.texture_for_player(player)
 
 
+func get_ship_texture_rotation() -> float:
+	return PI if player == 1 else 0.0
+
+
 func mast_count() -> int:
 	return definition.visual_profile.mast_offsets.size()
 
@@ -124,9 +127,9 @@ func _draw() -> void:
 	if texture == null:
 		return
 	var bounds := get_visual_bounds()
-	if is_active:
-		draw_rect(bounds.grow(7.0), ACTIVE_COLOR, false, 3.0, true)
+	draw_set_transform(Vector2.ZERO, get_ship_texture_rotation())
 	draw_texture_rect(texture, bounds, false)
+	draw_set_transform(Vector2.ZERO, 0.0)
 	_draw_readiness_glyph(bounds)
 	var bar_width := clampf(bounds.size.x * 0.65, 44.0, 72.0)
 	var bar_rect := Rect2(
