@@ -293,6 +293,7 @@ func test_invalid_map_export_locks_without_partial_fleet(
 		"Invalid battlefield data",
 		"invalid map reports setup failure in the real sidebar"
 	)
+	_expect_invalid_sidebar_cleared(t, battle, "invalid map")
 	battle.queue_free()
 	await tree.process_frame
 
@@ -358,6 +359,7 @@ func test_invalid_authored_ship_profiles_lock_without_spawning(
 			"Invalid battlefield data",
 			"%s shows approved invalid-data copy" % case_name
 		)
+		_expect_invalid_sidebar_cleared(t, battle, case_name)
 		battle.queue_free()
 		await tree.process_frame
 
@@ -590,6 +592,65 @@ func _add_invalid_battle_without_expected_error_output(
 	tree.root.add_child(battle)
 	await tree.process_frame
 	Engine.print_error_messages = previous_error_output
+
+
+func _expect_invalid_sidebar_cleared(
+	t: TestContext,
+	battle: BattleScreen,
+	case_name: String
+) -> void:
+	var sidebar := battle.sidebar
+	t.expect_true(
+		sidebar.has_method("show_invalid_setup"),
+		"%s uses the public invalid-setup sidebar state" % case_name
+	)
+	t.expect_eq(
+		_visible_sidebar_label_copy(sidebar),
+		["Invalid battlefield data"],
+		"%s leaves only the approved invalid-data copy visible" % case_name
+	)
+	t.expect_false(
+		sidebar.roster_container.is_visible_in_tree(),
+		"%s hides the fleet roster" % case_name
+	)
+	for row in sidebar.roster_rows:
+		t.expect_false(
+			row.is_visible_in_tree(),
+			"%s hides authored roster row copy" % case_name
+		)
+	for field in [
+		sidebar.active_player_label,
+		sidebar.round_label,
+		sidebar.ship_name_label,
+		sidebar.weight_label,
+		sidebar.role_label,
+		sidebar.hull_label,
+		sidebar.stats_label,
+		sidebar.action_state_label,
+	]:
+		t.expect_eq(field.text, "", "%s clears stale sidebar copy" % case_name)
+		t.expect_false(
+			field.is_visible_in_tree(),
+			"%s hides stale sidebar detail" % case_name
+		)
+	t.expect_eq(sidebar.hull_bar.value, 0.0, "%s clears the authored hull value" % case_name)
+	t.expect_false(
+		sidebar.hull_bar.is_visible_in_tree(),
+		"%s hides the authored hull bar" % case_name
+	)
+	t.expect_true(
+		sidebar.end_turn_button.disabled,
+		"%s disables END ACTIVATION" % case_name
+	)
+
+
+func _visible_sidebar_label_copy(sidebar: TacticalSidebar) -> Array[String]:
+	var copy: Array[String] = []
+	for node in sidebar.find_children("*", "Label", true, false):
+		var label := node as Label
+		if label != null and label.is_visible_in_tree() and not label.text.is_empty():
+			copy.append(label.text)
+	return copy
 
 
 func _add_close_battle(

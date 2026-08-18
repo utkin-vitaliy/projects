@@ -9,6 +9,9 @@ signal ship_selected(ship_id: StringName)
 @export var result_overlay_path: NodePath
 @export var play_again_button_path: NodePath
 
+@onready var _active_player_eyebrow: Label = $ContentMargin/Content/Eyebrow
+@onready var _header_separator: HSeparator = $ContentMargin/Content/Separator
+@onready var _detail_separator: HSeparator = $ContentMargin/Content/DetailSeparator
 @onready var active_player_label: Label = %ActivePlayer
 @onready var round_label: Label = %Round
 @onready var roster_container: VBoxContainer = %Roster
@@ -50,10 +53,7 @@ func _ready() -> void:
 
 
 func render_fleet(state: FleetBattleState) -> void:
-	roster_container.show()
-	round_label.show()
-	weight_label.show()
-	role_label.show()
+	_set_battle_data_visible(true)
 	end_turn_button.text = "END ACTIVATION"
 	active_player_label.text = "PLAYER %d" % state.active_player
 	round_label.text = "ROUND %d" % state.round_number
@@ -122,6 +122,23 @@ func show_message(text: String) -> void:
 	message_label.text = text
 
 
+func show_invalid_setup() -> void:
+	_set_battle_data_visible(false)
+	_rows_by_ship_id.clear()
+	active_player_label.text = ""
+	round_label.text = ""
+	ship_name_label.text = ""
+	weight_label.text = ""
+	role_label.text = ""
+	hull_label.text = ""
+	hull_bar.max_value = 1.0
+	hull_bar.value = 0.0
+	stats_label.text = ""
+	action_state_label.text = ""
+	show_message("Invalid battlefield data")
+	end_turn_button.disabled = true
+
+
 func show_rejection(reason: StringName, active_player: int) -> void:
 	var messages := {
 		&"selection_required": "Select your ship",
@@ -171,3 +188,22 @@ func show_result(winner: int) -> void:
 func hide_result() -> void:
 	if _result_overlay != null:
 		_result_overlay.hide()
+
+
+func _set_battle_data_visible(is_visible: bool) -> void:
+	for control in [
+		_active_player_eyebrow,
+		active_player_label,
+		round_label,
+		_header_separator,
+		roster_container,
+		_detail_separator,
+		ship_name_label,
+		weight_label,
+		role_label,
+		hull_label,
+		hull_bar,
+		stats_label,
+		action_state_label,
+	]:
+		control.visible = is_visible

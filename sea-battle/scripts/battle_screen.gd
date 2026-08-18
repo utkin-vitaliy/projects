@@ -283,8 +283,7 @@ func _report_invalid_setup(errors: Array[StringName]) -> void:
 		&"board_missing": "the rules board is missing",
 	}
 	input_locked = true
-	sidebar.show_message("Invalid battlefield data")
-	sidebar.end_turn_button.disabled = true
+	sidebar.show_invalid_setup()
 	for code in errors:
 		push_error("Invalid fleet battle setup: %s (%s)" % [descriptions.get(code, code), code])
 
