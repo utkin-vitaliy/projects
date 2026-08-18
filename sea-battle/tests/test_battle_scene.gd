@@ -58,3 +58,50 @@ func run(t: TestContext, tree: SceneTree) -> void:
 	)
 	battle.queue_free()
 	await tree.process_frame
+	await test_complete_match(t, tree, packed)
+
+
+func test_complete_match(t: TestContext, tree: SceneTree, packed: PackedScene) -> void:
+	var battle = packed.instantiate()
+	battle.skip_animations = true
+	tree.root.add_child(battle)
+	await tree.process_frame
+	var original_one: Vector2i = battle.state.ships[BattleState.Player.ONE].cell
+	var original_two: Vector2i = battle.state.ships[BattleState.Player.TWO].cell
+	battle.state.ships[BattleState.Player.ONE].cell = Vector2i(2, 4)
+	battle.state.ships[BattleState.Player.TWO].cell = Vector2i(4, 4)
+	battle.refresh_from_state()
+
+	await attack_with_active_ship(battle)
+	t.expect_eq(battle.state.ships[BattleState.Player.TWO].hull, 2, "attack deals one damage")
+	t.expect_eq(battle.state.active_player, BattleState.Player.TWO, "attack ends turn")
+	t.expect_eq(battle.sidebar.active_player_label.text, "PLAYER 2", "sidebar changes player")
+	t.expect_eq(battle.sidebar.message_label.text, "Select your ship", "next player receives selection prompt")
+
+	await attack_with_active_ship(battle)
+	await attack_with_active_ship(battle)
+	await attack_with_active_ship(battle)
+	await attack_with_active_ship(battle)
+	var result_overlay: Control = battle.get_node("OverlayLayer/ResultOverlay")
+	var result_label: Label = result_overlay.get_node("Center/ResultPanel/ResultContent/ResultLabel")
+	t.expect_eq(battle.state.winner, BattleState.Player.ONE, "third hit wins the match")
+	t.expect_true(result_overlay.visible, "winner overlay is visible")
+	t.expect_eq(result_label.text, "PLAYER 1 WINS", "winner copy is exact")
+	t.expect_true(battle.input_locked, "battlefield input locks after victory")
+
+	battle.sidebar.play_again_pressed.emit()
+	await tree.process_frame
+	t.expect_eq(battle.state.active_player, BattleState.Player.ONE, "restart restores player one")
+	t.expect_eq(battle.state.ships[BattleState.Player.ONE].hull, 3, "restart restores player one hull")
+	t.expect_eq(battle.state.ships[BattleState.Player.TWO].hull, 3, "restart restores player two hull")
+	t.expect_eq(battle.state.ships[BattleState.Player.ONE].cell, original_one, "restart restores player one position")
+	t.expect_eq(battle.state.ships[BattleState.Player.TWO].cell, original_two, "restart restores player two position")
+	t.expect_false(result_overlay.visible, "restart hides winner overlay")
+	t.expect_false(battle.input_locked, "restart unlocks battlefield input")
+	battle.queue_free()
+	await tree.process_frame
+
+
+func attack_with_active_ship(battle: BattleScreen) -> void:
+	await battle.handle_cell_click(battle.state.active_ship().cell)
+	await battle.handle_cell_click(battle.state.opposing_ship().cell)

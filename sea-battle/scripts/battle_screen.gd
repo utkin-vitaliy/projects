@@ -10,6 +10,7 @@ extends Control
 @onready var tile_map: TileMapLayer = %TileMapLayer
 @onready var ship_container: Node2D = %Ships
 @onready var highlights: HighlightLayer = %Highlights
+@onready var animator: BattleAnimator = %BattleAnimator
 @onready var sidebar: TacticalSidebar = %TacticalSidebar
 
 var state: BattleState
@@ -34,6 +35,7 @@ func _ready() -> void:
 		map_definition.player_two_start
 	)
 	highlights.configure(tile_map)
+	animator.skip_animations = skip_animations
 	_spawn_ship_views()
 	refresh_from_state()
 	_center_board.call_deferred()
@@ -105,8 +107,17 @@ func handle_cell_click(cell: Vector2i) -> void:
 			return
 		highlights.show_selection(state.active_ship().cell)
 		highlights.show_reachable(state.reachable_cells())
-		sidebar.show_message("Choose a highlighted destination")
+		_show_attack_target_or_movement_message()
 		sidebar.render(state)
+		return
+
+	if cell == state.opposing_ship().cell:
+		if not state.can_attack():
+			sidebar.show_rejection(&"out_of_range", state.active_player)
+			return
+		await _present_command(state.attack())
+		if not state.is_game_over():
+			sidebar.show_message("Select your ship")
 		return
 
 	if not state.reachable_cells().has(cell):
@@ -118,11 +129,10 @@ func handle_cell_click(cell: Vector2i) -> void:
 	if not movement.ok:
 		sidebar.show_rejection(movement.reason, state.active_player)
 		return
-	await _present_movement(movement.events)
-	refresh_from_state()
+	await _present_command(movement)
 	highlights.clear()
 	highlights.show_selection(state.active_ship().cell)
-	sidebar.show_message("Attack if in range, or end your turn")
+	_show_attack_target_or_movement_message()
 
 
 func handle_cell_hover(cell: Vector2i) -> void:
@@ -147,22 +157,27 @@ func cancel_selection() -> void:
 	sidebar.show_message("Select your ship")
 
 
-func _present_movement(events: Array[BattleEvent]) -> void:
-	for event in events:
-		if event.type != &"ship_moved":
-			continue
-		var player: int = event.data.player
-		var path: Array = event.data.path
-		var view: ShipView = ship_views[player]
+func _present_command(result: CommandResult) -> void:
+	if not result.ok:
+		sidebar.show_rejection(result.reason, state.active_player)
+		return
+	input_locked = true
+	await animator.play(result.events, ship_views, tile_map, sidebar)
+	refresh_from_state()
+	highlights.clear()
+	if state.is_game_over():
 		input_locked = true
-		if skip_animations:
-			view.position = tile_map.map_to_local(path.back())
-		else:
-			var tween := create_tween()
-			for index in range(1, path.size()):
-				tween.tween_property(view, "position", tile_map.map_to_local(path[index]), 0.12)
-			await tween.finished
+	else:
 		input_locked = false
+
+
+func _show_attack_target_or_movement_message() -> void:
+	if state.can_attack():
+		highlights.show_target(state.opposing_ship().cell)
+		sidebar.show_message("Attack · %d damage" % state.active_ship().definition.damage)
+	else:
+		highlights.clear_target()
+		sidebar.show_message("Choose a highlighted destination")
 
 
 func _player_at(cell: Vector2i) -> int:
@@ -188,13 +203,20 @@ func _unhandled_key_input(event: InputEvent) -> void:
 
 
 func _on_end_turn_pressed() -> void:
-	apply_result(state.end_turn())
+	if input_locked:
+		return
+	await _present_command(state.end_turn())
 	sidebar.show_message("Select your ship")
 
 
 func _on_play_again_pressed() -> void:
-	apply_result(state.reset())
+	state.reset()
+	animator.clear()
+	highlights.clear()
 	sidebar.hide_result()
+	sidebar.hide_turn_banner()
+	input_locked = false
+	refresh_from_state()
 	sidebar.show_message("Select your ship")
 
 
