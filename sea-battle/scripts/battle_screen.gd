@@ -317,6 +317,9 @@ func _on_end_activation_pressed() -> void:
 func _on_play_again_pressed() -> void:
 	state.reset()
 	animator.clear()
+	for view_value in ship_views.values():
+		var view: ShipView = view_value
+		view.reset_presentation()
 	highlights.clear()
 	sidebar.hide_result()
 	sidebar.hide_turn_banner()

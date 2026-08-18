@@ -91,7 +91,7 @@ func _draw_class_icon() -> void:
 		return
 	var available := class_icon.size - Vector2(8.0, 12.0)
 	var icon_scale := minf(available.x / source_bounds.size.x, available.y / source_bounds.size.y)
-	var target_center := class_icon.position + class_icon.size * 0.5
+	var target_center := _class_icon_center_in_row()
 	var points := PackedVector2Array()
 	for point in _visual_profile.hull_points:
 		points.append(target_center + (point - source_bounds.get_center()) * icon_scale)
@@ -102,6 +102,14 @@ func _draw_class_icon() -> void:
 	for mast_offset in _visual_profile.mast_offsets:
 		var mast_x := target_center.x + mast_offset * icon_scale
 		draw_line(Vector2(mast_x, target_center.y), Vector2(mast_x, mast_top), ICON_OUTLINE, 1.5, true)
+
+
+func _class_icon_center_in_row() -> Vector2:
+	return (
+		get_global_transform_with_canvas().affine_inverse()
+		* class_icon.get_global_transform_with_canvas()
+		* (class_icon.size * 0.5)
+	)
 
 
 func _draw_hull_copy() -> void:

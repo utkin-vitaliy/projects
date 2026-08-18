@@ -17,6 +17,7 @@ func run(t: TestContext, tree: SceneTree) -> void:
 	if packed == null:
 		return
 	var sidebar = packed.instantiate()
+	sidebar.size = Vector2(320.0, 672.0)
 	tree.root.add_child(sidebar)
 	await tree.process_frame
 
@@ -28,6 +29,7 @@ func run(t: TestContext, tree: SceneTree) -> void:
 
 	var state := _make_fleet_state()
 	sidebar.render_fleet(state)
+	await tree.process_frame
 	t.expect_eq(sidebar.roster_rows.size(), 3, "sidebar shows three fleet rows")
 	t.expect_eq(sidebar.roster_container.get_child_count(), 3, "roster contains three pre-authored rows")
 	for row in sidebar.roster_rows:
@@ -44,6 +46,16 @@ func run(t: TestContext, tree: SceneTree) -> void:
 	var sloop_row = sidebar.roster_rows[0]
 	var frigate_row = sidebar.roster_rows[1]
 	var galleon_row = sidebar.roster_rows[2]
+	var expected_icon_center: Vector2 = (
+		sloop_row.get_global_transform_with_canvas().affine_inverse()
+		* sloop_row.class_icon.get_global_transform_with_canvas()
+		* (sloop_row.class_icon.size * 0.5)
+	)
+	t.expect_eq(
+		sloop_row._class_icon_center_in_row(),
+		expected_icon_center,
+		"nested class icon center converts into row-local drawing coordinates"
+	)
 	t.expect_eq(sloop_row.class_label.text, "SLOOP", "first row is sloop")
 	t.expect_eq(frigate_row.class_label.text, "FRIGATE", "second row is frigate")
 	t.expect_eq(galleon_row.class_label.text, "GALLEON", "third row is galleon")

@@ -36,6 +36,12 @@ func _configure_profile(owner: int, ship_definition: ShipDefinition) -> void:
 	definition = ship_definition
 	hull = ship_definition.max_hull
 	max_hull = ship_definition.max_hull
+	reset_presentation()
+
+
+func reset_presentation() -> void:
+	transform = Transform2D.IDENTITY
+	hull = max_hull
 	displayed_hull = hull
 	is_active = false
 	is_ready = false

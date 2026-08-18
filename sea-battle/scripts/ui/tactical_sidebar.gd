@@ -147,6 +147,14 @@ func show_turn_banner(player: int) -> void:
 	_turn_banner.show()
 
 
+func show_round_banner(round_number: int, player: int) -> void:
+	if _turn_banner == null:
+		return
+	if _turn_banner_label != null:
+		_turn_banner_label.text = "ROUND %d · PLAYER %d INITIATIVE" % [round_number, player]
+	_turn_banner.show()
+
+
 func hide_turn_banner() -> void:
 	if _turn_banner != null:
 		_turn_banner.hide()

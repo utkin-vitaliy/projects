@@ -1,5 +1,15 @@
 extends RefCounted
 
+const CLOSE_MAP_PATH := "res://tests/fixtures/close_fleet_map.tres"
+const CLOSE_STARTS := {
+	FleetBattleState.Player.ONE: [
+		Vector2i(-2, 0), Vector2i(-2, 1), Vector2i(-1, 0),
+	],
+	FleetBattleState.Player.TWO: [
+		Vector2i(1, 0), Vector2i(1, -1), Vector2i(0, -1),
+	],
+}
+
 
 func run(t: TestContext, tree: SceneTree) -> void:
 	var packed: PackedScene = load("res://scenes/battle_screen.tscn")
@@ -37,6 +47,8 @@ func run(t: TestContext, tree: SceneTree) -> void:
 	await test_invalid_map_export_locks_without_partial_fleet(t, tree, packed)
 	await test_invalid_ship_definitions_lock_without_partial_fleet(t, tree, packed)
 	await test_real_movement_locks_during_animation(t, tree, packed)
+	await test_animated_sinking_owns_its_lock_and_restores_transform(t, tree, packed)
+	await test_complete_match_and_play_again(t, tree, packed)
 
 
 func test_initial_fleet_presentation(t: TestContext, battle: BattleScreen) -> void:
@@ -171,10 +183,7 @@ func test_multiple_targets_and_attack(
 	tree: SceneTree,
 	packed: PackedScene
 ) -> void:
-	var battle = packed.instantiate()
-	battle.skip_animations = true
-	tree.root.add_child(battle)
-	await tree.process_frame
+	var battle := await _add_close_battle(tree, packed, true)
 	if not battle.state is FleetBattleState:
 		battle.queue_free()
 		await tree.process_frame
@@ -184,13 +193,10 @@ func test_multiple_targets_and_attack(
 	var attacker: FleetShipState = _ship(fleet_state, &"p1_frigate")
 	var first_target: FleetShipState = _ship(fleet_state, &"p2_sloop")
 	var second_target: FleetShipState = _ship(fleet_state, &"p2_frigate")
-	first_target.cell = Vector2i(-1, 5)
-	second_target.cell = Vector2i(1, 5)
-	battle.refresh_from_state()
 	battle.handle_roster_selection(attacker.ship_id)
 	t.expect_eq(
 		battle.highlights.target_cells,
-		[Vector2i(-1, 5), Vector2i(1, 5)],
+		[Vector2i(1, 0), Vector2i(1, -1), Vector2i(0, -1)],
 		"selection highlights every legal target"
 	)
 	battle.handle_cell_hover(first_target.cell)
@@ -200,7 +206,7 @@ func test_multiple_targets_and_attack(
 		"hover strengthens the selected target cue"
 	)
 	t.expect_eq(battle.sidebar.message_label.text, "Attack · 1 damage", "target hover shows exact damage")
-	battle.handle_cell_hover(Vector2i(0, 5))
+	battle.handle_cell_hover(Vector2i(0, 0))
 	t.expect_false(battle.highlights.has_hovered_target, "leaving a target clears its stronger cue")
 
 	var hull_before := first_target.hull
@@ -221,31 +227,28 @@ func test_used_and_sunk_selection_feedback(
 	tree: SceneTree,
 	packed: PackedScene
 ) -> void:
-	var battle = packed.instantiate()
-	battle.skip_animations = true
-	tree.root.add_child(battle)
-	await tree.process_frame
+	var battle := await _add_close_battle(tree, packed, true)
 	if not battle.state is FleetBattleState:
 		battle.queue_free()
 		await tree.process_frame
 		return
 
 	var fleet_state: FleetBattleState = battle.get("state") as FleetBattleState
-	var used: FleetShipState = _ship(fleet_state, &"p1_sloop")
-	used.activation_used = true
+	await _attack_ship(battle, &"p1_galleon", &"p2_sloop")
+	var sunk: FleetShipState = _ship(fleet_state, &"p2_sloop")
 	var player_before: int = fleet_state.active_player
-	await battle.handle_cell_click(used.cell)
-	t.expect_eq(battle.state.selected_ship(), null, "used ship selection leaves rules selection unchanged")
-	t.expect_eq(battle.state.active_player, player_before, "used ship selection leaves player unchanged")
-	t.expect_eq(battle.sidebar.message_label.text, "Ship already activated", "used ship feedback is exact")
-
-	var sunk: FleetShipState = _ship(fleet_state, &"p1_galleon")
-	sunk.hull = 0
-	battle.refresh_from_state()
 	battle.handle_ship_selection(sunk.ship_id)
 	t.expect_eq(battle.state.selected_ship(), null, "sunk ship selection leaves rules selection unchanged")
 	t.expect_eq(battle.state.active_player, player_before, "sunk ship selection leaves player unchanged")
 	t.expect_eq(battle.sidebar.message_label.text, "Ship has sunk", "sunk ship feedback is exact")
+
+	await _end_ship_activation(tree, battle, &"p2_frigate")
+	var used: FleetShipState = _ship(fleet_state, &"p1_galleon")
+	player_before = fleet_state.active_player
+	await battle.handle_cell_click(used.cell)
+	t.expect_eq(battle.state.selected_ship(), null, "used ship selection leaves rules selection unchanged")
+	t.expect_eq(battle.state.active_player, player_before, "used ship selection leaves player unchanged")
+	t.expect_eq(battle.sidebar.message_label.text, "Ship already activated", "used ship feedback is exact")
 	battle.queue_free()
 	await tree.process_frame
 
@@ -343,6 +346,186 @@ func test_real_movement_locks_during_animation(
 	await tree.process_frame
 
 
+func test_animated_sinking_owns_its_lock_and_restores_transform(
+	t: TestContext,
+	tree: SceneTree,
+	packed: PackedScene
+) -> void:
+	var battle := await _add_close_battle(tree, packed, false)
+	var target_view: ShipView = battle.ship_views[&"p2_sloop"]
+	battle.handle_roster_selection(&"p1_galleon")
+	battle.handle_cell_click(_ship(battle.state, &"p2_sloop").cell)
+	var sinking_started := false
+	for _attempt in 40:
+		await tree.create_timer(0.02).timeout
+		if (
+			battle.animator.get_child_count() > 0
+			and target_view.scale.y < 0.9
+			and target_view.modulate.a < 0.9
+		):
+			sinking_started = true
+			break
+	t.expect_true(battle.input_locked, "lethal presentation keeps input locked during sinking")
+	t.expect_true(sinking_started, "animated sinking reaches its visible presentation state")
+	t.expect_true(
+		battle.animator.get_child_count() > 0,
+		"animated sinking draws a temporary water ring under the animator"
+	)
+	t.expect_true(target_view.scale.y < 0.9, "animated sinking compresses the target silhouette")
+	t.expect_true(target_view.modulate.a < 0.9, "animated sinking fades the target silhouette")
+
+	for _attempt in 40:
+		if not target_view.visible:
+			break
+		await tree.create_timer(0.02).timeout
+	t.expect_false(target_view.visible, "animated sunk view leaves the map before the handoff ends")
+	t.expect_eq(target_view.scale, Vector2.ONE, "sinking restores scale after hiding the view")
+	t.expect_eq(target_view.rotation, 0.0, "sinking restores rotation after hiding the view")
+	for _attempt in 80:
+		if not battle.input_locked:
+			break
+		await tree.create_timer(0.02).timeout
+	t.expect_false(battle.input_locked, "sinking and handoff release input only after presentation")
+	t.expect_false(target_view.visible, "post-presentation refresh preserves sunk visibility")
+	battle.queue_free()
+	await tree.process_frame
+
+
+func test_complete_match_and_play_again(
+	t: TestContext,
+	tree: SceneTree,
+	packed: PackedScene
+) -> void:
+	var battle := await _add_close_battle(tree, packed, true)
+	var close_map: MapDefinition = battle.map_definition
+	t.expect_eq(close_map.all_cells().size(), 127, "close match fixture preserves radius-six cells")
+	t.expect_true(close_map.blocked_cells.is_empty(), "close match fixture has no blocked cells")
+	t.expect_eq(battle.tile_map.get_used_cells().size(), 127, "close fixture passes scene validation")
+	t.expect_eq(
+		battle.state.board.distance(
+			_ship(battle.state, &"p1_galleon").cell,
+			_ship(battle.state, &"p2_sloop").cell
+		),
+		2,
+		"close fixture authors the galleon exactly range two from the sloop"
+	)
+
+	await _attack_ship(battle, &"p1_galleon", &"p2_sloop")
+	t.expect_eq(
+		battle.state.fleets[FleetBattleState.Player.TWO].ship(&"p2_sloop").hull,
+		0,
+		"galleon sinks sloop"
+	)
+	t.expect_false(battle.ship_views[&"p2_sloop"].visible, "sunk view leaves map")
+	t.expect_eq(
+		battle.sidebar.row_for(&"p2_sloop").status_label.text,
+		"SUNK",
+		"roster preserves sunk state"
+	)
+
+	await _end_ship_activation(tree, battle, &"p2_frigate")
+	await _attack_ship(battle, &"p1_frigate", &"p2_frigate")
+	await _end_ship_activation(tree, battle, &"p2_galleon")
+	await _attack_ship(battle, &"p1_sloop", &"p2_galleon")
+	t.expect_eq(battle.state.round_number, 2, "five surviving activations complete round one")
+	t.expect_eq(
+		battle.state.active_player,
+		FleetBattleState.Player.TWO,
+		"round two alternates initiative to player two"
+	)
+	t.expect_eq(
+		_turn_banner_label(battle).text,
+		"ROUND 2 · PLAYER 2 INITIATIVE",
+		"round-two banner presents alternating initiative"
+	)
+	t.expect_false(_turn_banner(battle).visible, "skip mode hides round banner without a timer")
+
+	await _end_ship_activation(tree, battle, &"p2_frigate")
+	await _attack_ship(battle, &"p1_galleon", &"p2_frigate")
+	await _end_ship_activation(tree, battle, &"p2_galleon")
+	var banner_before_unmatched := _turn_banner_label(battle).text
+	await _attack_ship(battle, &"p1_frigate", &"p2_frigate")
+	t.expect_false(battle.ship_views[&"p2_frigate"].visible, "second sunk view leaves map")
+	t.expect_eq(
+		battle.state.active_player,
+		FleetBattleState.Player.ONE,
+		"player one keeps the unmatched activation"
+	)
+	t.expect_eq(
+		_turn_banner_label(battle).text,
+		banner_before_unmatched,
+		"unmatched consecutive activation shows no misleading opponent banner"
+	)
+	await _attack_ship(battle, &"p1_sloop", &"p2_galleon")
+	t.expect_eq(battle.state.round_number, 3, "unmatched completion starts round three")
+	t.expect_eq(
+		_turn_banner_label(battle).text,
+		"ROUND 3 · PLAYER 1 INITIATIVE",
+		"round-three banner alternates initiative back to player one"
+	)
+
+	await _attack_ship(battle, &"p1_galleon", &"p2_galleon")
+	await _end_ship_activation(tree, battle, &"p2_galleon")
+	await _attack_ship(battle, &"p1_frigate", &"p2_galleon")
+	await _attack_ship(battle, &"p1_sloop", &"p2_galleon")
+	t.expect_eq(_ship(battle.state, &"p2_sloop").hull, 0, "player two sloop stays sunk")
+	t.expect_eq(_ship(battle.state, &"p2_frigate").hull, 0, "player two frigate sinks")
+	t.expect_eq(_ship(battle.state, &"p2_galleon").hull, 0, "player two galleon sinks")
+	t.expect_eq(battle.state.winner, FleetBattleState.Player.ONE, "complete match records player one")
+	t.expect_eq(battle.state.round_number, 3, "victory emits no extra round start")
+	t.expect_eq(battle.sidebar.round_label.text, "ROUND 3", "victory preserves the terminal round")
+	t.expect_true(_result_overlay(battle).visible, "victory shows the result overlay")
+	t.expect_eq(_result_label(battle).text, "PLAYER 1 WINS", "winner overlay copy is exact")
+	t.expect_true(battle.input_locked, "victory locks battlefield input")
+	battle.handle_ship_selection(&"p1_galleon")
+	t.expect_eq(battle.state.selected_ship(), null, "terminal input cannot select another ship")
+
+	var stale_ring := Line2D.new()
+	battle.animator.add_child(stale_ring)
+	var stale_sunk_view: ShipView = battle.ship_views[&"p2_sloop"]
+	stale_sunk_view.scale = Vector2(0.75, 0.15)
+	stale_sunk_view.rotation = 0.3
+	stale_sunk_view.modulate.a = 0.0
+	battle.sidebar.play_again_pressed.emit()
+	await tree.process_frame
+	t.expect_eq(battle.animator.get_child_count(), 0, "Play Again clears transient animator children")
+	t.expect_false(_result_overlay(battle).visible, "Play Again hides the result overlay")
+	t.expect_false(_turn_banner(battle).visible, "Play Again hides every handoff banner")
+	t.expect_false(battle.input_locked, "Play Again unlocks battlefield input")
+	t.expect_eq(battle.state.round_number, 1, "Play Again restores round one")
+	t.expect_eq(
+		battle.state.active_player,
+		FleetBattleState.Player.ONE,
+		"Play Again restores player one initiative"
+	)
+	t.expect_eq(battle.sidebar.message_label.text, "Choose a ready ship", "replay prompt is exact")
+	for player in [FleetBattleState.Player.ONE, FleetBattleState.Player.TWO]:
+		var ships: Array[FleetShipState] = battle.state.fleets[player].ordered_ships()
+		for index in ships.size():
+			var ship := ships[index]
+			var view: ShipView = battle.ship_views[ship.ship_id]
+			t.expect_eq(ship.cell, CLOSE_STARTS[player][index], "replay restores %s cell" % ship.ship_id)
+			t.expect_eq(ship.hull, ship.definition.max_hull, "replay restores %s hull" % ship.ship_id)
+			t.expect_true(view.visible, "replay restores %s visibility" % ship.ship_id)
+			t.expect_eq(view.hull, ship.definition.max_hull, "replay refreshes %s view hull" % ship.ship_id)
+			t.expect_eq(
+				view.position,
+				battle.tile_map.map_to_local(CLOSE_STARTS[player][index]),
+				"replay restores %s authored position" % ship.ship_id
+			)
+			t.expect_eq(view.scale, Vector2.ONE, "replay restores %s scale" % ship.ship_id)
+			t.expect_eq(view.rotation, 0.0, "replay restores %s rotation" % ship.ship_id)
+			t.expect_eq(view.modulate.a, 1.0, "replay restores %s opacity" % ship.ship_id)
+	for ship_id in [&"p1_sloop", &"p1_frigate", &"p1_galleon"]:
+		t.expect_eq(
+			battle.sidebar.row_for(ship_id).status_label.text,
+			"READY",
+			"replay restores %s roster readiness" % ship_id
+		)
+	battle.queue_free()
+	await tree.process_frame
+
+
 func _add_invalid_battle_without_expected_error_output(
 	tree: SceneTree,
 	battle: BattleScreen
@@ -352,6 +535,56 @@ func _add_invalid_battle_without_expected_error_output(
 	tree.root.add_child(battle)
 	await tree.process_frame
 	Engine.print_error_messages = previous_error_output
+
+
+func _add_close_battle(
+	tree: SceneTree,
+	packed: PackedScene,
+	skip: bool
+) -> BattleScreen:
+	var battle: BattleScreen = packed.instantiate()
+	battle.map_definition = load(CLOSE_MAP_PATH)
+	battle.skip_animations = skip
+	tree.root.add_child(battle)
+	await tree.process_frame
+	return battle
+
+
+func _attack_ship(
+	battle: BattleScreen,
+	attacker_id: StringName,
+	target_id: StringName
+) -> void:
+	battle.handle_roster_selection(attacker_id)
+	await battle.handle_cell_click(_ship(battle.state, target_id).cell)
+
+
+func _end_ship_activation(
+	tree: SceneTree,
+	battle: BattleScreen,
+	ship_id: StringName
+) -> void:
+	battle.handle_roster_selection(ship_id)
+	battle.sidebar.end_turn_pressed.emit()
+	await tree.process_frame
+
+
+func _turn_banner(battle: BattleScreen) -> Control:
+	return battle.get_node("OverlayLayer/TurnBanner") as Control
+
+
+func _turn_banner_label(battle: BattleScreen) -> Label:
+	return battle.get_node("OverlayLayer/TurnBanner/BannerPanel/BannerLabel") as Label
+
+
+func _result_overlay(battle: BattleScreen) -> Control:
+	return battle.get_node("OverlayLayer/ResultOverlay") as Control
+
+
+func _result_label(battle: BattleScreen) -> Label:
+	return battle.get_node(
+		"OverlayLayer/ResultOverlay/Center/ResultPanel/ResultContent/ResultLabel"
+	) as Label
 
 
 func _adjacent_reachable_cell(state: FleetBattleState) -> Vector2i:

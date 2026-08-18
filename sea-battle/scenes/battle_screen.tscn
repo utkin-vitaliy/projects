@@ -74,7 +74,6 @@ script = ExtResource("7_highlights")
 [node name="BattleAnimator" type="Node2D" parent="Margin/Layout/BattlefieldPanel/BoardRoot"]
 unique_name_in_owner = true
 script = ExtResource("8_animator")
-unique_name_in_owner = true
 
 [node name="SidebarSlot" type="MarginContainer" parent="Margin/Layout"]
 custom_minimum_size = Vector2(320, 0)
@@ -106,9 +105,9 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -170.0
+offset_left = -240.0
 offset_top = -36.0
-offset_right = 170.0
+offset_right = 240.0
 offset_bottom = 36.0
 grow_horizontal = 2
 grow_vertical = 2
