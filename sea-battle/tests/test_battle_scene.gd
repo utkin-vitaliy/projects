@@ -14,6 +14,20 @@ func run(t: TestContext, tree: SceneTree) -> void:
 	t.expect_eq(battle.ship_views.size(), 2, "two ship views exist")
 	t.expect_eq(battle.tile_map.get_used_cells().size(), 88, "all fixed map cells render")
 	t.expect_eq(battle.state.active_player, BattleState.Player.ONE, "player one starts")
+	var pointer_cell := Vector2i(5, 4)
+	var pointer_viewport_position: Vector2 = (
+		battle.tile_map.get_global_transform_with_canvas()
+		* battle.tile_map.map_to_local(pointer_cell)
+	)
+	var pointer_panel_position: Vector2 = (
+		battle.battlefield_panel.get_global_transform_with_canvas().affine_inverse()
+		* pointer_viewport_position
+	)
+	t.expect_eq(
+		battle.cell_from_pointer(pointer_panel_position),
+		pointer_cell,
+		"panel-local pointer resolves to its rendered hex"
+	)
 	var sidebar = battle.get_node_or_null("Margin/Layout/SidebarSlot/TacticalSidebar")
 	t.expect_not_null(sidebar, "sidebar is instanced")
 	if sidebar != null:

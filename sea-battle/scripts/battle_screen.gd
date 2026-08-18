@@ -257,8 +257,15 @@ func _on_play_again_pressed() -> void:
 
 
 func cell_from_pointer(panel_position: Vector2) -> Vector2i:
-	var pointer_global_position: Vector2 = battlefield_panel.to_global(panel_position)
-	return tile_map.local_to_map(tile_map.to_local(pointer_global_position))
+	var pointer_viewport_position := (
+		battlefield_panel.get_global_transform_with_canvas()
+		* panel_position
+	)
+	var pointer_tile_position := (
+		tile_map.get_global_transform_with_canvas().affine_inverse()
+		* pointer_viewport_position
+	)
+	return tile_map.local_to_map(pointer_tile_position)
 
 
 func _center_board() -> void:
