@@ -8,7 +8,7 @@
 
 **Tech Stack:** Godot 4.7.1, GDScript 2.0, `TileMapLayer`, `AStar2D`, custom `Resource` definitions, built-in headless test runner.
 
-**Spec:** `docs/superpowers/specs/2026-08-17-sea-battle-prototype-design.md`
+**Spec:** `sea-battle/docs/superpowers/specs/2026-08-17-sea-battle-prototype-design.md`
 
 ## Global Constraints
 
@@ -28,7 +28,7 @@
 ## Planned File Structure
 
 ```text
-2d-map/
+sea-battle/
 ├── project.godot
 ├── Assets/
 │   ├── Ocean001.png
@@ -73,17 +73,17 @@ Every script has one responsibility: definitions hold editable data, `HexBoard` 
 ### Task 1: Project Foundation and Data Definitions
 
 **Files:**
-- Modify: `2d-map/project.godot`
-- Create: `2d-map/scripts/definitions/ship_definition.gd`
-- Create: `2d-map/scripts/definitions/terrain_definition.gd`
-- Create: `2d-map/scripts/definitions/map_definition.gd`
-- Create: `2d-map/resources/ships/basic_ship.tres`
-- Create: `2d-map/resources/terrain/water.tres`
-- Create: `2d-map/resources/terrain/land.tres`
-- Create: `2d-map/resources/maps/prototype_map.tres`
-- Create: `2d-map/tests/test_context.gd`
-- Create: `2d-map/tests/test_runner.gd`
-- Create: `2d-map/tests/test_definitions.gd`
+- Modify: `sea-battle/project.godot`
+- Create: `sea-battle/scripts/definitions/ship_definition.gd`
+- Create: `sea-battle/scripts/definitions/terrain_definition.gd`
+- Create: `sea-battle/scripts/definitions/map_definition.gd`
+- Create: `sea-battle/resources/ships/basic_ship.tres`
+- Create: `sea-battle/resources/terrain/water.tres`
+- Create: `sea-battle/resources/terrain/land.tres`
+- Create: `sea-battle/resources/maps/prototype_map.tres`
+- Create: `sea-battle/tests/test_context.gd`
+- Create: `sea-battle/tests/test_runner.gd`
+- Create: `sea-battle/tests/test_definitions.gd`
 
 **Interfaces:**
 - Produces: `ShipDefinition`, `TerrainDefinition`, and `MapDefinition` resource classes.
@@ -162,7 +162,7 @@ func run(t: TestContext, _tree: SceneTree) -> void:
 Run:
 
 ```bash
-/home/vitaliy/.local/bin/godot --headless --path 2d-map -s res://tests/test_runner.gd
+/home/vitaliy/.local/bin/godot --headless --path sea-battle -s res://tests/test_runner.gd
 ```
 
 Expected: non-zero exit because the definition scripts and `.tres` resources do not exist.
@@ -263,8 +263,8 @@ Keep the main-scene assignment unchanged until Task 4 creates the new scene.
 Run:
 
 ```bash
-/home/vitaliy/.local/bin/godot --headless --path 2d-map --import
-/home/vitaliy/.local/bin/godot --headless --path 2d-map -s res://tests/test_runner.gd
+/home/vitaliy/.local/bin/godot --headless --path sea-battle --import
+/home/vitaliy/.local/bin/godot --headless --path sea-battle -s res://tests/test_runner.gd
 ```
 
 Expected: import succeeds and the definition suite exits `0` with 10 passing assertions.
@@ -272,7 +272,7 @@ Expected: import succeeds and the definition suite exits `0` with 10 passing ass
 - [ ] **Step 7: Commit the foundation**
 
 ```bash
-git add 2d-map/project.godot 2d-map/scripts/definitions 2d-map/resources 2d-map/tests
+git add sea-battle/project.godot sea-battle/scripts/definitions sea-battle/resources sea-battle/tests
 git commit -m "feat: add prototype data definitions"
 ```
 
@@ -281,9 +281,9 @@ git commit -m "feat: add prototype data definitions"
 ### Task 2: Hex Board and Pathfinding
 
 **Files:**
-- Create: `2d-map/scripts/rules/hex_board.gd`
-- Create: `2d-map/tests/test_hex_board.gd`
-- Modify: `2d-map/tests/test_runner.gd`
+- Create: `sea-battle/scripts/rules/hex_board.gd`
+- Create: `sea-battle/tests/test_hex_board.gd`
+- Modify: `sea-battle/tests/test_runner.gd`
 
 **Interfaces:**
 - Consumes: arrays from `MapDefinition.all_cells()` and `blocked_cells`.
@@ -438,7 +438,7 @@ Run the headless test command. Expected: all definition and board assertions pas
 - [ ] **Step 5: Commit board rules**
 
 ```bash
-git add 2d-map/scripts/rules/hex_board.gd 2d-map/tests/test_hex_board.gd 2d-map/tests/test_runner.gd
+git add sea-battle/scripts/rules/hex_board.gd sea-battle/tests/test_hex_board.gd sea-battle/tests/test_runner.gd
 git commit -m "feat: add hex board pathfinding"
 ```
 
@@ -447,11 +447,11 @@ git commit -m "feat: add hex board pathfinding"
 ### Task 3: Two-Player Battle Rules
 
 **Files:**
-- Create: `2d-map/scripts/rules/command_result.gd`
-- Create: `2d-map/scripts/rules/ship_state.gd`
-- Create: `2d-map/scripts/rules/battle_state.gd`
-- Create: `2d-map/tests/test_battle_state.gd`
-- Modify: `2d-map/tests/test_runner.gd`
+- Create: `sea-battle/scripts/rules/command_result.gd`
+- Create: `sea-battle/scripts/rules/ship_state.gd`
+- Create: `sea-battle/scripts/rules/battle_state.gd`
+- Create: `sea-battle/tests/test_battle_state.gd`
+- Modify: `sea-battle/tests/test_runner.gd`
 
 **Interfaces:**
 - Consumes: `HexBoard` and `ShipDefinition`.
@@ -701,7 +701,7 @@ Run the headless test command. Expected: all definition, board, and battle asser
 - [ ] **Step 6: Commit battle rules**
 
 ```bash
-git add 2d-map/scripts/rules 2d-map/tests/test_battle_state.gd 2d-map/tests/test_runner.gd
+git add sea-battle/scripts/rules sea-battle/tests/test_battle_state.gd sea-battle/tests/test_runner.gd
 git commit -m "feat: add local two-player battle rules"
 ```
 
@@ -710,14 +710,14 @@ git commit -m "feat: add local two-player battle rules"
 ### Task 4: Fixed Battlefield Scene and Rendering
 
 **Files:**
-- Create: `2d-map/resources/tiles/prototype_tileset.tres`
-- Create: `2d-map/scenes/battle_screen.tscn`
-- Create: `2d-map/scripts/battle_screen.gd`
-- Create: `2d-map/scripts/presentation/ship_view.gd`
-- Create: `2d-map/tests/test_battle_scene.gd`
-- Modify: `2d-map/project.godot`
-- Modify: `2d-map/tests/test_runner.gd`
-- Remove after migration: `2d-map/main.tscn`
+- Create: `sea-battle/resources/tiles/prototype_tileset.tres`
+- Create: `sea-battle/scenes/battle_screen.tscn`
+- Create: `sea-battle/scripts/battle_screen.gd`
+- Create: `sea-battle/scripts/presentation/ship_view.gd`
+- Create: `sea-battle/tests/test_battle_scene.gd`
+- Modify: `sea-battle/project.godot`
+- Modify: `sea-battle/tests/test_runner.gd`
+- Remove after migration: `sea-battle/main.tscn`
 
 **Interfaces:**
 - Consumes: map, terrain, ship resources and `BattleState`.
@@ -833,9 +833,9 @@ Delete `main.tscn` only after `prototype_tileset.tres` and `battle_screen.tscn` 
 Run:
 
 ```bash
-/home/vitaliy/.local/bin/godot --headless --path 2d-map --import
-/home/vitaliy/.local/bin/godot --headless --path 2d-map -s res://tests/test_runner.gd
-/home/vitaliy/.local/bin/godot --headless --path 2d-map --quit-after 2
+/home/vitaliy/.local/bin/godot --headless --path sea-battle --import
+/home/vitaliy/.local/bin/godot --headless --path sea-battle -s res://tests/test_runner.gd
+/home/vitaliy/.local/bin/godot --headless --path sea-battle --quit-after 2
 ```
 
 Expected: all tests pass, the main scene loads without parser/resource errors, and no orphan-node warnings appear.
@@ -843,8 +843,8 @@ Expected: all tests pass, the main scene loads without parser/resource errors, a
 - [ ] **Step 8: Commit the rendered battlefield**
 
 ```bash
-git add 2d-map/project.godot 2d-map/resources/tiles 2d-map/scenes 2d-map/scripts/battle_screen.gd 2d-map/scripts/presentation/ship_view.gd 2d-map/tests
-git add -u 2d-map/main.tscn
+git add sea-battle/project.godot sea-battle/resources/tiles sea-battle/scenes sea-battle/scripts/battle_screen.gd sea-battle/scripts/presentation/ship_view.gd sea-battle/tests
+git add -u sea-battle/main.tscn
 git commit -m "feat: render fixed sea battle map"
 ```
 
@@ -853,12 +853,12 @@ git commit -m "feat: render fixed sea battle map"
 ### Task 5: Tactical Sidebar and Nautical Theme
 
 **Files:**
-- Create: `2d-map/resources/themes/nautical_theme.tres`
-- Create: `2d-map/scenes/components/tactical_sidebar.tscn`
-- Create: `2d-map/scripts/ui/tactical_sidebar.gd`
-- Modify: `2d-map/scenes/battle_screen.tscn`
-- Modify: `2d-map/scripts/battle_screen.gd`
-- Modify: `2d-map/tests/test_battle_scene.gd`
+- Create: `sea-battle/resources/themes/nautical_theme.tres`
+- Create: `sea-battle/scenes/components/tactical_sidebar.tscn`
+- Create: `sea-battle/scripts/ui/tactical_sidebar.gd`
+- Modify: `sea-battle/scenes/battle_screen.tscn`
+- Modify: `sea-battle/scripts/battle_screen.gd`
+- Modify: `sea-battle/tests/test_battle_scene.gd`
 
 **Interfaces:**
 - Consumes: read-only `BattleState` state.
@@ -932,7 +932,7 @@ Instance the sidebar scene in `SidebarSlot`, connect its signals, and call `side
 Run the headless suite, then launch:
 
 ```bash
-/home/vitaliy/.local/bin/godot --path 2d-map --editor
+/home/vitaliy/.local/bin/godot --path sea-battle --editor
 ```
 
 Verify the 1280×720 preview has a flexible battlefield, 320px sidebar, readable light text, brass primary action, visible keyboard focus, and no control overlap.
@@ -940,7 +940,7 @@ Verify the 1280×720 preview has a flexible battlefield, 320px sidebar, readable
 - [ ] **Step 8: Commit the sidebar**
 
 ```bash
-git add 2d-map/resources/themes 2d-map/scenes 2d-map/scripts/ui 2d-map/scripts/battle_screen.gd 2d-map/tests/test_battle_scene.gd
+git add sea-battle/resources/themes sea-battle/scenes sea-battle/scripts/ui sea-battle/scripts/battle_screen.gd sea-battle/tests/test_battle_scene.gd
 git commit -m "feat: add tactical battle sidebar"
 ```
 
@@ -949,11 +949,11 @@ git commit -m "feat: add tactical battle sidebar"
 ### Task 6: Selection, Reachability, Path Preview, and Movement
 
 **Files:**
-- Create: `2d-map/scripts/presentation/highlight_layer.gd`
-- Modify: `2d-map/scenes/battle_screen.tscn`
-- Modify: `2d-map/scripts/battle_screen.gd`
-- Modify: `2d-map/scripts/presentation/ship_view.gd`
-- Modify: `2d-map/tests/test_battle_scene.gd`
+- Create: `sea-battle/scripts/presentation/highlight_layer.gd`
+- Modify: `sea-battle/scenes/battle_screen.tscn`
+- Modify: `sea-battle/scripts/battle_screen.gd`
+- Modify: `sea-battle/scripts/presentation/ship_view.gd`
+- Modify: `sea-battle/tests/test_battle_scene.gd`
 
 **Interfaces:**
 - Consumes: `BattleState.select_ship`, `reachable_cells`, and `move_active_ship`.
@@ -1027,7 +1027,7 @@ Run the headless suite. Then verify manually:
 - [ ] **Step 7: Commit selection and movement**
 
 ```bash
-git add 2d-map/scenes/battle_screen.tscn 2d-map/scripts/battle_screen.gd 2d-map/scripts/presentation 2d-map/tests/test_battle_scene.gd
+git add sea-battle/scenes/battle_screen.tscn sea-battle/scripts/battle_screen.gd sea-battle/scripts/presentation sea-battle/tests/test_battle_scene.gd
 git commit -m "feat: add ship selection and movement previews"
 ```
 
@@ -1036,13 +1036,13 @@ git commit -m "feat: add ship selection and movement previews"
 ### Task 7: Attacks, Turn Changes, Victory, and Restart
 
 **Files:**
-- Create: `2d-map/scripts/presentation/battle_animator.gd`
-- Modify: `2d-map/scenes/battle_screen.tscn`
-- Modify: `2d-map/scenes/components/tactical_sidebar.tscn`
-- Modify: `2d-map/scripts/battle_screen.gd`
-- Modify: `2d-map/scripts/presentation/ship_view.gd`
-- Modify: `2d-map/scripts/ui/tactical_sidebar.gd`
-- Modify: `2d-map/tests/test_battle_scene.gd`
+- Create: `sea-battle/scripts/presentation/battle_animator.gd`
+- Modify: `sea-battle/scenes/battle_screen.tscn`
+- Modify: `sea-battle/scenes/components/tactical_sidebar.tscn`
+- Modify: `sea-battle/scripts/battle_screen.gd`
+- Modify: `sea-battle/scripts/presentation/ship_view.gd`
+- Modify: `sea-battle/scripts/ui/tactical_sidebar.gd`
+- Modify: `sea-battle/tests/test_battle_scene.gd`
 
 **Interfaces:**
 - Consumes: ordered command events from `BattleState`.
@@ -1107,7 +1107,7 @@ In each match verify:
 - [ ] **Step 8: Commit the complete battle loop**
 
 ```bash
-git add 2d-map/scenes 2d-map/scripts 2d-map/tests/test_battle_scene.gd
+git add sea-battle/scenes sea-battle/scripts sea-battle/tests/test_battle_scene.gd
 git commit -m "feat: complete local two-player battle loop"
 ```
 
@@ -1116,13 +1116,13 @@ git commit -m "feat: complete local two-player battle loop"
 ### Task 8: Feedback, Map Validation, and Prototype Polish
 
 **Files:**
-- Modify: `2d-map/scripts/definitions/map_definition.gd`
-- Modify: `2d-map/scripts/battle_screen.gd`
-- Modify: `2d-map/scripts/presentation/highlight_layer.gd`
-- Modify: `2d-map/scripts/ui/tactical_sidebar.gd`
-- Modify: `2d-map/resources/themes/nautical_theme.tres`
-- Modify: `2d-map/tests/test_definitions.gd`
-- Modify: `2d-map/tests/test_battle_scene.gd`
+- Modify: `sea-battle/scripts/definitions/map_definition.gd`
+- Modify: `sea-battle/scripts/battle_screen.gd`
+- Modify: `sea-battle/scripts/presentation/highlight_layer.gd`
+- Modify: `sea-battle/scripts/ui/tactical_sidebar.gd`
+- Modify: `sea-battle/resources/themes/nautical_theme.tres`
+- Modify: `sea-battle/tests/test_definitions.gd`
+- Modify: `sea-battle/tests/test_battle_scene.gd`
 - Modify: `README.md`
 
 **Interfaces:**
@@ -1168,7 +1168,7 @@ Replace the generic root README content with:
 
 - Project purpose and current one-versus-one local scope.
 - Godot 4.7.1 requirement.
-- Open `2d-map/project.godot` and run instructions.
+- Open `sea-battle/project.godot` and run instructions.
 - Exact headless test command.
 - Controls: left click, hover, right-click/`Esc`, and End Turn.
 - Deferred features summarized from the spec.
@@ -1178,9 +1178,9 @@ Replace the generic root README content with:
 Run:
 
 ```bash
-/home/vitaliy/.local/bin/godot --headless --path 2d-map --import
-/home/vitaliy/.local/bin/godot --headless --path 2d-map -s res://tests/test_runner.gd
-/home/vitaliy/.local/bin/godot --headless --path 2d-map --quit-after 3
+/home/vitaliy/.local/bin/godot --headless --path sea-battle --import
+/home/vitaliy/.local/bin/godot --headless --path sea-battle -s res://tests/test_runner.gd
+/home/vitaliy/.local/bin/godot --headless --path sea-battle --quit-after 3
 git diff --check
 git status --short
 ```
@@ -1200,7 +1200,7 @@ At 1280×720 verify:
 - [ ] **Step 8: Commit prototype polish**
 
 ```bash
-git add README.md 2d-map
+git add README.md sea-battle
 git commit -m "feat: polish sea battle desktop prototype"
 ```
 

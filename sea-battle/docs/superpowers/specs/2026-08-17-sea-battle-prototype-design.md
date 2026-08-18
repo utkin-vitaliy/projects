@@ -1,7 +1,7 @@
 # Sea Battle Desktop Prototype Design
 
 Date: 2026-08-17
-Status: Approved in conversation; awaiting written-spec review
+Status: Approved
 
 ## Goal
 
