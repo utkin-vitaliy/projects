@@ -9,6 +9,7 @@ extends Control
 @onready var board_root: Node2D = %BoardRoot
 @onready var tile_map: TileMapLayer = %TileMapLayer
 @onready var ship_container: Node2D = %Ships
+@onready var sidebar: TacticalSidebar = %TacticalSidebar
 
 var state: BattleState
 var board: HexBoard
@@ -16,6 +17,8 @@ var ship_views: Dictionary = {}
 
 
 func _ready() -> void:
+	sidebar.end_turn_pressed.connect(_on_end_turn_pressed)
+	sidebar.play_again_pressed.connect(_on_play_again_pressed)
 	_build_map()
 	var neighbors := _build_neighbors()
 	board = HexBoard.new()
@@ -74,6 +77,25 @@ func refresh_from_state() -> void:
 		view.position = tile_map.map_to_local(ship.cell)
 		view.set_hull(ship.hull, ship.definition.max_hull)
 		view.set_active(player == state.active_player)
+	sidebar.render(state)
+
+
+func apply_result(result: CommandResult) -> void:
+	if not result.ok:
+		sidebar.show_rejection(result.reason, state.active_player)
+		return
+	refresh_from_state()
+
+
+func _on_end_turn_pressed() -> void:
+	apply_result(state.end_turn())
+	sidebar.show_message("Select your ship")
+
+
+func _on_play_again_pressed() -> void:
+	apply_result(state.reset())
+	sidebar.hide_result()
+	sidebar.show_message("Select your ship")
 
 
 func cell_from_pointer(panel_position: Vector2) -> Vector2i:

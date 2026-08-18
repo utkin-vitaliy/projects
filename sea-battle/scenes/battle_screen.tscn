@@ -1,9 +1,11 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://scripts/battle_screen.gd" id="1_battle"]
 [ext_resource type="TileSet" path="res://resources/tiles/prototype_tileset.tres" id="2_tiles"]
 [ext_resource type="Resource" path="res://resources/maps/prototype_map.tres" id="3_map"]
 [ext_resource type="Resource" path="res://resources/ships/basic_ship.tres" id="4_ship"]
+[ext_resource type="PackedScene" path="res://scenes/components/tactical_sidebar.tscn" id="5_sidebar"]
+[ext_resource type="Theme" path="res://resources/themes/nautical_theme.tres" id="6_theme"]
 
 [node name="BattleScreen" type="Control"]
 layout_mode = 3
@@ -69,3 +71,82 @@ unique_name_in_owner = true
 [node name="SidebarSlot" type="MarginContainer" parent="Margin/Layout"]
 custom_minimum_size = Vector2(320, 0)
 layout_mode = 2
+
+[node name="TacticalSidebar" parent="Margin/Layout/SidebarSlot" instance=ExtResource("5_sidebar")]
+unique_name_in_owner = true
+turn_banner_path = NodePath("../../../../OverlayLayer/TurnBanner")
+result_overlay_path = NodePath("../../../../OverlayLayer/ResultOverlay")
+play_again_button_path = NodePath("../../../../OverlayLayer/ResultOverlay/Center/ResultPanel/ResultContent/PlayAgain")
+
+[node name="OverlayLayer" type="CanvasLayer" parent="."]
+layer = 10
+
+[node name="TurnBanner" type="Control" parent="OverlayLayer"]
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="BannerPanel" type="PanelContainer" parent="OverlayLayer/TurnBanner"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -170.0
+offset_top = -36.0
+offset_right = 170.0
+offset_bottom = 36.0
+grow_horizontal = 2
+grow_vertical = 2
+theme = ExtResource("6_theme")
+
+[node name="BannerLabel" type="Label" parent="OverlayLayer/TurnBanner/BannerPanel"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 22
+text = "PLAYER 1'S TURN"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="ResultOverlay" type="ColorRect" parent="OverlayLayer"]
+visible = false
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.02, 0.063, 0.086, 0.88)
+
+[node name="Center" type="CenterContainer" parent="OverlayLayer/ResultOverlay"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="ResultPanel" type="PanelContainer" parent="OverlayLayer/ResultOverlay/Center"]
+custom_minimum_size = Vector2(360, 200)
+layout_mode = 2
+theme = ExtResource("6_theme")
+
+[node name="ResultContent" type="VBoxContainer" parent="OverlayLayer/ResultOverlay/Center/ResultPanel"]
+layout_mode = 2
+theme_override_constants/separation = 22
+alignment = 1
+
+[node name="ResultLabel" type="Label" parent="OverlayLayer/ResultOverlay/Center/ResultPanel/ResultContent"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 28
+text = "PLAYER 1 WINS"
+horizontal_alignment = 1
+
+[node name="PlayAgain" type="Button" parent="OverlayLayer/ResultOverlay/Center/ResultPanel/ResultContent"]
+layout_mode = 2
+text = "PLAY AGAIN"
