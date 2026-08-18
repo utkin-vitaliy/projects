@@ -53,10 +53,10 @@ func setup(
 			if seen_starts.has(start_value):
 				duplicate_start = true
 			seen_starts[start_value] = true
-			if hex_board == null:
-				continue
 			if not start_value is Vector2i:
 				start_outside_map = true
+				continue
+			if hex_board == null:
 				continue
 			if not hex_board.has_cell(start_value):
 				start_outside_map = true

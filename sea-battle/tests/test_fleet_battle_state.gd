@@ -17,6 +17,8 @@ const DEFAULT_STARTS := {
 
 func run(t: TestContext, _tree: SceneTree) -> void:
 	test_rejects_invalid_setup_without_partial_state(t)
+	test_aggregates_null_board_and_invalid_start_type(t)
+	test_empty_board_reports_starts_outside_map(t)
 	test_selects_any_ready_active_ship(t)
 	test_rejects_enemy_used_and_sunk_ships(t)
 	test_moves_once_around_all_occupants(t)
@@ -69,6 +71,27 @@ func test_rejects_invalid_setup_without_partial_state(t: TestContext) -> void:
 	t.expect_eq(errors_after_valid, [&"board_missing"], "later invalid setup still reports its error")
 	t.expect_true(state.fleets == original_fleets, "failed reconfiguration preserves existing fleets")
 	t.expect_true(state.board == original_board, "failed reconfiguration preserves existing board")
+
+
+func test_aggregates_null_board_and_invalid_start_type(t: TestContext) -> void:
+	var state := FleetBattleState.new()
+	var errors := state.setup(null, load_definitions(), {
+		FleetBattleState.Player.ONE: [&"not_a_cell", Vector2i(0, 1), Vector2i(1, 0)],
+		FleetBattleState.Player.TWO: [Vector2i(3, -3), Vector2i(2, -3), Vector2i(1, -3)],
+	})
+	t.expect_eq(errors, [
+		&"board_missing",
+		&"start_outside_map",
+	], "null board still aggregates malformed start classification")
+	t.expect_true(state.fleets.is_empty(), "combined null-board setup creates no fleets")
+
+
+func test_empty_board_reports_starts_outside_map(t: TestContext) -> void:
+	var state := FleetBattleState.new()
+	var empty_board := HexBoard.new()
+	var errors := state.setup(empty_board, load_definitions(), DEFAULT_STARTS)
+	t.expect_eq(errors, [&"start_outside_map"], "non-null empty board is not classified as missing")
+	t.expect_true(state.fleets.is_empty(), "empty-board setup creates no fleets")
 
 
 func test_selects_any_ready_active_ship(t: TestContext) -> void:
