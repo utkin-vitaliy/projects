@@ -16,6 +16,11 @@ var winner := 0
 
 var _definitions: Array[ShipDefinition] = []
 var _starts_by_player: Dictionary = {}
+var _starting_player_picker: Callable
+
+
+func _init(starting_player_picker: Callable = Callable()) -> void:
+	_starting_player_picker = starting_player_picker
 
 
 func setup(
@@ -355,7 +360,6 @@ func _append_activation_handoff(events: Array[BattleEvent]) -> void:
 		return
 
 	round_number += 1
-	round_starter = _other_player(round_starter)
 	for fleet_value in fleets.values():
 		var fleet: FleetState = fleet_value
 		fleet.reset_activations()
@@ -367,8 +371,8 @@ func _append_activation_handoff(events: Array[BattleEvent]) -> void:
 
 
 func _restore_battle() -> void:
-	active_player = Player.ONE
-	round_starter = Player.ONE
+	round_starter = _pick_starting_player()
+	active_player = round_starter
 	round_number = 1
 	selected_ship_id = &""
 	winner = 0
@@ -383,6 +387,12 @@ func _restore_battle() -> void:
 		fleet.configure(player, _definitions, starts)
 		restored_fleets[player] = fleet
 	fleets = restored_fleets
+
+
+func _pick_starting_player() -> int:
+	if _starting_player_picker.is_valid():
+		return _starting_player_picker.call()
+	return randi_range(Player.ONE, Player.TWO)
 
 
 func _ship_by_id(ship_id: StringName) -> FleetShipState:

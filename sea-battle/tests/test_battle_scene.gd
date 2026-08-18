@@ -16,7 +16,9 @@ func run(t: TestContext, tree: SceneTree) -> void:
 	t.expect_not_null(packed, "battle scene loads")
 	if packed == null:
 		return
+	await test_scene_uses_injected_match_starter(t, tree, packed)
 	var battle = packed.instantiate()
+	battle.starting_player_picker = _fixed_starter(FleetBattleState.Player.ONE)
 	battle.skip_animations = true
 	tree.root.add_child(battle)
 	await tree.process_frame
@@ -50,6 +52,34 @@ func run(t: TestContext, tree: SceneTree) -> void:
 	await test_real_movement_locks_during_animation(t, tree, packed)
 	await test_animated_sinking_owns_its_lock_and_restores_transform(t, tree, packed)
 	await test_complete_match_and_play_again(t, tree, packed)
+
+
+func test_scene_uses_injected_match_starter(
+	t: TestContext,
+	tree: SceneTree,
+	packed: PackedScene
+) -> void:
+	var battle: BattleScreen = packed.instantiate()
+	var supports_picker := false
+	for property in battle.get_property_list():
+		if property.name == &"starting_player_picker":
+			supports_picker = true
+			break
+	t.expect_true(supports_picker, "battle scene exposes deterministic match-starter injection")
+	if not supports_picker:
+		battle.free()
+		return
+	battle.set("starting_player_picker", func() -> int: return FleetBattleState.Player.TWO)
+	battle.skip_animations = true
+	tree.root.add_child(battle)
+	await tree.process_frame
+	t.expect_eq(
+		battle.state.active_player,
+		FleetBattleState.Player.TWO,
+		"scene passes the selected starter into fleet rules"
+	)
+	battle.queue_free()
+	await tree.process_frame
 
 
 func test_initial_fleet_presentation(t: TestContext, battle: BattleScreen) -> void:
@@ -237,6 +267,7 @@ func test_used_and_sunk_selection_feedback(
 	tree.root.add_child(viewport)
 	var battle: BattleScreen = packed.instantiate()
 	battle.map_definition = load(CLOSE_MAP_PATH)
+	battle.starting_player_picker = _fixed_starter(FleetBattleState.Player.ONE)
 	battle.skip_animations = true
 	viewport.add_child(battle)
 	await tree.process_frame
@@ -370,6 +401,7 @@ func test_real_movement_locks_during_animation(
 	packed: PackedScene
 ) -> void:
 	var battle = packed.instantiate()
+	battle.starting_player_picker = _fixed_starter(FleetBattleState.Player.ONE)
 	battle.skip_animations = false
 	tree.root.add_child(battle)
 	await tree.process_frame
@@ -453,11 +485,21 @@ func test_complete_match_and_play_again(
 	tree: SceneTree,
 	packed: PackedScene
 ) -> void:
-	var battle := await _add_close_battle(tree, packed, true)
+	var starter_pick_tracker := {"count": 0}
+	var battle := await _add_close_battle(
+		tree,
+		packed,
+		true,
+		_scripted_starter([
+			FleetBattleState.Player.ONE,
+			FleetBattleState.Player.ONE,
+		], starter_pick_tracker)
+	)
 	var close_map: MapDefinition = battle.map_definition
 	t.expect_eq(close_map.all_cells().size(), 127, "close match fixture preserves radius-six cells")
 	t.expect_true(close_map.blocked_cells.is_empty(), "close match fixture has no blocked cells")
 	t.expect_eq(battle.tile_map.get_used_cells().size(), 127, "close fixture passes scene validation")
+	t.expect_eq(starter_pick_tracker.count, 1, "match setup consumes one starter pick")
 	t.expect_eq(
 		battle.state.board.distance(
 			_ship(battle.state, &"p1_galleon").cell,
@@ -487,38 +529,27 @@ func test_complete_match_and_play_again(
 	t.expect_eq(battle.state.round_number, 2, "five surviving activations complete round one")
 	t.expect_eq(
 		battle.state.active_player,
-		FleetBattleState.Player.TWO,
-		"round two alternates initiative to player two"
+		FleetBattleState.Player.ONE,
+		"round two returns initiative to the match starter"
 	)
 	t.expect_eq(
 		_turn_banner_label(battle).text,
-		"ROUND 2 · PLAYER 2 INITIATIVE",
-		"round-two banner presents alternating initiative"
+		"ROUND 2 · PLAYER 1 INITIATIVE",
+		"round-two banner presents the match starter"
 	)
 	t.expect_false(_turn_banner(battle).visible, "skip mode hides round banner without a timer")
 
-	await _end_ship_activation(tree, battle, &"p2_frigate")
 	await _attack_ship(battle, &"p1_galleon", &"p2_frigate")
-	await _end_ship_activation(tree, battle, &"p2_galleon")
-	var banner_before_unmatched := _turn_banner_label(battle).text
+	await _end_ship_activation(tree, battle, &"p2_frigate")
 	await _attack_ship(battle, &"p1_frigate", &"p2_frigate")
-	t.expect_false(battle.ship_views[&"p2_frigate"].visible, "second sunk view leaves map")
-	t.expect_eq(
-		battle.state.active_player,
-		FleetBattleState.Player.ONE,
-		"player one keeps the unmatched activation"
-	)
-	t.expect_eq(
-		_turn_banner_label(battle).text,
-		banner_before_unmatched,
-		"unmatched consecutive activation shows no misleading opponent banner"
-	)
+	await _end_ship_activation(tree, battle, &"p2_galleon")
 	await _attack_ship(battle, &"p1_sloop", &"p2_galleon")
-	t.expect_eq(battle.state.round_number, 3, "unmatched completion starts round three")
+	t.expect_false(battle.ship_views[&"p2_frigate"].visible, "second sunk view leaves map")
+	t.expect_eq(battle.state.round_number, 3, "final round-two activation starts round three")
 	t.expect_eq(
 		_turn_banner_label(battle).text,
 		"ROUND 3 · PLAYER 1 INITIATIVE",
-		"round-three banner alternates initiative back to player one"
+		"round-three banner preserves the match starter"
 	)
 
 	await _attack_ship(battle, &"p1_galleon", &"p2_galleon")
@@ -553,8 +584,9 @@ func test_complete_match_and_play_again(
 	t.expect_eq(
 		battle.state.active_player,
 		FleetBattleState.Player.ONE,
-		"Play Again restores player one initiative"
+		"Play Again accepts a repeated fresh match starter"
 	)
+	t.expect_eq(starter_pick_tracker.count, 2, "Play Again consumes one new starter pick")
 	t.expect_eq(battle.sidebar.message_label.text, "Choose a ready ship", "replay prompt is exact")
 	for player in [FleetBattleState.Player.ONE, FleetBattleState.Player.TWO]:
 		var ships: Array[FleetShipState] = battle.state.fleets[player].ordered_ships()
@@ -656,14 +688,32 @@ func _visible_sidebar_label_copy(sidebar: TacticalSidebar) -> Array[String]:
 func _add_close_battle(
 	tree: SceneTree,
 	packed: PackedScene,
-	skip: bool
+	skip: bool,
+	starting_player_picker: Callable = Callable()
 ) -> BattleScreen:
 	var battle: BattleScreen = packed.instantiate()
 	battle.map_definition = load(CLOSE_MAP_PATH)
+	battle.starting_player_picker = (
+		starting_player_picker
+		if starting_player_picker.is_valid()
+		else _fixed_starter(FleetBattleState.Player.ONE)
+	)
 	battle.skip_animations = skip
 	tree.root.add_child(battle)
 	await tree.process_frame
 	return battle
+
+
+func _fixed_starter(player: int) -> Callable:
+	return func() -> int: return player
+
+
+func _scripted_starter(players: Array[int], tracker: Dictionary) -> Callable:
+	var remaining := players.duplicate()
+	return func() -> int:
+		assert(not remaining.is_empty(), "Scripted starter fixture needs another player")
+		tracker.count += 1
+		return remaining.pop_front()
 
 
 func _invalid_authored_definition_cases() -> Array[Dictionary]:

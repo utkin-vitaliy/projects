@@ -19,6 +19,20 @@ const COMBAT_STARTS := {
 }
 
 
+class ScriptedStarterBattleState extends FleetBattleState:
+	var scripted_starters: Array[int]
+	var starter_pick_count := 0
+
+
+	func _init(starters: Array[int]) -> void:
+		scripted_starters = starters.duplicate()
+
+
+	func _pick_starting_player() -> int:
+		starter_pick_count += 1
+		return scripted_starters.pop_front()
+
+
 func run(t: TestContext, _tree: SceneTree) -> void:
 	test_rejects_invalid_setup_without_partial_state(t)
 	test_setup_rejects_wrong_unique_class_ids_without_mutation(t)
@@ -29,12 +43,13 @@ func run(t: TestContext, _tree: SceneTree) -> void:
 	test_setup_definition_errors_have_deterministic_order(t)
 	test_aggregates_null_board_and_invalid_start_type(t)
 	test_empty_board_reports_starts_outside_map(t)
+	test_uses_selected_match_starter(t)
 	test_selects_any_ready_active_ship(t)
 	test_rejects_enemy_used_and_sunk_ships(t)
 	test_moves_once_around_all_occupants(t)
 	test_alternates_players_with_ready_ships(t)
 	test_allows_unmatched_consecutive_activations(t)
-	test_alternates_round_initiative(t)
+	test_keeps_match_starter_for_every_round(t)
 	test_attack_without_moving_targets_explicit_enemy(t)
 	test_rejects_friendly_sunk_and_out_of_range_targets(t)
 	test_attack_ends_activation_and_forbids_later_movement(t)
@@ -45,7 +60,10 @@ func run(t: TestContext, _tree: SceneTree) -> void:
 
 
 func test_rejects_invalid_setup_without_partial_state(t: TestContext) -> void:
-	var state := FleetBattleState.new()
+	var state := ScriptedStarterBattleState.new([
+		FleetBattleState.Player.ONE,
+		FleetBattleState.Player.TWO,
+	])
 	var definitions := load_definitions()
 	var invalid_definitions: Array[ShipDefinition] = [definitions[0], definitions[0], null]
 	var missing_board_errors := state.setup(null, invalid_definitions, {
@@ -61,6 +79,7 @@ func test_rejects_invalid_setup_without_partial_state(t: TestContext) -> void:
 		&"duplicate_start",
 	], "setup aggregates configuration errors in deterministic order")
 	t.expect_true(state.fleets.is_empty(), "invalid first setup creates no partial fleets")
+	t.expect_eq(state.starter_pick_count, 0, "invalid first setup consumes no starter pick")
 
 	var board := make_board([Vector2i.ZERO])
 	var invalid_start_errors := state.setup(board, definitions, {
@@ -79,15 +98,21 @@ func test_rejects_invalid_setup_without_partial_state(t: TestContext) -> void:
 	})
 	t.expect_eq(invalid_start_type_errors, [&"start_outside_map"], "non-cell start is rejected at setup boundary")
 	t.expect_true(state.fleets.is_empty(), "invalid start type creates no partial fleets")
+	t.expect_eq(state.starter_pick_count, 0, "all invalid initial setups consume no starter picks")
 
 	var valid_errors := state.setup(board, definitions, DEFAULT_STARTS)
 	t.expect_eq(valid_errors, [], "valid setup has no errors")
 	var original_fleets := state.fleets
 	var original_board := state.board
+	var original_active_player := state.active_player
+	var original_round_starter := state.round_starter
 	var errors_after_valid := state.setup(null, definitions, DEFAULT_STARTS)
 	t.expect_eq(errors_after_valid, [&"board_missing"], "later invalid setup still reports its error")
 	t.expect_true(state.fleets == original_fleets, "failed reconfiguration preserves existing fleets")
 	t.expect_true(state.board == original_board, "failed reconfiguration preserves existing board")
+	t.expect_eq(state.active_player, original_active_player, "failed reconfiguration preserves active player")
+	t.expect_eq(state.round_starter, original_round_starter, "failed reconfiguration preserves match starter")
+	t.expect_eq(state.starter_pick_count, 1, "failed reconfiguration consumes no additional starter pick")
 
 
 func test_setup_rejects_wrong_unique_class_ids_without_mutation(t: TestContext) -> void:
@@ -299,25 +324,31 @@ func test_allows_unmatched_consecutive_activations(t: TestContext) -> void:
 	t.expect_eq(event_types(second_unmatched.events), [&"activation_completed", &"round_started"], "last unmatched activation starts the next round")
 	t.expect_eq(second_unmatched.events[1].data, {
 		"round": 2,
-		"player": FleetBattleState.Player.TWO,
-	}, "round event carries alternating initiative")
+		"player": FleetBattleState.Player.ONE,
+	}, "round event preserves the match starter")
 
 
-func test_alternates_round_initiative(t: TestContext) -> void:
-	var state := make_state()
+func test_uses_selected_match_starter(t: TestContext) -> void:
+	var state := make_state(DEFAULT_STARTS, [], [FleetBattleState.Player.TWO])
+	t.expect_eq(state.round_starter, FleetBattleState.Player.TWO, "selected player starts round one")
+	t.expect_eq(state.active_player, FleetBattleState.Player.TWO, "selected player receives the first activation")
+
+
+func test_keeps_match_starter_for_every_round(t: TestContext) -> void:
+	var state := make_state(DEFAULT_STARTS, [], [FleetBattleState.Player.TWO])
 	var round_two_events := complete_round(state)
 	t.expect_eq(event_types(round_two_events), [&"activation_completed", &"round_started"], "sixth activation starts a round")
 	t.expect_eq(state.round_number, 2, "six activations complete round one")
-	t.expect_eq(state.round_starter, FleetBattleState.Player.TWO, "player two starts round two")
-	t.expect_eq(state.active_player, FleetBattleState.Player.TWO, "round two activates its starter")
+	t.expect_eq(state.round_starter, FleetBattleState.Player.TWO, "match starter remains player two in round two")
+	t.expect_eq(state.active_player, FleetBattleState.Player.TWO, "round two activates the match starter")
 	t.expect_eq(state.active_fleet().ready_ships().size(), 3, "round reset restores active fleet readiness")
 	t.expect_eq(state.opposing_fleet().ready_ships().size(), 3, "round reset restores opposing fleet readiness")
 
 	var round_three_events := complete_round(state)
 	t.expect_eq(event_types(round_three_events), [&"activation_completed", &"round_started"], "second sixth activation starts another round")
 	t.expect_eq(state.round_number, 3, "six more activations complete round two")
-	t.expect_eq(state.round_starter, FleetBattleState.Player.ONE, "player one starts round three")
-	t.expect_eq(state.active_player, FleetBattleState.Player.ONE, "round three activates its starter")
+	t.expect_eq(state.round_starter, FleetBattleState.Player.TWO, "match starter remains player two in round three")
+	t.expect_eq(state.active_player, FleetBattleState.Player.TWO, "round three activates the match starter")
 
 
 func test_attack_without_moving_targets_explicit_enemy(t: TestContext) -> void:
@@ -471,7 +502,10 @@ func test_last_enemy_ship_wins_immediately(t: TestContext) -> void:
 
 
 func test_reset_restores_round_one(t: TestContext) -> void:
-	var state := make_state()
+	var state := make_state(DEFAULT_STARTS, [], [
+		FleetBattleState.Player.ONE,
+		FleetBattleState.Player.ONE,
+	])
 	state.select_ship(&"p1_sloop")
 	state.move_selected_ship(Vector2i(-3, 2))
 	state.end_activation()
@@ -486,8 +520,9 @@ func test_reset_restores_round_one(t: TestContext) -> void:
 		"round": 1,
 		"player": FleetBattleState.Player.ONE,
 	}, "reset event carries restored round and initiative")
-	t.expect_eq(state.active_player, FleetBattleState.Player.ONE, "reset restores player one initiative")
-	t.expect_eq(state.round_starter, FleetBattleState.Player.ONE, "reset restores round starter")
+	t.expect_eq(state.active_player, FleetBattleState.Player.ONE, "reset accepts a repeated fresh match starter")
+	t.expect_eq(state.round_starter, FleetBattleState.Player.ONE, "reset stores the newly sampled match starter")
+	t.expect_eq(state.starter_pick_count, 2, "reset consumes exactly one fresh starter pick")
 	t.expect_eq(state.round_number, 1, "reset restores round one")
 	t.expect_eq(state.winner, 0, "reset clears winner")
 	t.expect_eq(state.selected_ship(), null, "reset clears selection")
@@ -545,9 +580,10 @@ func _expect_invalid_definitions_preserve_state(
 
 func make_state(
 	starts: Dictionary = DEFAULT_STARTS,
-	blocked: Array[Vector2i] = []
-) -> FleetBattleState:
-	var state := FleetBattleState.new()
+	blocked: Array[Vector2i] = [],
+	starters: Array[int] = [FleetBattleState.Player.ONE]
+) -> ScriptedStarterBattleState:
+	var state := ScriptedStarterBattleState.new(starters)
 	var errors := state.setup(make_board(blocked), load_definitions(), starts)
 	assert(errors.is_empty(), "Fleet battle test fixture must be valid")
 	return state

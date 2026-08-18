@@ -25,7 +25,7 @@ godot --headless --path sea-battle -s res://tests/test_runner.gd
 - **Hover:** preview the route to a reachable cell and inspect the attack target.
 - **Right click / Esc:** cancel selection before committing an action.
 - **END ACTIVATION:** finish the selected ship's activation without attacking.
-- **PLAY AGAIN:** restore all six ships, full hull, original cells, round one, and Player 1 initiative after a victory.
+- **PLAY AGAIN:** restore all six ships, full hull, original cells, and round one with a newly randomized starting player.
 
 ## Fleet classes
 
@@ -37,7 +37,7 @@ Each player controls one ship of every class:
 | Frigate | 4 | 3 | 3 | 1 | Durable ranged-control ship |
 | Galleon | 6 | 2 | 2 | 2 | Slow, close-range fleet anchor |
 
-Every surviving ship receives one activation per round. Players alternate activations while both fleets have READY ships; if only one fleet has activations left, it completes them consecutively. Round initiative alternates between Player 1 and Player 2.
+Every surviving ship receives one activation per round. Players alternate activations while both fleets have READY ships; if only one fleet has activations left, it completes them consecutively. A starting player is chosen randomly for each match, and that player starts every round of the match.
 
 ## Current scope
 

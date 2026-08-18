@@ -17,6 +17,7 @@ var state: FleetBattleState
 var board: HexBoard
 var ship_views: Dictionary = {}
 var input_locked := false
+var starting_player_picker: Callable
 
 
 func _ready() -> void:
@@ -24,7 +25,7 @@ func _ready() -> void:
 	sidebar.play_again_pressed.connect(_on_play_again_pressed)
 	sidebar.ship_selected.connect(handle_roster_selection)
 	battlefield_panel.gui_input.connect(_on_battlefield_input)
-	state = FleetBattleState.new()
+	state = FleetBattleState.new(starting_player_picker)
 	highlights.configure(tile_map)
 	animator.skip_animations = skip_animations
 	if map_definition == null:

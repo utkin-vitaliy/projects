@@ -150,7 +150,9 @@ func _make_fleet_state() -> FleetBattleState:
 	var definitions: Array[ShipDefinition] = []
 	for path in CLASS_PATHS:
 		definitions.append(load(path))
-	var state := FleetBattleState.new()
+	var state := FleetBattleState.new(
+		func() -> int: return FleetBattleState.Player.ONE
+	)
 	var errors := state.setup(_make_board(), definitions, STARTS)
 	assert(errors.is_empty(), "Sidebar fleet fixture must be valid")
 	return state
