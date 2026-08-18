@@ -1,10 +1,6 @@
 class_name MapDefinition
 extends Resource
 
-# Temporary migration seam for the rectangular duel through Task 7.
-@export var size := Vector2i(11, 8)
-@export var player_one_start := Vector2i(1, 4)
-@export var player_two_start := Vector2i(9, 3)
 @export var playable_cells: Array[Vector2i] = []
 @export var blocked_cells: Array[Vector2i] = []
 @export var player_one_starts: Array[Vector2i] = []
@@ -14,13 +10,7 @@ extends Resource
 
 
 func all_cells() -> Array[Vector2i]:
-	if not playable_cells.is_empty():
-		return playable_cells.duplicate()
-	var legacy_cells: Array[Vector2i] = []
-	for y in range(size.y):
-		for x in range(size.x):
-			legacy_cells.append(Vector2i(x, y))
-	return legacy_cells
+	return playable_cells.duplicate()
 
 
 func terrain_at(cell: Vector2i) -> TerrainDefinition:
@@ -28,38 +18,12 @@ func terrain_at(cell: Vector2i) -> TerrainDefinition:
 
 
 func validate(neighbors: Dictionary, tile_set: TileSet = null) -> Array[StringName]:
-	var errors := _validate_fleet(neighbors) if _uses_fleet_starts() else _validate_legacy(neighbors)
+	var errors := _validate_fleet(neighbors)
 	if water_terrain == null or land_terrain == null:
 		errors.append(&"terrain_definition_missing")
 	else:
 		var tile_errors := _validate_terrain_tiles(tile_set)
 		errors.append_array(tile_errors)
-	return errors
-
-
-func _uses_fleet_starts() -> bool:
-	return not player_one_starts.is_empty() or not player_two_starts.is_empty()
-
-
-func _validate_legacy(neighbors: Dictionary) -> Array[StringName]:
-	var errors: Array[StringName] = []
-	var starts_overlap := player_one_start == player_two_start
-	var starts_inside := _contains(player_one_start) and _contains(player_two_start)
-	var starts_blocked := (
-		blocked_cells.has(player_one_start)
-		or blocked_cells.has(player_two_start)
-	)
-	if starts_overlap:
-		errors.append(&"overlapping_starts")
-	if not starts_inside:
-		errors.append(&"start_outside_map")
-	if starts_blocked:
-		errors.append(&"start_blocked")
-	if starts_inside and not starts_overlap and not starts_blocked:
-		var validation_board := HexBoard.new()
-		validation_board.configure(all_cells(), blocked_cells, neighbors)
-		if validation_board.path(player_one_start, player_two_start).is_empty():
-			errors.append(&"starts_disconnected")
 	return errors
 
 

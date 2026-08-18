@@ -18,7 +18,7 @@ func play(
 				await _play_attack(event, ship_views)
 			&"ship_damaged":
 				await _play_damage(event, ship_views)
-			&"turn_changed":
+			&"player_changed":
 				await _play_turn_change(event, sidebar)
 			&"battle_won":
 				sidebar.show_result(event.data["winner"])
@@ -30,7 +30,7 @@ func clear() -> void:
 
 
 func _play_movement(event: BattleEvent, ship_views: Dictionary, tile_map: TileMapLayer) -> void:
-	var view: ShipView = ship_views[event.data["player"]]
+	var view: ShipView = ship_views[event.data["ship_id"]]
 	var path: Array = event.data["path"]
 	if skip_animations:
 		view.position = tile_map.map_to_local(path.back())
@@ -44,8 +44,8 @@ func _play_movement(event: BattleEvent, ship_views: Dictionary, tile_map: TileMa
 func _play_attack(event: BattleEvent, ship_views: Dictionary) -> void:
 	if skip_animations:
 		return
-	var attacker: ShipView = ship_views[event.data["attacker"]]
-	var target: ShipView = ship_views[event.data["target"]]
+	var attacker: ShipView = ship_views[event.data["attacker_id"]]
+	var target: ShipView = ship_views[event.data["target_id"]]
 	var projectile := Polygon2D.new()
 	projectile.polygon = PackedVector2Array([
 		Vector2(-6, 0), Vector2(0, -4), Vector2(6, 0), Vector2(0, 4),
@@ -60,7 +60,7 @@ func _play_attack(event: BattleEvent, ship_views: Dictionary) -> void:
 
 
 func _play_damage(event: BattleEvent, ship_views: Dictionary) -> void:
-	var target: ShipView = ship_views[event.data["player"]]
+	var target: ShipView = ship_views[event.data["ship_id"]]
 	target.hull = event.data["hull"]
 	if skip_animations:
 		target.displayed_hull = event.data["hull"]

@@ -1,9 +1,11 @@
-[gd_scene load_steps=9 format=3]
+[gd_scene load_steps=11 format=3]
 
 [ext_resource type="Script" path="res://scripts/battle_screen.gd" id="1_battle"]
 [ext_resource type="TileSet" path="res://resources/tiles/prototype_tileset.tres" id="2_tiles"]
-[ext_resource type="Resource" path="res://resources/maps/prototype_map.tres" id="3_map"]
-[ext_resource type="Resource" path="res://resources/ships/basic_ship.tres" id="4_ship"]
+[ext_resource type="Resource" path="res://resources/maps/fleet_hex_map.tres" id="3_map"]
+[ext_resource type="Resource" path="res://resources/ships/sloop.tres" id="4_sloop"]
+[ext_resource type="Resource" path="res://resources/ships/frigate.tres" id="4_frigate"]
+[ext_resource type="Resource" path="res://resources/ships/galleon.tres" id="4_galleon"]
 [ext_resource type="PackedScene" path="res://scenes/components/tactical_sidebar.tscn" id="5_sidebar"]
 [ext_resource type="Theme" path="res://resources/themes/nautical_theme.tres" id="6_theme"]
 [ext_resource type="Script" path="res://scripts/presentation/highlight_layer.gd" id="7_highlights"]
@@ -18,7 +20,7 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_battle")
 map_definition = ExtResource("3_map")
-ship_definition = ExtResource("4_ship")
+ship_definitions = [ExtResource("4_sloop"), ExtResource("4_frigate"), ExtResource("4_galleon")]
 
 [node name="Background" type="ColorRect" parent="."]
 layout_mode = 1
@@ -56,6 +58,7 @@ mouse_filter = 1
 
 [node name="BoardRoot" type="Node2D" parent="Margin/Layout/BattlefieldPanel"]
 unique_name_in_owner = true
+scale = Vector2(0.88, 0.88)
 
 [node name="TileMapLayer" type="TileMapLayer" parent="Margin/Layout/BattlefieldPanel/BoardRoot"]
 unique_name_in_owner = true

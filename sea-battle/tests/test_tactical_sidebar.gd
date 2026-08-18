@@ -128,13 +128,6 @@ func run(t: TestContext, tree: SceneTree) -> void:
 	sidebar.show_rejection(&"invalid_target", FleetBattleState.Player.ONE)
 	t.expect_eq(sidebar.message_label.text, "Choose an enemy ship", "target rejection uses fleet wording")
 
-	var duel_state := BattleState.new()
-	duel_state.setup(_make_board(), load("res://resources/ships/basic_ship.tres"), Vector2i(-3, 0), Vector2i(3, 0))
-	sidebar.render(duel_state)
-	t.expect_false(sidebar.roster_container.visible, "legacy duel render hides fleet roster")
-	t.expect_eq(sidebar.ship_name_label.text, "THE MARINER", "legacy duel detail remains compatible")
-	t.expect_eq(sidebar.end_turn_button.text, "END TURN", "legacy duel keeps its action wording")
-
 	sidebar.queue_free()
 	await tree.process_frame
 

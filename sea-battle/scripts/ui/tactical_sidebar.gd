@@ -49,30 +49,6 @@ func _ready() -> void:
 		play_again_button.pressed.connect(func() -> void: play_again_pressed.emit())
 
 
-func render(state: BattleState) -> void:
-	roster_container.hide()
-	round_label.hide()
-	weight_label.hide()
-	role_label.hide()
-	end_turn_button.text = "END TURN"
-	var ship := state.active_ship()
-	active_player_label.text = "PLAYER %d" % state.active_player
-	ship_name_label.text = ship.definition.display_name.to_upper()
-	hull_label.text = "%d / %d" % [ship.hull, ship.definition.max_hull]
-	hull_bar.max_value = ship.definition.max_hull
-	hull_bar.value = ship.hull
-	stats_label.text = "MOVE %d   RANGE %d   DAMAGE %d" % [
-		ship.definition.movement,
-		ship.definition.attack_range,
-		ship.definition.damage,
-	]
-	action_state_label.text = "%s · %s" % [
-		"MOVE USED" if ship.movement_used else "MOVE READY",
-		"ATTACK USED" if ship.attack_used else "ATTACK READY",
-	]
-	end_turn_button.disabled = state.is_game_over()
-
-
 func render_fleet(state: FleetBattleState) -> void:
 	roster_container.show()
 	round_label.show()

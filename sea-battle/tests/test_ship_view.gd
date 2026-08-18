@@ -61,13 +61,6 @@ func run(t: TestContext, tree: SceneTree) -> void:
 	t.expect_true(sloop.visible, "restored presentation is visible")
 	t.expect_true(sloop.is_processing_input(), "restored presentation accepts input")
 
-	var duel_view := ShipView.new()
-	duel_view.configure(2, load(CLASS_PATHS[&"frigate"]))
-	t.expect_eq(duel_view.player, 2, "duel configuration preserves owner")
-	t.expect_eq(duel_view.max_hull, 4, "duel configuration preserves class hull")
-	t.expect_eq(duel_view.ship_id, &"", "duel configuration leaves fleet id empty")
-	duel_view.free()
-
 	for view in [sloop, frigate, galleon, opposing_sloop]:
 		view.free()
 
@@ -80,5 +73,5 @@ func _fleet_view(
 ) -> ShipView:
 	var view := ShipView.new()
 	tree.root.add_child(view)
-	view.configure_fleet(id, owner, load(CLASS_PATHS[class_id]))
+	view.configure(id, owner, load(CLASS_PATHS[class_id]))
 	return view

@@ -3,12 +3,13 @@ extends Node2D
 
 var reachable_cells: Array[Vector2i] = []
 var path_cells: Array[Vector2i] = []
+var target_cells: Array[Vector2i] = []
+var hovered_target_cell := Vector2i.ZERO
+var has_hovered_target := false
 
 var _tile_map: TileMapLayer
 var _selection_cell := Vector2i.ZERO
 var _has_selection := false
-var _target_cell := Vector2i.ZERO
-var _has_target := false
 
 
 func configure(tile_map: TileMapLayer) -> void:
@@ -32,22 +33,30 @@ func show_path(cells: Array[Vector2i]) -> void:
 	queue_redraw()
 
 
-func show_target(cell: Vector2i) -> void:
-	_target_cell = cell
-	_has_target = true
+func show_targets(cells: Array[Vector2i]) -> void:
+	target_cells = cells.duplicate()
+	if has_hovered_target and not target_cells.has(hovered_target_cell):
+		has_hovered_target = false
 	queue_redraw()
 
 
-func clear_target() -> void:
-	_has_target = false
+func show_hovered_target(cell: Vector2i) -> void:
+	hovered_target_cell = cell
+	has_hovered_target = target_cells.has(cell)
+	queue_redraw()
+
+
+func clear_hovered_target() -> void:
+	has_hovered_target = false
 	queue_redraw()
 
 
 func clear() -> void:
 	reachable_cells.clear()
 	path_cells.clear()
+	target_cells.clear()
 	_has_selection = false
-	_has_target = false
+	has_hovered_target = false
 	queue_redraw()
 
 
@@ -69,12 +78,26 @@ func _draw() -> void:
 			draw_circle(point, 4.0, Color("f2f0df"))
 		for index in range(points.size() - 1):
 			_draw_route_chevron(points[index], points[index + 1])
-	if _has_target:
-		var target_center := _tile_map.map_to_local(_target_cell)
-		_draw_hex_outline(target_center, Color("c85f58"), 3.0)
-		draw_circle(target_center, 9.0, Color("f2f0df"), false, 2.0, true)
-		draw_line(target_center + Vector2(-14, 0), target_center + Vector2(14, 0), Color("f2f0df"), 2.0)
-		draw_line(target_center + Vector2(0, -14), target_center + Vector2(0, 14), Color("f2f0df"), 2.0)
+	for cell in target_cells:
+		var target_center := _tile_map.map_to_local(cell)
+		var hovered := has_hovered_target and cell == hovered_target_cell
+		var width := 5.0 if hovered else 3.0
+		var radius := 12.0 if hovered else 9.0
+		var crosshair_width := 3.5 if hovered else 2.0
+		_draw_hex_outline(target_center, Color("c85f58"), width)
+		draw_circle(target_center, radius, Color("f2f0df"), false, crosshair_width, true)
+		draw_line(
+			target_center + Vector2(-14, 0),
+			target_center + Vector2(14, 0),
+			Color("f2f0df"),
+			crosshair_width
+		)
+		draw_line(
+			target_center + Vector2(0, -14),
+			target_center + Vector2(0, 14),
+			Color("f2f0df"),
+			crosshair_width
+		)
 
 
 func _draw_hex_outline(center: Vector2, color: Color, width: float) -> void:

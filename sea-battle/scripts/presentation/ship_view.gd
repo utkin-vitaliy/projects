@@ -26,12 +26,7 @@ var displayed_hull := 0.0:
 		queue_redraw()
 
 
-func configure(owner: int, ship_definition: ShipDefinition) -> void:
-	ship_id = &""
-	_configure_profile(owner, ship_definition)
-
-
-func configure_fleet(id: StringName, owner: int, ship_definition: ShipDefinition) -> void:
+func configure(id: StringName, owner: int, ship_definition: ShipDefinition) -> void:
 	ship_id = id
 	_configure_profile(owner, ship_definition)
 

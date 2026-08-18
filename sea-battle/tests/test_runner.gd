@@ -7,7 +7,6 @@ const SUITES := [
 	"res://tests/test_fleet_battle_state.gd",
 	"res://tests/test_ship_view.gd",
 	"res://tests/test_tactical_sidebar.gd",
-	"res://tests/test_battle_state.gd",
 	"res://tests/test_battle_scene.gd",
 ]
 
