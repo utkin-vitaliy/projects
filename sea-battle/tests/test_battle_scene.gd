@@ -34,6 +34,9 @@ func run(t: TestContext, tree: SceneTree) -> void:
 
 	await test_multiple_targets_and_attack(t, tree, packed)
 	await test_used_and_sunk_selection_feedback(t, tree, packed)
+	await test_invalid_map_export_locks_without_partial_fleet(t, tree, packed)
+	await test_invalid_ship_definitions_lock_without_partial_fleet(t, tree, packed)
+	await test_real_movement_locks_during_animation(t, tree, packed)
 
 
 func test_initial_fleet_presentation(t: TestContext, battle: BattleScreen) -> void:
@@ -245,6 +248,118 @@ func test_used_and_sunk_selection_feedback(
 	t.expect_eq(battle.sidebar.message_label.text, "Ship has sunk", "sunk ship feedback is exact")
 	battle.queue_free()
 	await tree.process_frame
+
+
+func test_invalid_map_export_locks_without_partial_fleet(
+	t: TestContext,
+	tree: SceneTree,
+	packed: PackedScene
+) -> void:
+	var battle = packed.instantiate()
+	battle.map_definition = MapDefinition.new()
+	await _add_invalid_battle_without_expected_error_output(tree, battle)
+	t.expect_true(battle.input_locked, "invalid map export locks battlefield input")
+	t.expect_true(battle.sidebar.end_turn_button.disabled, "invalid map disables activation completion")
+	t.expect_true(battle.ship_views.is_empty(), "invalid map spawns no ship views")
+	t.expect_eq(battle.ship_container.get_child_count(), 0, "invalid map spawns no partial fleet nodes")
+	t.expect_true(battle.state.fleets.is_empty(), "invalid map creates no partial rules fleets")
+	t.expect_eq(
+		battle.sidebar.message_label.text,
+		"Invalid fleet battle setup",
+		"invalid map reports setup failure in the real sidebar"
+	)
+	battle.queue_free()
+	await tree.process_frame
+
+
+func test_invalid_ship_definitions_lock_without_partial_fleet(
+	t: TestContext,
+	tree: SceneTree,
+	packed: PackedScene
+) -> void:
+	var battle = packed.instantiate()
+	var sloop: ShipDefinition = load("res://resources/ships/sloop.tres")
+	var invalid_definitions: Array[ShipDefinition] = [
+		sloop,
+		sloop,
+		load("res://resources/ships/galleon.tres"),
+	]
+	battle.ship_definitions = invalid_definitions
+	await _add_invalid_battle_without_expected_error_output(tree, battle)
+	t.expect_true(battle.input_locked, "invalid ship definitions lock battlefield input")
+	t.expect_true(battle.sidebar.end_turn_button.disabled, "invalid ship definitions disable activation completion")
+	t.expect_true(battle.ship_views.is_empty(), "invalid ship definitions spawn no ship views")
+	t.expect_eq(
+		battle.ship_container.get_child_count(),
+		0,
+		"invalid ship definitions spawn no partial fleet nodes"
+	)
+	t.expect_true(battle.state.fleets.is_empty(), "invalid ship definitions create no partial rules fleets")
+	t.expect_eq(
+		battle.sidebar.message_label.text,
+		"Invalid fleet battle setup",
+		"invalid ship definitions report setup failure in the real sidebar"
+	)
+	battle.queue_free()
+	await tree.process_frame
+
+
+func test_real_movement_locks_during_animation(
+	t: TestContext,
+	tree: SceneTree,
+	packed: PackedScene
+) -> void:
+	var battle = packed.instantiate()
+	battle.skip_animations = false
+	tree.root.add_child(battle)
+	await tree.process_frame
+	var fleet_state: FleetBattleState = battle.get("state") as FleetBattleState
+	var sloop: FleetShipState = _ship(fleet_state, &"p1_sloop")
+	await battle.handle_cell_click(sloop.cell)
+	var destination := _adjacent_reachable_cell(fleet_state)
+	t.expect_true(destination != sloop.cell, "real animation fixture has an adjacent destination")
+	if destination == sloop.cell:
+		battle.queue_free()
+		await tree.process_frame
+		return
+
+	battle.handle_cell_click(destination)
+	t.expect_true(battle.input_locked, "real movement locks input while presentation is in flight")
+	battle.handle_roster_selection(&"p1_galleon")
+	t.expect_eq(
+		fleet_state.selected_ship_id,
+		&"p1_sloop",
+		"in-flight input cannot replace the authoritative selection"
+	)
+	await tree.create_timer(1.0).timeout
+	t.expect_false(battle.input_locked, "nonterminal movement unlocks input after presentation")
+	t.expect_eq(sloop.cell, destination, "awaited movement commits through fleet rules")
+	t.expect_eq(
+		battle.ship_views[&"p1_sloop"].position,
+		battle.tile_map.map_to_local(destination),
+		"animated stable-ID view finishes at the authoritative destination"
+	)
+	battle.queue_free()
+	await tree.process_frame
+
+
+func _add_invalid_battle_without_expected_error_output(
+	tree: SceneTree,
+	battle: BattleScreen
+) -> void:
+	var previous_error_output := Engine.print_error_messages
+	Engine.print_error_messages = false
+	tree.root.add_child(battle)
+	await tree.process_frame
+	Engine.print_error_messages = previous_error_output
+
+
+func _adjacent_reachable_cell(state: FleetBattleState) -> Vector2i:
+	var selected := state.selected_ship()
+	for cell in state.reachable_cells():
+		if state.board.distance(selected.cell, cell) == 1:
+			return cell
+	return selected.cell
 
 
 func _ship(state: FleetBattleState, ship_id: StringName) -> FleetShipState:
