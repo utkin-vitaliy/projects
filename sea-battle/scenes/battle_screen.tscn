@@ -1,0 +1,71 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/battle_screen.gd" id="1_battle"]
+[ext_resource type="TileSet" path="res://resources/tiles/prototype_tileset.tres" id="2_tiles"]
+[ext_resource type="Resource" path="res://resources/maps/prototype_map.tres" id="3_map"]
+[ext_resource type="Resource" path="res://resources/ships/basic_ship.tres" id="4_ship"]
+
+[node name="BattleScreen" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_battle")
+map_definition = ExtResource("3_map")
+ship_definition = ExtResource("4_ship")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.035, 0.09, 0.125, 1)
+
+[node name="Margin" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 24
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 24
+
+[node name="Layout" type="HBoxContainer" parent="Margin"]
+layout_mode = 2
+theme_override_constants/separation = 24
+
+[node name="BattlefieldPanel" type="Control" parent="Margin/Layout"]
+unique_name_in_owner = true
+clip_contents = true
+custom_minimum_size = Vector2(0, 672)
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 1
+
+[node name="BoardRoot" type="Node2D" parent="Margin/Layout/BattlefieldPanel"]
+unique_name_in_owner = true
+
+[node name="TileMapLayer" type="TileMapLayer" parent="Margin/Layout/BattlefieldPanel/BoardRoot"]
+unique_name_in_owner = true
+tile_set = ExtResource("2_tiles")
+
+[node name="Ships" type="Node2D" parent="Margin/Layout/BattlefieldPanel/BoardRoot"]
+unique_name_in_owner = true
+
+[node name="Highlights" type="Node2D" parent="Margin/Layout/BattlefieldPanel/BoardRoot"]
+unique_name_in_owner = true
+
+[node name="Effects" type="Node2D" parent="Margin/Layout/BattlefieldPanel/BoardRoot"]
+unique_name_in_owner = true
+
+[node name="SidebarSlot" type="MarginContainer" parent="Margin/Layout"]
+custom_minimum_size = Vector2(320, 0)
+layout_mode = 2
