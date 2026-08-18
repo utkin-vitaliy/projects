@@ -1,0 +1,130 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/fleet_roster_row.gd" id="1_row"]
+
+[sub_resource type="StyleBoxFlat" id="RowNormal"]
+bg_color = Color(0.055, 0.145, 0.19, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.286, 0.431, 0.478, 1)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+
+[sub_resource type="StyleBoxFlat" id="RowHover"]
+bg_color = Color(0.09, 0.22, 0.278, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.835, 0.651, 0.325, 1)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+
+[sub_resource type="StyleBoxFlat" id="RowPressed"]
+bg_color = Color(0.043, 0.11, 0.145, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.659, 0.478, 0.224, 1)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+
+[sub_resource type="StyleBoxFlat" id="RowDisabled"]
+bg_color = Color(0.075, 0.125, 0.145, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.208, 0.294, 0.322, 1)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+
+[sub_resource type="StyleBoxFlat" id="RowFocus"]
+bg_color = Color(0, 0, 0, 0)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.949, 0.941, 0.875, 1)
+corner_radius_top_left = 5
+corner_radius_top_right = 5
+corner_radius_bottom_right = 5
+corner_radius_bottom_left = 5
+
+[node name="FleetRosterRow" type="Button"]
+custom_minimum_size = Vector2(0, 64)
+layout_mode = 2
+focus_mode = 2
+theme_override_styles/normal = SubResource("RowNormal")
+theme_override_styles/hover = SubResource("RowHover")
+theme_override_styles/pressed = SubResource("RowPressed")
+theme_override_styles/disabled = SubResource("RowDisabled")
+theme_override_styles/focus = SubResource("RowFocus")
+script = ExtResource("1_row")
+
+[node name="RowMargin" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 11
+theme_override_constants/margin_top = 7
+theme_override_constants/margin_right = 9
+theme_override_constants/margin_bottom = 7
+
+[node name="RowContent" type="HBoxContainer" parent="RowMargin"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 7
+
+[node name="ClassIcon" type="Control" parent="RowMargin/RowContent"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(42, 42)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="Identity" type="VBoxContainer" parent="RowMargin/RowContent"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_override_constants/separation = 3
+
+[node name="ClassName" type="Label" parent="RowMargin/RowContent/Identity"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_font_sizes/font_size = 14
+text = "SLOOP"
+
+[node name="Hull" type="ProgressBar" parent="RowMargin/RowContent/Identity"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 14)
+layout_mode = 2
+mouse_filter = 2
+max_value = 2.0
+value = 2.0
+show_percentage = false
+
+[node name="Status" type="Label" parent="RowMargin/RowContent"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(48, 0)
+layout_mode = 2
+mouse_filter = 2
+theme_override_font_sizes/font_size = 11
+text = "READY"
+horizontal_alignment = 2
+vertical_alignment = 1
