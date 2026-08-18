@@ -38,6 +38,10 @@ func run(t: TestContext, tree: SceneTree) -> void:
 	t.expect_false(battle.state.selected, "selection cancels before an action")
 	t.expect_true(battle.highlights.reachable_cells.is_empty(), "cancel clears highlights")
 	await battle.handle_cell_click(player_one_start)
+	await battle.handle_cell_click(Vector2i(3, 5))
+	t.expect_eq(sidebar.message_label.text, "Blocked", "land click shows blocked feedback")
+	await battle.handle_cell_click(Vector2i(8, 7))
+	t.expect_eq(sidebar.message_label.text, "Out of range", "distant click shows range feedback")
 
 	var destination := Vector2i(2, 4)
 	battle.handle_cell_hover(destination)
@@ -98,6 +102,17 @@ func test_complete_match(t: TestContext, tree: SceneTree, packed: PackedScene) -
 	t.expect_eq(battle.state.ships[BattleState.Player.TWO].cell, original_two, "restart restores player two position")
 	t.expect_false(result_overlay.visible, "restart hides winner overlay")
 	t.expect_false(battle.input_locked, "restart unlocks battlefield input")
+	for replay_index in range(2):
+		battle.state.ships[BattleState.Player.ONE].cell = Vector2i(2, 4)
+		battle.state.ships[BattleState.Player.TWO].cell = Vector2i(4, 4)
+		battle.refresh_from_state()
+		for hit_index in range(5):
+			await attack_with_active_ship(battle)
+		t.expect_eq(battle.state.winner, BattleState.Player.ONE, "replay %d reaches a winner" % (replay_index + 2))
+		t.expect_true(result_overlay.visible, "replay %d shows its result" % (replay_index + 2))
+		battle.sidebar.play_again_pressed.emit()
+		await tree.process_frame
+		t.expect_false(result_overlay.visible, "replay %d clears its result" % (replay_index + 2))
 	battle.queue_free()
 	await tree.process_frame
 

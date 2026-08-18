@@ -21,3 +21,45 @@ func run(t: TestContext, _tree: SceneTree) -> void:
 	t.expect_true(map.terrain_at(map.player_two_start).walkable, "player two starts on walkable terrain")
 	t.expect_false(map.terrain_at(map.blocked_cells[0]).walkable, "blocked cells use land definition")
 	t.expect_eq(map.land_terrain.source_ids, [1, 2], "land exposes both art variants")
+	test_map_validation(t, map.water_terrain, map.land_terrain)
+
+
+func test_map_validation(
+	t: TestContext,
+	water: TerrainDefinition,
+	land: TerrainDefinition
+) -> void:
+	var neighbors := {
+		Vector2i(0, 0): [Vector2i(1, 0)],
+		Vector2i(1, 0): [Vector2i(0, 0), Vector2i(2, 0)],
+		Vector2i(2, 0): [Vector2i(1, 0)],
+	}
+	var definition := MapDefinition.new()
+	definition.size = Vector2i(3, 1)
+	definition.player_one_start = Vector2i(0, 0)
+	definition.player_two_start = Vector2i(2, 0)
+	definition.water_terrain = water
+	definition.land_terrain = land
+	t.expect_eq(definition.validate(neighbors), [], "valid map has no validation codes")
+
+	definition.player_two_start = Vector2i(0, 0)
+	t.expect_eq(definition.validate(neighbors), [&"overlapping_starts"], "overlap has stable code")
+	definition.player_two_start = Vector2i(3, 0)
+	t.expect_eq(definition.validate(neighbors), [&"start_outside_map"], "outside start has stable code")
+	definition.player_two_start = Vector2i(2, 0)
+	definition.blocked_cells = [Vector2i(2, 0)]
+	t.expect_eq(definition.validate(neighbors), [&"start_blocked"], "blocked start has stable code")
+	definition.blocked_cells = []
+	var disconnected := {
+		Vector2i(0, 0): [],
+		Vector2i(1, 0): [],
+		Vector2i(2, 0): [],
+	}
+	t.expect_eq(definition.validate(disconnected), [&"starts_disconnected"], "disconnected starts have stable code")
+	definition.water_terrain = null
+	definition.land_terrain = null
+	t.expect_eq(
+		definition.validate(neighbors),
+		[&"terrain_definition_missing"],
+		"missing terrain has stable code"
+	)

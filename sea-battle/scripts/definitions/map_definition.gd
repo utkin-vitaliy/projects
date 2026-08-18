@@ -19,3 +19,31 @@ func all_cells() -> Array[Vector2i]:
 
 func terrain_at(cell: Vector2i) -> TerrainDefinition:
 	return land_terrain if blocked_cells.has(cell) else water_terrain
+
+
+func validate(neighbors: Dictionary) -> Array[StringName]:
+	var errors: Array[StringName] = []
+	var starts_overlap := player_one_start == player_two_start
+	var starts_inside := _contains(player_one_start) and _contains(player_two_start)
+	var starts_blocked := (
+		blocked_cells.has(player_one_start)
+		or blocked_cells.has(player_two_start)
+	)
+	if starts_overlap:
+		errors.append(&"overlapping_starts")
+	if not starts_inside:
+		errors.append(&"start_outside_map")
+	if starts_blocked:
+		errors.append(&"start_blocked")
+	if starts_inside and not starts_overlap and not starts_blocked:
+		var validation_board := HexBoard.new()
+		validation_board.configure(all_cells(), blocked_cells, neighbors)
+		if validation_board.path(player_one_start, player_two_start).is_empty():
+			errors.append(&"starts_disconnected")
+	if water_terrain == null or land_terrain == null:
+		errors.append(&"terrain_definition_missing")
+	return errors
+
+
+func _contains(cell: Vector2i) -> bool:
+	return cell.x >= 0 and cell.y >= 0 and cell.x < size.x and cell.y < size.y

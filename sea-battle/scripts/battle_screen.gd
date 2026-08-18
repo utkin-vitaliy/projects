@@ -23,8 +23,12 @@ func _ready() -> void:
 	sidebar.end_turn_pressed.connect(_on_end_turn_pressed)
 	sidebar.play_again_pressed.connect(_on_play_again_pressed)
 	battlefield_panel.gui_input.connect(_on_battlefield_input)
-	_build_map()
 	var neighbors := _build_neighbors()
+	var validation_errors := map_definition.validate(neighbors)
+	if not validation_errors.is_empty():
+		_report_invalid_map(validation_errors)
+		return
+	_build_map()
 	board = HexBoard.new()
 	board.configure(map_definition.all_cells(), map_definition.blocked_cells, neighbors)
 	state = BattleState.new()
@@ -136,6 +140,10 @@ func handle_cell_click(cell: Vector2i) -> void:
 
 
 func handle_cell_hover(cell: Vector2i) -> void:
+	if state.selected and cell == state.opposing_ship().cell and state.can_attack():
+		sidebar.show_message("Attack · %d damage" % state.active_ship().definition.damage)
+		highlights.show_path([])
+		return
 	if input_locked or not state.selected or state.active_ship().movement_used:
 		highlights.show_path([])
 		return
@@ -174,10 +182,27 @@ func _present_command(result: CommandResult) -> void:
 func _show_attack_target_or_movement_message() -> void:
 	if state.can_attack():
 		highlights.show_target(state.opposing_ship().cell)
-		sidebar.show_message("Attack · %d damage" % state.active_ship().definition.damage)
 	else:
 		highlights.clear_target()
-		sidebar.show_message("Choose a highlighted destination")
+	if state.active_ship().movement_used:
+		sidebar.show_message("Choose a target or end turn")
+	else:
+		sidebar.show_message("Choose a destination or attack")
+
+
+func _report_invalid_map(errors: Array[StringName]) -> void:
+	var descriptions := {
+		&"overlapping_starts": "player starts overlap",
+		&"start_outside_map": "a player start is outside the map",
+		&"start_blocked": "a player start is blocked",
+		&"starts_disconnected": "player starts have no walkable route",
+		&"terrain_definition_missing": "a terrain definition is missing",
+	}
+	input_locked = true
+	sidebar.show_message("Invalid battlefield data")
+	sidebar.end_turn_button.disabled = true
+	for code in errors:
+		push_error("Invalid battlefield data: %s (%s)" % [descriptions.get(code, code), code])
 
 
 func _player_at(cell: Vector2i) -> int:
