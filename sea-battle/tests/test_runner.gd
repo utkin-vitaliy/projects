@@ -1,6 +1,9 @@
 extends SceneTree
 
-const SUITES := ["res://tests/test_definitions.gd"]
+const SUITES := [
+	"res://tests/test_definitions.gd",
+	"res://tests/test_hex_board.gd",
+]
 
 
 func _initialize() -> void:
