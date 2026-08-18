@@ -13,4 +13,4 @@ gun_port_count = 0
 icon_code = &"frigate"
 player_one_texture = ExtResource("2_player_one")
 player_two_texture = ExtResource("3_player_two")
-sprite_scale = 0.78
+sprite_scale = 0.39

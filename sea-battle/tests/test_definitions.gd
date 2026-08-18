@@ -44,17 +44,17 @@ func test_kenney_ship_texture_profiles(t: TestContext) -> void:
 		&"sloop": [
 			"res://assets/ships/kenney/player_one_sloop.png",
 			"res://assets/ships/kenney/player_two_sloop.png",
-			0.64,
+			0.32,
 		],
 		&"frigate": [
 			"res://assets/ships/kenney/player_one_frigate.png",
 			"res://assets/ships/kenney/player_two_frigate.png",
-			0.78,
+			0.39,
 		],
 		&"galleon": [
 			"res://assets/ships/kenney/player_one_galleon.png",
 			"res://assets/ships/kenney/player_two_galleon.png",
-			0.92,
+			0.46,
 		],
 	}
 	for path in CLASS_PATHS:
