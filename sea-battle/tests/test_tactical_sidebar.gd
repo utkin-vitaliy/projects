@@ -50,6 +50,7 @@ func run(t: TestContext, tree: SceneTree) -> void:
 	t.expect_eq(sloop_row.icon_code, &"sloop", "row uses authored sloop visual identity")
 	t.expect_eq(sloop_row.status_label.text, "READY", "unused ship is ready")
 	t.expect_false(sloop_row.disabled, "ready ship can be selected")
+	t.expect_eq(sloop_row.focus_mode, Control.FOCUS_ALL, "ready row accepts keyboard focus")
 	t.expect_eq(sloop_row.hull_bar.value, 2.0, "row renders current hull")
 	t.expect_eq(sloop_row.hull_bar.max_value, 2.0, "row renders maximum hull")
 	t.expect_eq(sloop_row.get("hull_copy"), "2 / 2", "row exposes exact current and maximum hull copy")
@@ -69,6 +70,9 @@ func run(t: TestContext, tree: SceneTree) -> void:
 	t.expect_true(sloop_row.disabled, "active row cannot be reselected")
 	t.expect_true(frigate_row.disabled, "used row cannot be selected")
 	t.expect_true(galleon_row.disabled, "sunk row cannot be selected")
+	t.expect_eq(sloop_row.focus_mode, Control.FOCUS_NONE, "active row is skipped by keyboard focus")
+	t.expect_eq(frigate_row.focus_mode, Control.FOCUS_NONE, "used row is skipped by keyboard focus")
+	t.expect_eq(galleon_row.focus_mode, Control.FOCUS_NONE, "sunk row is skipped by keyboard focus")
 	t.expect_eq(sidebar.ship_name_label.text, "SLOOP", "selected detail shows class")
 	t.expect_eq(sidebar.weight_label.text, "LIGHT", "selected detail shows weight")
 	t.expect_eq(
@@ -78,7 +82,35 @@ func run(t: TestContext, tree: SceneTree) -> void:
 	)
 	t.expect_eq(sidebar.hull_label.text, "2 / 2", "selected detail shows exact hull")
 	t.expect_eq(sidebar.stats_label.text, "MOVE 4   RANGE 2   DAMAGE 1", "selected detail shows exact stats")
+	t.expect_eq(
+		sidebar.action_state_label.text,
+		"MOVE READY · ATTACK READY",
+		"selected detail shows both actions ready"
+	)
 	t.expect_false(sidebar.end_turn_button.disabled, "selected ship enables activation completion")
+	t.expect_eq(
+		sidebar.end_turn_button.focus_mode,
+		Control.FOCUS_ALL,
+		"enabled end activation accepts keyboard focus"
+	)
+
+	var selected_sloop: FleetShipState = state.selected_ship()
+	selected_sloop.movement_used = true
+	sidebar.render_fleet(state)
+	t.expect_eq(
+		sidebar.action_state_label.text,
+		"MOVE USED · ATTACK READY",
+		"selected detail distinguishes spent movement"
+	)
+	selected_sloop.attack_used = true
+	sidebar.render_fleet(state)
+	t.expect_eq(
+		sidebar.action_state_label.text,
+		"MOVE USED · ATTACK USED",
+		"selected detail shows both actions spent"
+	)
+	selected_sloop.movement_used = false
+	selected_sloop.attack_used = false
 
 	state.cancel_selection()
 	state.fleets[FleetBattleState.Player.ONE].ship(&"p1_frigate").activation_used = false
