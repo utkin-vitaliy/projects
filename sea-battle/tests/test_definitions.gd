@@ -1,5 +1,11 @@
 extends RefCounted
 
+const CLASS_PATHS := [
+	"res://resources/ships/sloop.tres",
+	"res://resources/ships/frigate.tres",
+	"res://resources/ships/galleon.tres",
+]
+
 
 func run(t: TestContext, _tree: SceneTree) -> void:
 	var ship = load("res://resources/ships/basic_ship.tres")
@@ -10,6 +16,7 @@ func run(t: TestContext, _tree: SceneTree) -> void:
 	t.expect_eq(ship.movement, 3, "basic ship movement")
 	t.expect_eq(ship.attack_range, 2, "basic ship range")
 	t.expect_eq(ship.damage, 1, "basic ship damage")
+	test_fleet_classes(t)
 
 	var map = load("res://resources/maps/prototype_map.tres")
 	t.expect_not_null(map, "prototype map resource loads")
@@ -22,6 +29,28 @@ func run(t: TestContext, _tree: SceneTree) -> void:
 	t.expect_false(map.terrain_at(map.blocked_cells[0]).walkable, "blocked cells use land definition")
 	t.expect_eq(map.land_terrain.source_ids, [1, 2], "land exposes both art variants")
 	test_map_validation(t, map.water_terrain, map.land_terrain)
+
+
+func test_fleet_classes(t: TestContext) -> void:
+	var expected := {
+		&"sloop": ["Sloop", "Light", 2, 4, 2, 1],
+		&"frigate": ["Frigate", "Medium", 4, 3, 3, 1],
+		&"galleon": ["Galleon", "Heavy", 6, 2, 2, 2],
+	}
+	for path in CLASS_PATHS:
+		var definition: ShipDefinition = load(path)
+		t.expect_not_null(definition, "%s loads" % path)
+		if definition == null:
+			continue
+		var values: Array = expected[definition.class_id]
+		t.expect_eq(
+			[definition.display_name, definition.weight_label, definition.max_hull,
+				definition.movement, definition.attack_range, definition.damage],
+			values,
+			"%s has approved balance" % definition.class_id
+		)
+		t.expect_not_null(definition.visual_profile, "%s has visual profile" % definition.class_id)
+		t.expect_true(definition.visual_profile.hull_points.size() >= 6, "silhouette is drawable")
 
 
 func test_map_validation(

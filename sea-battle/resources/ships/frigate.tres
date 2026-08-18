@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="ShipDefinition" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/definitions/ship_definition.gd" id="1_ship"]
+[ext_resource type="Resource" path="res://resources/ship_visuals/frigate_visual.tres" id="2_visual"]
+
+[resource]
+script = ExtResource("1_ship")
+class_id = &"frigate"
+display_name = "Frigate"
+weight_label = "Medium"
+tactical_role = "Durable ranged-control ship"
+max_hull = 4
+movement = 3
+attack_range = 3
+damage = 1
+visual_profile = ExtResource("2_visual")
