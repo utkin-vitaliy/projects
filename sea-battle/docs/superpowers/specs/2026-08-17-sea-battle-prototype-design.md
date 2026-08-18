@@ -96,7 +96,7 @@ The initial ship definition contains:
 - Fixed attack damage.
 - Presentation references where appropriate.
 
-The initial terrain definition distinguishes walkable water from impassable land. Adding sand, reefs, hazards, or alternative art later should extend terrain data and presentation behavior without changing turn control or the input flow.
+The initial terrain definitions distinguish walkable water from impassable land and own their tile-source references. The handcrafted map references those definitions directly; rendering and walkability both consume the same data. Adding sand, reefs, hazards, or alternative art later therefore extends terrain data and presentation behavior without changing turn control or the input flow.
 
 Initial tuning values are:
 
@@ -140,7 +140,7 @@ Input is translated into explicit rules commands such as:
 - End the turn.
 - Reset the battle.
 
-The rules layer validates a command before mutating state. A successful command returns ordered domain events such as:
+The rules layer validates a command before mutating state. A rejected command returns a stable `StringName` reason code; the UI translates that code into player-facing copy. This keeps rule tests independent of wording and leaves localization possible without changing gameplay. A successful command returns typed, ordered domain events such as:
 
 - Ship selected.
 - Ship moved along a path.
@@ -160,7 +160,7 @@ After movement, or immediately after selecting a ship already able to attack, th
 
 The initial map contains only water and blocking land. Ships cannot enter or pass through land or the opposing ship's occupied cell. The pathfinder must find the shortest legal route around obstacles.
 
-Pathfinding uses an `AStar2D` graph built from the walkable cells in the `TileMapLayer`. Neighbor connections come from the tile map's hex topology rather than duplicated pixel or coordinate calculations.
+Pathfinding uses an `AStar2D` graph built from the walkable cells in the `TileMapLayer`. Neighbor connections come from the tile map's hex topology rather than duplicated pixel or coordinate calculations. An internal unit-cost `AStar2D` subclass makes every adjacent hex transition cost exactly one, independent of the coordinates used to store graph points.
 
 ## Interface Design
 
@@ -210,7 +210,7 @@ Exact durations are tuning values. Rules resolve before presentation begins, and
 
 ## Validation and Error Handling
 
-Invalid player commands do not mutate state. Common invalid actions produce brief contextual feedback in the sidebar rather than modal dialogs. Examples include `Out of range`, `Blocked`, and `Player 2's turn`.
+Invalid player commands do not mutate state. Rules return stable reason codes such as `out_of_range`, `blocked`, and `inactive_player`; the sidebar maps them to brief contextual feedback rather than modal dialogs.
 
 The handcrafted map is validated when the battle starts:
 

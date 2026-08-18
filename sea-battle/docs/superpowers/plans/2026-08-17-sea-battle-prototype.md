@@ -4,9 +4,9 @@
 
 **Goal:** Build a polished desktop-first local two-player Sea Battle prototype with one ship per player, a fixed hex map, movement, fixed-damage attacks, alternating turns, victory, and restart.
 
-**Architecture:** A scene-free GDScript rules model validates commands and returns ordered events. Godot scenes render the fixed map, ships, highlights, animation, and an editor-authored tactical sidebar; resource files hold ship, terrain, and map data.
+**Architecture:** A scene-free GDScript rules model validates commands, returns stable rejection codes, and emits typed ordered events. Godot scenes render the fixed map, ships, highlights, animation, and an editor-authored tactical sidebar; resource files are the shared source of truth for ship, terrain, and map data.
 
-**Tech Stack:** Godot 4.7.1, GDScript 2.0, `TileMapLayer`, `AStar2D`, custom `Resource` definitions, built-in headless test runner.
+**Tech Stack:** Godot 4.7.1, GDScript 2.0, `TileMapLayer`, unit-cost `AStar2D`, custom `Resource` definitions, built-in headless test runner.
 
 **Spec:** `sea-battle/docs/superpowers/specs/2026-08-17-sea-battle-prototype-design.md`
 
@@ -22,6 +22,14 @@
 - Build UI structure in editable `.tscn` scenes and style it through a reusable `Theme` resource.
 - Use the existing ocean and mountain artwork; keep additional terrain outside this plan.
 - Do not scaffold menus, settings, saving, networking, responsive layouts, multiple weapons, or additional ships.
+
+## Technical Review Decisions
+
+- Rule failures expose stable `StringName` codes; UI copy stays in the interface layer.
+- Domain events use a typed `BattleEvent` object rather than anonymous event dictionaries.
+- Hex graphs override `AStar2D` edge and heuristic costs so every adjacent transition costs one.
+- `MapDefinition` references real `TerrainDefinition` resources, and rendering plus walkability consume those same resources.
+- Tests assert rules behavior and reason codes; only interface integration tests assert player-facing copy.
 
 ---
 
@@ -53,6 +61,7 @@ sea-battle/
 │   ├── presentation/highlight_layer.gd
 │   ├── presentation/ship_view.gd
 │   ├── rules/battle_state.gd
+│   ├── rules/battle_event.gd
 │   ├── rules/command_result.gd
 │   ├── rules/hex_board.gd
 │   ├── rules/ship_state.gd
@@ -153,8 +162,10 @@ func run(t: TestContext, _tree: SceneTree) -> void:
     t.expect_not_null(map, "prototype map resource loads")
     t.expect_eq(map.size, Vector2i(11, 8), "prototype map size")
     t.expect_true(map.player_one_start != map.player_two_start, "starts are distinct")
-    t.expect_false(map.blocked_cells.has(map.player_one_start), "player one starts on water")
-    t.expect_false(map.blocked_cells.has(map.player_two_start), "player two starts on water")
+    t.expect_true(map.terrain_at(map.player_one_start).walkable, "player one starts on walkable terrain")
+    t.expect_true(map.terrain_at(map.player_two_start).walkable, "player two starts on walkable terrain")
+    t.expect_false(map.terrain_at(map.blocked_cells[0]).walkable, "blocked cells use land definition")
+    t.expect_eq(map.land_terrain.source_ids, [1, 2], "land exposes both art variants")
 ```
 
 - [ ] **Step 2: Run the test to verify missing resources fail**
@@ -191,7 +202,7 @@ extends Resource
 @export var id: StringName
 @export var display_name := ""
 @export var walkable := true
-@export var source_id := 0
+@export var source_ids: Array[int] = []
 @export var atlas_coords := Vector2i.ZERO
 ```
 
@@ -205,6 +216,8 @@ extends Resource
 @export var blocked_cells: Array[Vector2i] = []
 @export var player_one_start := Vector2i(1, 4)
 @export var player_two_start := Vector2i(9, 3)
+@export var water_terrain: TerrainDefinition
+@export var land_terrain: TerrainDefinition
 
 func all_cells() -> Array[Vector2i]:
     var cells: Array[Vector2i] = []
@@ -212,17 +225,20 @@ func all_cells() -> Array[Vector2i]:
         for x in range(size.x):
             cells.append(Vector2i(x, y))
     return cells
+
+func terrain_at(cell: Vector2i) -> TerrainDefinition:
+    return land_terrain if blocked_cells.has(cell) else water_terrain
 ```
 
 - [ ] **Step 4: Create the concrete definition resources**
 
 Create `basic_ship.tres` with `max_hull = 3`, `movement = 3`, `attack_range = 2`, and `damage = 1`.
 
-Create `water.tres` with `id = &"water"`, `walkable = true`, and tile source `0`.
+Create `water.tres` with `id = &"water"`, `walkable = true`, and `source_ids = [0]`.
 
-Create `land.tres` with `id = &"land"`, `walkable = false`, and tile source `1`.
+Create `land.tres` with `id = &"land"`, `walkable = false`, and `source_ids = [1, 2]` for both mountain variants.
 
-Create `prototype_map.tres` with:
+Create `prototype_map.tres` with external references to `water.tres` and `land.tres`, then set:
 
 ```gdscript
 size = Vector2i(11, 8)
@@ -235,6 +251,8 @@ blocked_cells = Array[Vector2i]([
 ])
 player_one_start = Vector2i(1, 4)
 player_two_start = Vector2i(9, 3)
+water_terrain = ExtResource("water")
+land_terrain = ExtResource("land")
 ```
 
 - [ ] **Step 5: Set the desktop project baseline**
@@ -267,7 +285,7 @@ Run:
 /home/vitaliy/.local/bin/godot --headless --path sea-battle -s res://tests/test_runner.gd
 ```
 
-Expected: import succeeds and the definition suite exits `0` with 10 passing assertions.
+Expected: import succeeds and the definition suite exits `0` with 12 passing assertions.
 
 - [ ] **Step 7: Commit the foundation**
 
@@ -340,7 +358,7 @@ Run the headless test command. Expected: failure because `HexBoard` is undefined
 
 - [ ] **Step 3: Implement `HexBoard` with two graphs**
 
-Use one `AStar2D` graph containing all cells for geometric distance and one excluding blocked cells for movement. Assign sequential integer point IDs and retain coordinate-to-ID and ID-to-coordinate dictionaries. Connect only neighbor pairs supplied to `configure`.
+Use one unit-cost `AStar2D` graph containing all cells for geometric distance and one excluding blocked cells for movement. Assign sequential integer point IDs and retain coordinate-to-ID and ID-to-coordinate dictionaries. Connect only neighbor pairs supplied to `configure`. Override graph cost because raw axial/offset coordinates do not have equal Euclidean distance in every hex-neighbor direction.
 
 Implement temporary occupancy by disabling occupied points in the movement graph before a query and enabling them afterward in all return paths:
 
@@ -348,11 +366,20 @@ Implement temporary occupancy by disabling occupied points in the movement graph
 class_name HexBoard
 extends RefCounted
 
+class UnitCostAStar:
+    extends AStar2D
+
+    func _compute_cost(_from_id: int, _to_id: int) -> float:
+        return 1.0
+
+    func _estimate_cost(_from_id: int, _to_id: int) -> float:
+        return 0.0
+
 var _cells := {}
 var _blocked := {}
 var _neighbors := {}
-var _movement := AStar2D.new()
-var _geometry := AStar2D.new()
+var _movement := UnitCostAStar.new()
+var _geometry := UnitCostAStar.new()
 var _coord_to_id := {}
 var _id_to_coord := {}
 
@@ -448,6 +475,7 @@ git commit -m "feat: add hex board pathfinding"
 
 **Files:**
 - Create: `sea-battle/scripts/rules/command_result.gd`
+- Create: `sea-battle/scripts/rules/battle_event.gd`
 - Create: `sea-battle/scripts/rules/ship_state.gd`
 - Create: `sea-battle/scripts/rules/battle_state.gd`
 - Create: `sea-battle/tests/test_battle_state.gd`
@@ -455,7 +483,7 @@ git commit -m "feat: add hex board pathfinding"
 
 **Interfaces:**
 - Consumes: `HexBoard` and `ShipDefinition`.
-- Produces: `CommandResult.ok`, `message`, and ordered `events` dictionaries.
+- Produces: `CommandResult.ok`, stable `reason: StringName`, and ordered `Array[BattleEvent]`.
 - Produces: `BattleState.setup(board, definition, player_one_start, player_two_start)`.
 - Produces: `select_ship(player)`, `move_active_ship(destination)`, `attack()`, `end_turn()`, and `reset()`.
 - Produces: `active_ship()`, `opposing_ship()`, `reachable_cells()`, `can_attack()`, and `is_game_over()` queries.
@@ -477,7 +505,7 @@ func run(t: TestContext, _tree: SceneTree) -> void:
     test_reset_restores_initial_state(t)
 ```
 
-Each helper creates fresh state. Assert exact messages (`"Player 1's turn"`, `"Out of range"`, `"Blocked"`, `"Movement already used"`, `"Battle is over"`) and exact event type order. For a successful attack that does not win, require:
+Each helper creates fresh state. Assert stable rejection codes (`&"inactive_player"`, `&"out_of_range"`, `&"blocked"`, `&"movement_used"`, `&"game_over"`) and exact event type order. For a successful attack that does not win, require:
 
 ```gdscript
 [&"ship_attacked", &"ship_damaged", &"turn_changed"]
@@ -491,9 +519,23 @@ For the winning attack, require:
 
 - [ ] **Step 2: Run tests and verify battle types are missing**
 
-Run the headless test command. Expected: failure because `BattleState`, `ShipState`, and `CommandResult` are undefined.
+Run the headless test command. Expected: failure because `BattleState`, `BattleEvent`, `ShipState`, and `CommandResult` are undefined.
 
 - [ ] **Step 3: Implement the small state types**
+
+Create `battle_event.gd`:
+
+```gdscript
+class_name BattleEvent
+extends RefCounted
+
+var type: StringName
+var data: Dictionary
+
+func _init(event_type: StringName, event_data: Dictionary = {}) -> void:
+    type = event_type
+    data = event_data
+```
 
 Create `command_result.gd`:
 
@@ -502,20 +544,20 @@ class_name CommandResult
 extends RefCounted
 
 var ok: bool
-var message: String
-var events: Array[Dictionary]
+var reason: StringName
+var events: Array[BattleEvent]
 
-static func success(new_events: Array[Dictionary]) -> CommandResult:
+static func success(new_events: Array[BattleEvent]) -> CommandResult:
     var result := CommandResult.new()
     result.ok = true
-    result.message = ""
+    result.reason = &""
     result.events = new_events
     return result
 
-static func failure(reason: String) -> CommandResult:
+static func failure(rejection: StringName) -> CommandResult:
     var result := CommandResult.new()
     result.ok = false
-    result.message = reason
+    result.reason = rejection
     result.events = []
     return result
 ```
@@ -593,11 +635,11 @@ func is_game_over() -> bool:
 
 func select_ship(player: int) -> CommandResult:
     if is_game_over():
-        return CommandResult.failure("Battle is over")
+        return CommandResult.failure(&"game_over")
     if player != active_player:
-        return CommandResult.failure("Player %d's turn" % active_player)
+        return CommandResult.failure(&"inactive_player")
     if ships[player].is_destroyed():
-        return CommandResult.failure("Battle is over")
+        return CommandResult.failure(&"game_over")
     selected = true
     return CommandResult.success([_event(&"ship_selected", {"player": player})])
 
@@ -611,19 +653,19 @@ func reachable_cells() -> Array[Vector2i]:
 
 func move_active_ship(destination: Vector2i) -> CommandResult:
     if is_game_over():
-        return CommandResult.failure("Battle is over")
+        return CommandResult.failure(&"game_over")
     if not selected:
-        return CommandResult.failure("Select your ship")
+        return CommandResult.failure(&"selection_required")
     var ship := active_ship()
     if ship.movement_used:
-        return CommandResult.failure("Movement already used")
+        return CommandResult.failure(&"movement_used")
     if ship.attack_used:
-        return CommandResult.failure("Movement already used")
+        return CommandResult.failure(&"movement_used")
     if board.is_blocked(destination) or opposing_ship().cell == destination:
-        return CommandResult.failure("Blocked")
+        return CommandResult.failure(&"blocked")
     var route := board.path(ship.cell, destination, _occupied_by_opponent())
     if route.is_empty() or route.size() - 1 > ship.definition.movement:
-        return CommandResult.failure("Out of range")
+        return CommandResult.failure(&"out_of_range")
     ship.cell = destination
     ship.movement_used = true
     return CommandResult.success([_event(&"ship_moved", {
@@ -638,18 +680,18 @@ func can_attack() -> bool:
 
 func attack() -> CommandResult:
     if is_game_over():
-        return CommandResult.failure("Battle is over")
+        return CommandResult.failure(&"game_over")
     if not selected:
-        return CommandResult.failure("Select your ship")
+        return CommandResult.failure(&"selection_required")
     if active_ship().attack_used:
-        return CommandResult.failure("Attack already used")
+        return CommandResult.failure(&"attack_used")
     if not can_attack():
-        return CommandResult.failure("Out of range")
+        return CommandResult.failure(&"out_of_range")
     var attacker := active_ship()
     var target := opposing_ship()
     attacker.attack_used = true
     target.hull = maxi(0, target.hull - attacker.definition.damage)
-    var events: Array[Dictionary] = [
+    var events: Array[BattleEvent] = [
         _event(&"ship_attacked", {"attacker": attacker.player, "target": target.player}),
         _event(&"ship_damaged", {"player": target.player, "hull": target.hull})
     ]
@@ -662,7 +704,7 @@ func attack() -> CommandResult:
 
 func end_turn() -> CommandResult:
     if is_game_over():
-        return CommandResult.failure("Battle is over")
+        return CommandResult.failure(&"game_over")
     return CommandResult.success([_switch_turn()])
 
 func reset() -> CommandResult:
@@ -677,7 +719,7 @@ func reset() -> CommandResult:
         ship.reset_actions()
     return CommandResult.success([_event(&"battle_reset")])
 
-func _switch_turn() -> Dictionary:
+func _switch_turn() -> BattleEvent:
     active_player = _other_player(active_player)
     turn_number += 1
     selected = false
@@ -690,8 +732,8 @@ func _occupied_by_opponent() -> Dictionary:
 func _other_player(player: int) -> int:
     return Player.TWO if player == Player.ONE else Player.ONE
 
-func _event(type: StringName, data: Dictionary = {}) -> Dictionary:
-    return {"type": type, "data": data}
+func _event(type: StringName, data: Dictionary = {}) -> BattleEvent:
+    return BattleEvent.new(type, data)
 ```
 
 - [ ] **Step 5: Run the full rules suite**
@@ -776,10 +818,10 @@ Give the root a dark ocean background so unused space never shows the engine cle
 
 - [ ] **Step 5: Implement fixed-map setup in `BattleScreen`**
 
-Export the three definition resources and tile source IDs. In `_ready()`:
+Export the map and ship definition resources. In `_ready()`:
 
-1. Fill every map cell with the ocean tile.
-2. Replace each blocked coordinate with alternating mountain source IDs based on coordinate parity.
+1. Resolve each cell through `map_definition.terrain_at(cell)`.
+2. Select from that definition's `source_ids` using `posmod(cell.x + cell.y, source_ids.size())`, then paint its configured atlas coordinate. Water therefore always uses its one source while land alternates its two configured mountain variants without a terrain-specific branch.
 3. Center `BoardRoot` in `BattlefieldPanel` using the tile map's used rectangle.
 4. Build the neighbor dictionary by calling `tile_map.get_surrounding_cells(cell)` and filtering to `map_definition.all_cells()`.
 5. Configure `HexBoard` and `BattleState`.
@@ -863,7 +905,7 @@ git commit -m "feat: render fixed sea battle map"
 **Interfaces:**
 - Consumes: read-only `BattleState` state.
 - Produces: `signal end_turn_pressed`, `signal play_again_pressed`.
-- Produces: `render(state)`, `show_message(text)`, `show_turn_banner(player)`, and `show_result(winner)`.
+- Produces: `render(state)`, `show_message(text)`, `show_rejection(reason, active_player)`, `show_turn_banner(player)`, and `show_result(winner)`.
 
 - [ ] **Step 1: Extend the scene test with failing sidebar expectations**
 
@@ -921,11 +963,11 @@ Add a full-screen sibling `OverlayLayer` to the battle root with `TurnBanner` an
 
 - [ ] **Step 5: Implement sidebar state rendering and signals**
 
-Cache child controls with typed `@onready` variables. `render(state)` must derive all visible text from the active `ShipState`, including action readiness. Connect the two buttons to the public signals. `show_message` updates only the message label. `show_turn_banner` and `show_result` control the overlay nodes supplied through exported `NodePath` properties.
+Cache child controls with typed `@onready` variables. `render(state)` must derive all visible text from the active `ShipState`, including action readiness. Connect the two buttons to the public signals. `show_message` updates only the message label. `show_rejection` maps stable rule codes to UI copy: `selection_required` → `Select your ship`, `movement_used` → `Movement already used`, `attack_used` → `Attack already used`, `blocked` → `Blocked`, `out_of_range` → `Out of range`, `inactive_player` → `Player N's turn`, and `game_over` → `Battle is over`. `show_turn_banner` and `show_result` control the overlay nodes supplied through exported `NodePath` properties.
 
 - [ ] **Step 6: Wire sidebar rendering from `BattleScreen`**
 
-Instance the sidebar scene in `SidebarSlot`, connect its signals, and call `sidebar.render(state)` after setup and after every successful command. Invalid commands call `sidebar.show_message(result.message)` without changing ship positions or action labels.
+Instance the sidebar scene in `SidebarSlot`, connect its signals, and call `sidebar.render(state)` after setup and after every successful command. Invalid commands call `sidebar.show_rejection(result.reason, state.active_player)` without changing ship positions or action labels.
 
 - [ ] **Step 7: Run the tests and inspect the theme manually**
 
@@ -1126,7 +1168,7 @@ git commit -m "feat: complete local two-player battle loop"
 - Modify: `README.md`
 
 **Interfaces:**
-- Produces: `MapDefinition.validate(neighbors) -> PackedStringArray`.
+- Produces: `MapDefinition.validate(neighbors) -> Array[StringName]`.
 - Produces: final player-facing messages and non-color highlight cues.
 - Produces: documented run and test commands.
 
@@ -1139,7 +1181,7 @@ Test these invalid maps independently:
 - A start is blocked.
 - The two starts have no walkable route.
 
-Require exact validation messages in stable order. Extend the scene test to verify clicking land shows `Blocked` and clicking beyond movement shows `Out of range`. Verify center dots, route chevrons, and the attack crosshair during the manual acceptance pass because they are draw commands rather than state.
+Require stable validation codes in deterministic order: `overlapping_starts`, `start_outside_map`, `start_blocked`, `starts_disconnected`, and `terrain_definition_missing`. Extend the scene test to verify clicking land shows `Blocked` and clicking beyond movement shows `Out of range`. Verify center dots, route chevrons, and the attack crosshair during the manual acceptance pass because they are draw commands rather than state.
 
 - [ ] **Step 2: Run tests and verify validation is absent**
 
@@ -1147,7 +1189,7 @@ Run the headless test command. Expected: failures on `MapDefinition.validate` an
 
 - [ ] **Step 3: Implement startup validation without UI recovery paths**
 
-`MapDefinition.validate(neighbors)` returns all structural errors. `BattleScreen._ready()` checks them before creating state. If errors exist, call `push_error` once per message, disable input, and show `Invalid battlefield data` in the sidebar. Do not silently repair authored map data.
+`MapDefinition.validate(neighbors)` returns all structural error codes. `BattleScreen._ready()` checks them before creating state. If errors exist, map each code to a clear development log message, disable input, and show `Invalid battlefield data` in the sidebar. Do not silently repair authored map data.
 
 Validate connectivity by constructing a temporary `HexBoard` and checking for a non-empty path between the starts.
 
