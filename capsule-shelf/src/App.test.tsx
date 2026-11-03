@@ -42,6 +42,20 @@ async function addCapsules(name: string, amount: number) {
 }
 
 describe("Capsule Shelf dashboard", () => {
+  it("switches to recipes and back without losing inventory quantities", async () => {
+    render(<App />);
+    await waitForReady();
+    await addCapsules("Arpeggio", 3);
+
+    fireEvent.click(screen.getByRole("button", { name: "Рецепты" }));
+    expect(screen.getByRole("heading", { name: "Рецепты для твоей полки" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Капучино" })).toBeInTheDocument();
+    expect(screen.queryByLabelText("Количество Arpeggio")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Капсулы" }));
+    expect(screen.getByLabelText("Количество Arpeggio")).toHaveValue(3);
+  });
+
   it("loads the file before enabling stock controls and writes quantity changes to the API", async () => {
     render(<App />);
     await waitForReady();

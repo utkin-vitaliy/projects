@@ -1,10 +1,13 @@
+import { useState } from "react";
 import { CapsuleGrid } from "./components/CapsuleGrid";
 import { InventoryFilters } from "./components/InventoryFilters";
 import { InventorySummary } from "./components/InventorySummary";
+import { RecipesPage } from "./components/RecipesPage";
 import { capsules as fullCatalog } from "./data/capsules";
 import { useInventory } from "./features/inventory/useInventory";
 
 export default function App() {
+  const [activeView, setActiveView] = useState<"inventory" | "recipes">("inventory");
   const {
     capsules,
     inventory,
@@ -34,8 +37,25 @@ export default function App() {
         <div className="line-chip"><span className="line-chip__dot" /> Nespresso Original</div>
       </header>
 
+      <nav className="page-nav" aria-label="Разделы приложения">
+        <button
+          aria-current={activeView === "inventory" ? "page" : undefined}
+          className={`page-nav__button${activeView === "inventory" ? " is-active" : ""}`}
+          onClick={() => setActiveView("inventory")}
+          type="button"
+        >Капсулы</button>
+        <button
+          aria-current={activeView === "recipes" ? "page" : undefined}
+          className={`page-nav__button${activeView === "recipes" ? " is-active" : ""}`}
+          onClick={() => setActiveView("recipes")}
+          type="button"
+        >Рецепты</button>
+      </nav>
+
       {!ready ? (
         <p className="inventory-loading" role="status">Загружаю данные с диска…</p>
+      ) : activeView === "recipes" ? (
+        <RecipesPage />
       ) : (
         <>
           <InventorySummary
