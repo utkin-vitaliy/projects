@@ -1,0 +1,485 @@
+{
+  "version": 1,
+  "inventory": {
+    "arpeggio": {
+      "quantity": 11,
+      "favorite": false,
+      "threshold": 5,
+      "note": {
+        "rating": null,
+        "tastingNotes": "",
+        "recipes": "",
+        "suitableFor": "",
+        "unsuitableFor": ""
+      }
+    },
+    "ristretto": {
+      "quantity": 11,
+      "favorite": false,
+      "threshold": 5,
+      "note": {
+        "rating": null,
+        "tastingNotes": "",
+        "recipes": "",
+        "suitableFor": "",
+        "unsuitableFor": ""
+      }
+    },
+    "napoli": {
+      "quantity": 21,
+      "favorite": false,
+      "threshold": 5,
+      "note": {
+        "rating": null,
+        "tastingNotes": "",
+        "recipes": "",
+        "suitableFor": "",
+        "unsuitableFor": ""
+      }
+    },
+    "kazaar": {
+      "quantity": 21,
+      "favorite": false,
+      "threshold": 5,
+      "note": {
+        "rating": null,
+        "tastingNotes": "",
+        "recipes": "",
+        "suitableFor": "",
+        "unsuitableFor": ""
+      }
+    },
+    "roma": {
+      "quantity": 11,
+      "favorite": false,
+      "threshold": 5,
+      "note": {
+        "rating": null,
+        "tastingNotes": "",
+        "recipes": "",
+        "suitableFor": "",
+        "unsuitableFor": ""
+      }
+    },
+    "venezia": {
+      "quantity": 1,
+      "favorite": false,
+      "threshold": 5,
+      "note": {
+        "rating": null,
+        "tastingNotes": "",
+        "recipes": "",
+        "suitableFor": "",
+        "unsuitableFor": ""
+      }
+    },
+    "livanto": {
+      "quantity": 11,
+      "favorite": false,
+      "threshold": 5,
+      "note": {
+        "rating": null,
+        "tastingNotes": "",
+        "recipes": "",
+        "suitableFor": "",
+        "unsuitableFor": ""
+      }
+    },
+    "capriccio": {
+      "quantity": 10,
+      "favorite": false,
+      "threshold": 5,
+      "note": {
+        "rating": null,
+        "tastingNotes": "",
+        "recipes": "",
+        "suitableFor": "",
+        "unsuitableFor": ""
+      }
+    },
+    "volluto": {
+      "quantity": 1,
+      "favorite": false,
+      "threshold": 5,
+      "note": {
+        "rating": null,
+        "tastingNotes": "",
+        "recipes": "",
+        "suitableFor": "",
+        "unsuitableFor": ""
+      }
+    },
+    "cosi": {
+      "quantity": 1,
+      "favorite": false,
+      "threshold": 5,
+      "note": {
+        "rating": null,
+        "tastingNotes": "",
+        "recipes": "",
+        "suitableFor": "",
+        "unsuitableFor": ""
+      }
+    },
+    "colombia": {
+      "quantity": 81,
+      "favorite": false,
+      "threshold": 5,
+      "note": {
+        "rating": null,
+        "tastingNotes": "",
+        "recipes": "",
+        "suitableFor": "",
+        "unsuitableFor": ""
+      }
+    },
+    "crystal-spark": {
+      "quantity": 51,
+      "favorite": false,
+      "threshold": 5,
+      "note": {
+        "rating": null,
+        "tastingNotes": "",
+        "recipes": "",
+        "suitableFor": "",
+        "unsuitableFor": ""
+      }
+    },
+    "hazelnut-brownie": {
+      "quantity": 1,
+      "favorite": false,
+      "threshold": 5,
+      "note": {
+        "rating": null,
+        "tastingNotes": "",
+        "recipes": "",
+        "suitableFor": "",
+        "unsuitableFor": ""
+      }
+    },
+    "blueberry-cheesecake": {
+      "quantity": 1,
+      "favorite": false,
+      "threshold": 5,
+      "note": {
+        "rating": null,
+        "tastingNotes": "",
+        "recipes": "",
+        "suitableFor": "",
+        "unsuitableFor": ""
+      }
+    },
+    "pumpkin-spice-cake": {
+      "quantity": 10,
+      "favorite": false,
+      "threshold": 5,
+      "note": {
+        "rating": null,
+        "tastingNotes": "",
+        "recipes": "",
+        "suitableFor": "",
+        "unsuitableFor": ""
+      }
+    },
+    "yuzu-vanilla-over-ice": {
+      "quantity": 10,
+      "favorite": false,
+      "threshold": 5,
+      "note": {
+        "rating": null,
+        "tastingNotes": "",
+        "recipes": "",
+        "suitableFor": "",
+        "unsuitableFor": ""
+      }
+    },
+    "maple-pecan": {
+      "quantity": 11,
+      "favorite": false,
+      "threshold": 5,
+      "note": {
+        "rating": null,
+        "tastingNotes": "",
+        "recipes": "",
+        "suitableFor": "",
+        "unsuitableFor": ""
+      }
+    },
+    "arpeggio-decaffeinato": {
+      "quantity": 1,
+      "favorite": false,
+      "threshold": 5,
+      "note": {
+        "rating": null,
+        "tastingNotes": "",
+        "recipes": "",
+        "suitableFor": "",
+        "unsuitableFor": ""
+      }
+    },
+    "ristretto-decaffeinato": {
+      "quantity": 0,
+      "favorite": false,
+      "threshold": 5,
+      "note": {
+        "rating": null,
+        "tastingNotes": "",
+        "recipes": "",
+        "suitableFor": "",
+        "unsuitableFor": ""
+      }
+    },
+    "vaniglia-decaffeinato": {
+      "quantity": 1,
+      "favorite": false,
+      "threshold": 5,
+      "note": {
+        "rating": null,
+        "tastingNotes": "",
+        "recipes": "",
+        "suitableFor": "",
+        "unsuitableFor": ""
+      }
+    },
+    "volluto-decaffeinato": {
+      "quantity": 0,
+      "favorite": false,
+      "threshold": 5,
+      "note": {
+        "rating": null,
+        "tastingNotes": "",
+        "recipes": "",
+        "suitableFor": "",
+        "unsuitableFor": ""
+      }
+    },
+    "vienna-lungo-decaffeinato": {
+      "quantity": 1,
+      "favorite": false,
+      "threshold": 5,
+      "note": {
+        "rating": null,
+        "tastingNotes": "",
+        "recipes": "",
+        "suitableFor": "",
+        "unsuitableFor": ""
+      }
+    },
+    "athens-freddo-intenso": {
+      "quantity": 20,
+      "favorite": false,
+      "threshold": 5,
+      "note": {
+        "rating": null,
+        "tastingNotes": "",
+        "recipes": "",
+        "suitableFor": "",
+        "unsuitableFor": ""
+      }
+    },
+    "cape-town-lungo": {
+      "quantity": 11,
+      "favorite": false,
+      "threshold": 5,
+      "note": {
+        "rating": null,
+        "tastingNotes": "",
+        "recipes": "",
+        "suitableFor": "",
+        "unsuitableFor": ""
+      }
+    },
+    "miami-espresso": {
+      "quantity": 10,
+      "favorite": false,
+      "threshold": 5,
+      "note": {
+        "rating": null,
+        "tastingNotes": "",
+        "recipes": "",
+        "suitableFor": "",
+        "unsuitableFor": ""
+      }
+    },
+    "vienna-lungo": {
+      "quantity": 70,
+      "favorite": false,
+      "threshold": 5,
+      "note": {
+        "rating": null,
+        "tastingNotes": "",
+        "recipes": "",
+        "suitableFor": "",
+        "unsuitableFor": ""
+      }
+    },
+    "paris-espresso": {
+      "quantity": 1,
+      "favorite": false,
+      "threshold": 5,
+      "note": {
+        "rating": null,
+        "tastingNotes": "",
+        "recipes": "",
+        "suitableFor": "",
+        "unsuitableFor": ""
+      }
+    },
+    "tokyo-lungo": {
+      "quantity": 11,
+      "favorite": false,
+      "threshold": 5,
+      "note": {
+        "rating": null,
+        "tastingNotes": "",
+        "recipes": "",
+        "suitableFor": "",
+        "unsuitableFor": ""
+      }
+    },
+    "stockholm-lungo": {
+      "quantity": 11,
+      "favorite": false,
+      "threshold": 5,
+      "note": {
+        "rating": null,
+        "tastingNotes": "",
+        "recipes": "",
+        "suitableFor": "",
+        "unsuitableFor": ""
+      }
+    },
+    "shanghai-lungo": {
+      "quantity": 0,
+      "favorite": false,
+      "threshold": 5,
+      "note": {
+        "rating": null,
+        "tastingNotes": "",
+        "recipes": "",
+        "suitableFor": "",
+        "unsuitableFor": ""
+      }
+    },
+    "buenos-aires-lungo": {
+      "quantity": 0,
+      "favorite": false,
+      "threshold": 5,
+      "note": {
+        "rating": null,
+        "tastingNotes": "",
+        "recipes": "",
+        "suitableFor": "",
+        "unsuitableFor": ""
+      }
+    },
+    "kahawa-ya-congo": {
+      "quantity": 10,
+      "favorite": false,
+      "threshold": 5,
+      "note": {
+        "rating": null,
+        "tastingNotes": "",
+        "recipes": "",
+        "suitableFor": "",
+        "unsuitableFor": ""
+      }
+    },
+    "india": {
+      "quantity": 11,
+      "favorite": false,
+      "threshold": 5,
+      "note": {
+        "rating": null,
+        "tastingNotes": "",
+        "recipes": "",
+        "suitableFor": "",
+        "unsuitableFor": ""
+      }
+    },
+    "indonesia-fairtrade": {
+      "quantity": 1,
+      "favorite": false,
+      "threshold": 5,
+      "note": {
+        "rating": null,
+        "tastingNotes": "",
+        "recipes": "",
+        "suitableFor": "",
+        "unsuitableFor": ""
+      }
+    },
+    "nicaragua": {
+      "quantity": 21,
+      "favorite": false,
+      "threshold": 5,
+      "note": {
+        "rating": null,
+        "tastingNotes": "",
+        "recipes": "",
+        "suitableFor": "",
+        "unsuitableFor": ""
+      }
+    },
+    "nocciola": {
+      "quantity": 21,
+      "favorite": false,
+      "threshold": 5,
+      "note": {
+        "rating": null,
+        "tastingNotes": "",
+        "recipes": "",
+        "suitableFor": "",
+        "unsuitableFor": ""
+      }
+    },
+    "caramello": {
+      "quantity": 20,
+      "favorite": false,
+      "threshold": 5,
+      "note": {
+        "rating": null,
+        "tastingNotes": "",
+        "recipes": "",
+        "suitableFor": "",
+        "unsuitableFor": ""
+      }
+    },
+    "vaniglia": {
+      "quantity": 20,
+      "favorite": false,
+      "threshold": 5,
+      "note": {
+        "rating": null,
+        "tastingNotes": "",
+        "recipes": "",
+        "suitableFor": "",
+        "unsuitableFor": ""
+      }
+    },
+    "cioccolatino": {
+      "quantity": 21,
+      "favorite": false,
+      "threshold": 5,
+      "note": {
+        "rating": null,
+        "tastingNotes": "",
+        "recipes": "",
+        "suitableFor": "",
+        "unsuitableFor": ""
+      }
+    },
+    "scuro": {
+      "quantity": 10,
+      "favorite": false,
+      "threshold": 5,
+      "note": {
+        "rating": null,
+        "tastingNotes": "",
+        "recipes": "",
+        "suitableFor": "",
+        "unsuitableFor": ""
+      }
+    }
+  }
+}
