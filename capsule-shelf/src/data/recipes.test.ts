@@ -65,11 +65,7 @@ describe("Nespresso Original recipes", () => {
 
   it("includes a descriptive official Nespresso photo for each recipe", () => {
     for (const recipe of recipes) {
-      if (recipe.imageUrl.startsWith("http")) {
-        expect(new URL(recipe.imageUrl).hostname).toMatch(/(?:^|\.)nespresso\.(?:com|es)$/);
-      } else {
-        expect(recipe.imageUrl).toMatch(/(?:^|\/)recipe-book\/.+\.jpg$/);
-      }
+      expect(recipe.imageUrl).toMatch(/(?:^|\/)(?:images\/recipes|recipe-book)\/.+\.(?:jpg|png)$/);
       expect(recipe.imageAlt.trim().length).toBeGreaterThan(15);
     }
   });

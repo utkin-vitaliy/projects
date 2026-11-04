@@ -1,7 +1,7 @@
 import type { Capsule } from "../domain/capsules";
 
 const canadaCatalog = "https://www.nespresso.com/ca/en/order/capsules/original";
-const image = (media: string, file: string) => `https://www.nespresso.com/ecom/medias/sys_master/public/${media}/${file}?impolicy=small&imwidth=600&imdensity=1`;
+const image = (_media: string, file: string) => `${import.meta.env.BASE_URL}images/capsules/${encodeURIComponent(file)}`;
 const capsule = (id: string, name: string, flavor: string, category: Capsule["category"], slug: string, imageUrl: string, intensity?: number): Capsule => ({
   id, name, flavor, category, sourceUrl: `${canadaCatalog}/${slug}`, imageUrl, ...(intensity === undefined ? {} : { intensity }), imageFit: "contain",
 });
