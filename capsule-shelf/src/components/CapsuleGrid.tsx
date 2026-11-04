@@ -1,5 +1,6 @@
 import type { Capsule, CapsuleNote, InventoryEntry } from "../domain/capsules";
 import { CapsuleCard } from "./CapsuleCard";
+import { useLocale } from "../i18n/locale";
 
 type Props = {
   catalog: Capsule[];
@@ -13,8 +14,9 @@ type Props = {
 };
 
 export function CapsuleGrid({ catalog, inventory, lowStockIds, onQuantitySet, onFavoriteToggle, onThresholdChange, onNoteSave, onRecipeSelect }: Props) {
+  const { t } = useLocale();
   if (catalog.length === 0) {
-    return <div className="empty-filter" role="status"><span aria-hidden="true">✦</span><p>Здесь пока пусто</p><small>Отметь любимый сорт или проверь пороги запаса.</small></div>;
+    return <div className="empty-filter" role="status"><span aria-hidden="true">✦</span><p>{t("emptyTitle")}</p><small>{t("emptyTip")}</small></div>;
   }
 
   return (

@@ -1,6 +1,7 @@
 import type { InventoryFilter } from "../features/inventory/useInventory";
 import type { CategoryFilter } from "../features/inventory/useInventory";
 import { capsules } from "../data/capsules";
+import { useLocale } from "../i18n/locale";
 
 type Props = {
   value: InventoryFilter;
@@ -9,28 +10,20 @@ type Props = {
   onCategoryChange: (category: CategoryFilter) => void;
 };
 
-const filters: { id: InventoryFilter; label: string }[] = [
-  { id: "all", label: "Все сорта" },
-  { id: "favorites", label: "Избранное" },
-  { id: "low", label: "Пора пополнить" },
-];
-
-const categoryLabels = {
-  limited: "Лимитированные",
-  italian: "Итальянские",
-  decaffeinated: "Без кофеина",
-  world: "Кофейные культуры мира",
-  origins: "Кофе по происхождению",
-  flavoured: "Ароматизированные",
-  heritage: "Классика",
-} as const;
+const categoryKeys = ["limited", "italian", "decaffeinated", "world", "origins", "flavoured", "heritage"] as const;
 
 export function InventoryFilters({ value, onChange, category, onCategoryChange }: Props) {
+  const { t } = useLocale();
+  const filters = [
+    { id: "all" as const, label: t("allVarieties") },
+    { id: "favorites" as const, label: t("favorites") },
+    { id: "low" as const, label: t("restock") },
+  ];
   const populatedCategories = new Set(capsules.map(({ category: itemCategory }) => itemCategory));
-  const categories = (Object.keys(categoryLabels) as (keyof typeof categoryLabels)[]).filter((itemCategory) => populatedCategories.has(itemCategory));
+  const categories = categoryKeys.filter((itemCategory) => populatedCategories.has(itemCategory));
   return (
     <div className="filter-controls">
-      <div className="filter-tabs" role="group" aria-label="Фильтр сортов">
+      <div className="filter-tabs" role="group" aria-label={t("filterAria")}>
         {filters.map((filter) => (
           <button
             aria-pressed={value === filter.id}
@@ -44,10 +37,10 @@ export function InventoryFilters({ value, onChange, category, onCategoryChange }
         ))}
       </div>
       <label className="category-filter">
-        <span>Категория</span>
-        <select aria-label="Категория сортов" onChange={(event) => onCategoryChange(event.target.value as CategoryFilter)} value={category}>
-          <option value="all">Все категории</option>
-          {categories.map((itemCategory) => <option key={itemCategory} value={itemCategory}>{categoryLabels[itemCategory]}</option>)}
+        <span>{t("category")}</span>
+        <select aria-label={t("categoryAria")} onChange={(event) => onCategoryChange(event.target.value as CategoryFilter)} value={category}>
+          <option value="all">{t("allCategories")}</option>
+          {categories.map((itemCategory) => <option key={itemCategory} value={itemCategory}>{t(itemCategory === "heritage" ? "classic" : itemCategory)}</option>)}
         </select>
       </label>
     </div>

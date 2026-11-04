@@ -2,12 +2,18 @@ import { cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { recipes } from "../data/recipes";
 import { RecipesPage } from "./RecipesPage";
+import { LocaleProvider } from "../i18n/locale";
+
+function renderRecipesPage() {
+  localStorage.setItem("capsule-shelf:locale:v1", "ru");
+  return render(<LocaleProvider><RecipesPage /></LocaleProvider>);
+}
 
 afterEach(cleanup);
 
 describe("RecipesPage", () => {
   it("renders every Russian recipe with ingredients and numbered preparation steps", () => {
-    render(<RecipesPage />);
+    renderRecipesPage();
 
     expect(screen.getByRole("heading", { name: "Рецепты для твоей полки" })).toBeInTheDocument();
     const cards = screen.getAllByRole("article");
@@ -27,7 +33,7 @@ describe("RecipesPage", () => {
   });
 
   it("links each card to its official recipe source safely", () => {
-    render(<RecipesPage />);
+    renderRecipesPage();
 
     const links = screen.getAllByRole("link");
     expect(links).toHaveLength(23);
@@ -39,7 +45,7 @@ describe("RecipesPage", () => {
   });
 
   it("explains Original substitutions on adapted recipe cards", () => {
-    render(<RecipesPage />);
+    renderRecipesPage();
 
     for (const recipe of recipes.filter(({ adaptationNote }) => adaptationNote)) {
       const card = screen.getByRole("heading", { name: recipe.title }).closest("article");
@@ -48,7 +54,7 @@ describe("RecipesPage", () => {
   });
 
   it("uses the book photo background only for cards sourced from the recipe book", () => {
-    render(<RecipesPage />);
+    renderRecipesPage();
 
     for (const recipe of recipes) {
       const card = screen.getByRole("heading", { name: recipe.title }).closest("article");

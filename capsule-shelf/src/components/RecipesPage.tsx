@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { recipes } from "../data/recipes";
+import { useLocale } from "../i18n/locale";
+import { localizeRecipe } from "../i18n/catalogContent";
 
 type RecipeTemperature = "all" | "hot" | "cold";
 type Props = {
@@ -8,6 +10,7 @@ type Props = {
 };
 
 export function RecipesPage({ targetRecipeId = null, onTargetHandled = () => undefined }: Props) {
+  const { locale, t } = useLocale();
   const [temperature, setTemperature] = useState<RecipeTemperature>("all");
   const visibleRecipes = temperature === "all"
     ? recipes
@@ -26,14 +29,14 @@ export function RecipesPage({ targetRecipeId = null, onTargetHandled = () => und
     <section className="recipes-section" aria-labelledby="recipes-title">
       <div className="recipes-toolbar">
         <header className="recipes-heading">
-          <h2 id="recipes-title">Рецепты для твоей полки</h2>
+          <h2 id="recipes-title">{t("recipeHeading")}</h2>
         </header>
 
-        <div className="recipe-filters" role="group" aria-label="Фильтр по температуре напитка">
+        <div className="recipe-filters" role="group" aria-label={t("temperatureFilter")}>
           {([
-            ["all", "Все"],
-            ["hot", "Горячие"],
-            ["cold", "Холодные"],
+            ["all", "all"],
+            ["hot", "hot"],
+            ["cold", "cold"],
           ] as const).map(([value, label]) => {
             const count = value === "all" ? recipes.length : recipes.filter((recipe) => recipe.temperature === value).length;
             return (
@@ -44,7 +47,7 @@ export function RecipesPage({ targetRecipeId = null, onTargetHandled = () => und
                 onClick={() => setTemperature(value)}
                 type="button"
               >
-                {label} <span>{count}</span>
+                {t(label)} <span>{count}</span>
               </button>
             );
           })}
@@ -52,7 +55,9 @@ export function RecipesPage({ targetRecipeId = null, onTargetHandled = () => und
       </div>
 
       <div className="recipe-grid">
-        {visibleRecipes.map((recipe) => (
+        {visibleRecipes.map((item) => {
+          const recipe = localizeRecipe(item, locale);
+          return (
           <article className="recipe-card" id={`recipe-${recipe.id}`} key={recipe.id} tabIndex={-1}>
             <div className={`recipe-card__photo${recipe.sourcePage ? " recipe-card__photo--book" : ""}`}>
               <img src={recipe.imageUrl} alt={recipe.imageAlt} loading="lazy" />
@@ -63,19 +68,19 @@ export function RecipesPage({ targetRecipeId = null, onTargetHandled = () => und
               <span>{recipe.difficulty}</span>
             </div>
             <h3>{recipe.title}</h3>
-            <p className="recipe-card__capsule">Капсула: <strong>{recipe.capsule}</strong></p>
+            <p className="recipe-card__capsule">{t("capsuleLabel")} <strong>{recipe.capsule}</strong></p>
             {recipe.adaptationNote && <p className="recipe-card__adaptation">{recipe.adaptationNote}</p>}
 
             <div className="recipe-card__body">
               <div>
-                <h4>Ингредиенты</h4>
-                <ul aria-label="Ингредиенты">
+                <h4>{t("ingredients")}</h4>
+                <ul aria-label={t("ingredients")}>
                   {recipe.ingredients.map((ingredient) => <li key={ingredient}>{ingredient}</li>)}
                 </ul>
               </div>
               <div>
-                <h4>Приготовление</h4>
-                <ol aria-label="Приготовление">
+                <h4>{t("preparation")}</h4>
+                <ol aria-label={t("preparation")}>
                   {recipe.steps.map((step) => <li key={step}>{step}</li>)}
                 </ol>
               </div>
@@ -85,7 +90,8 @@ export function RecipesPage({ targetRecipeId = null, onTargetHandled = () => und
               {recipe.sourceLabel} <span aria-hidden="true">↗</span>
             </a>
           </article>
-        ))}
+          );
+        })}
       </div>
     </section>
   );

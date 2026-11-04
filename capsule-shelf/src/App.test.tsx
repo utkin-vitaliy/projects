@@ -12,6 +12,7 @@ function storedInventory() {
 
 beforeEach(() => {
   localStorage.clear();
+  localStorage.setItem("capsule-shelf:locale:v1", "ru");
 });
 afterEach(() => {
   cleanup();
@@ -30,6 +31,26 @@ async function addCapsules(name: string, amount: number) {
 }
 
 describe("Capsule Shelf dashboard", () => {
+  it("uses the browser's preferred supported language when no language has been saved", async () => {
+    localStorage.removeItem("capsule-shelf:locale:v1");
+    vi.spyOn(window.navigator, "languages", "get").mockReturnValue(["fr-CA", "en-CA"]);
+
+    render(<App />);
+
+    expect(await screen.findByRole("heading", { name: "Ma collection de café" })).toBeInTheDocument();
+  });
+
+  it("lets the user switch languages and remembers the selection", async () => {
+    render(<App />);
+    await waitForReady();
+
+    fireEvent.change(screen.getByRole("combobox", { name: "Язык" }), { target: { value: "en" } });
+
+    expect(screen.getByRole("heading", { name: "My Coffee Shelf" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Recipes" })).toBeInTheDocument();
+    expect(localStorage.getItem("capsule-shelf:locale:v1")).toBe("en");
+  });
+
   it("switches to recipes and back without losing inventory quantities", async () => {
     render(<App />);
     await waitForReady();
@@ -250,6 +271,7 @@ describe("Capsule Shelf dashboard", () => {
 
   it("keeps the in-memory shelf usable when browser storage is unavailable", async () => {
     vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => { throw new Error("blocked"); });
+    vi.spyOn(window.navigator, "languages", "get").mockReturnValue(["ru"]);
     render(<App />);
     await waitForReady();
 

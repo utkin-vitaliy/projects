@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { CapsuleNote, CapsuleRating } from "../domain/capsules";
+import { useLocale } from "../i18n/locale";
 
 type Props = {
   capsuleName: string;
@@ -7,13 +8,12 @@ type Props = {
   onSave: (note: CapsuleNote) => void;
 };
 
-const ratings: { value: Exclude<CapsuleRating, null>; label: string }[] = [
-  { value: "like", label: "Нравится" },
-  { value: "neutral", label: "Нейтрально" },
-  { value: "dislike", label: "Не нравится" },
+const ratings: { value: Exclude<CapsuleRating, null>; key: "like" | "neutral" | "dislike" }[] = [
+  { value: "like", key: "like" }, { value: "neutral", key: "neutral" }, { value: "dislike", key: "dislike" },
 ];
 
 export function CapsuleNotes({ capsuleName, note, onSave }: Props) {
+  const { t } = useLocale();
   const [draft, setDraft] = useState<CapsuleNote>(note);
   const [saved, setSaved] = useState(false);
 
@@ -29,8 +29,8 @@ export function CapsuleNotes({ capsuleName, note, onSave }: Props) {
 
   return (
     <div className="notes-editor">
-      <div className="notes-rating" role="group" aria-label={`Оценка ${capsuleName}`}>
-        <span className="notes-label">Твоё впечатление</span>
+      <div className="notes-rating" role="group" aria-label={t("notesAria", { name: capsuleName })}>
+        <span className="notes-label">{t("impression")}</span>
         <div className="rating-options">
           {ratings.map((rating) => (
             <button
@@ -40,38 +40,38 @@ export function CapsuleNotes({ capsuleName, note, onSave }: Props) {
               onClick={() => update("rating", rating.value)}
               type="button"
             >
-              {rating.label}
+              {t(rating.key)}
             </button>
           ))}
         </div>
       </div>
       <label className="notes-field">
-        <span>Вкус по твоим ощущениям</span>
+        <span>{t("tastingNotes")}</span>
         <textarea
-          aria-label="Личная заметка о вкусе"
+          aria-label={t("tastingInputLabel")}
           onChange={(event) => update("tastingNotes", event.target.value)}
-          placeholder="Например: мягкий, с шоколадным послевкусием"
+          placeholder={t("tastingPlaceholder")}
           rows={2}
           value={draft.tastingNotes}
         />
       </label>
       <label className="notes-field">
-        <span>Рецепты</span>
-        <textarea aria-label="Рецепты" onChange={(event) => update("recipes", event.target.value)} placeholder="Капучино, айс-латте…" rows={2} value={draft.recipes} />
+        <span>{t("recipesLabel")}</span>
+        <textarea aria-label={t("recipesLabel")} onChange={(event) => update("recipes", event.target.value)} placeholder={t("recipesPlaceholder")} rows={2} value={draft.recipes} />
       </label>
       <div className="notes-field-grid">
         <label className="notes-field">
-          <span>Подходит для</span>
-          <textarea aria-label="Подходит для" onChange={(event) => update("suitableFor", event.target.value)} placeholder="Эспрессо, напитков с молоком…" rows={2} value={draft.suitableFor} />
+          <span>{t("suitableFor")}</span>
+          <textarea aria-label={t("suitableFor")} onChange={(event) => update("suitableFor", event.target.value)} placeholder={t("suitablePlaceholder")} rows={2} value={draft.suitableFor} />
         </label>
         <label className="notes-field">
-          <span>Не подходит для</span>
-          <textarea aria-label="Не подходит для" onChange={(event) => update("unsuitableFor", event.target.value)} placeholder="Длинного лунго, если любишь покрепче…" rows={2} value={draft.unsuitableFor} />
+          <span>{t("unsuitableFor")}</span>
+          <textarea aria-label={t("unsuitableFor")} onChange={(event) => update("unsuitableFor", event.target.value)} placeholder={t("unsuitablePlaceholder")} rows={2} value={draft.unsuitableFor} />
         </label>
       </div>
       <div className="notes-footer">
-        {saved && <span className="notes-saved" role="status">Заметки сохранены</span>}
-        <button className="save-notes-button" onClick={save} type="button">Сохранить заметки {capsuleName}</button>
+        {saved && <span className="notes-saved" role="status">{t("notesSaved")}</span>}
+        <button className="save-notes-button" onClick={save} type="button">{t("saveNotes", { name: capsuleName })}</button>
       </div>
     </div>
   );

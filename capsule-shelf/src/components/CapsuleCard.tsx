@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { CapsuleNotes } from "./CapsuleNotes";
 import { createEmptyInventoryEntry, type Capsule, type CapsuleNote, type InventoryEntry } from "../domain/capsules";
 import { getRecipesForCapsule } from "../data/recipes";
+import { useLocale } from "../i18n/locale";
+import { localizeRecipe } from "../i18n/catalogContent";
 
 type Props = {
   capsule: Capsule;
@@ -19,13 +21,14 @@ function hasNotes(note: CapsuleNote): boolean {
 }
 
 export function CapsuleCard({ capsule, entry = createEmptyInventoryEntry(), lowStock, onQuantitySet, onFavoriteToggle, onThresholdChange, onNoteSave, onRecipeSelect }: Props) {
+  const { locale, t } = useLocale();
   const [notesOpen, setNotesOpen] = useState(false);
   const [recipesOpen, setRecipesOpen] = useState(false);
   const [imageFailed, setImageFailed] = useState(false);
   const [quantityDraft, setQuantityDraft] = useState(String(entry.quantity));
-  const matchingRecipes = getRecipesForCapsule(capsule.id);
+  const matchingRecipes = getRecipesForCapsule(capsule.id).map((recipe) => localizeRecipe(recipe, locale));
   useEffect(() => setQuantityDraft(String(entry.quantity)), [entry.quantity]);
-  const status = lowStock ? (entry.quantity === 0 ? "Закончился" : "Пора пополнить") : entry.favorite ? "В запасе" : "";
+  const status = lowStock ? (entry.quantity === 0 ? t("finished") : t("restock")) : entry.favorite ? t("inStock") : "";
   function commitQuantity() {
     const nextQuantity = Number(quantityDraft);
     if (quantityDraft.trim() !== "" && Number.isSafeInteger(nextQuantity) && nextQuantity >= 0) {
@@ -48,20 +51,20 @@ export function CapsuleCard({ capsule, entry = createEmptyInventoryEntry(), lowS
             src={capsule.imageUrl}
           />
         ) : (
-          <div className="photo-fallback" role="img" aria-label={`Фото ${capsule.name} временно недоступно`}>
+          <div className="photo-fallback" role="img" aria-label={`${capsule.name}: ${t("imageUnavailable")}`}>
             <span className="fallback-capsule" aria-hidden="true" />
-            <span>Фото сорта временно недоступно</span>
+            <span>{t("imageUnavailable")}</span>
           </div>
         )}
-        <a aria-label={`Открыть источник Nespresso для ${capsule.name} в новой вкладке`} className="photo-source" href={capsule.sourceUrl} rel="noreferrer" target="_blank" title="Источник Nespresso">
+        <a aria-label={t("sourceLink", { name: capsule.name })} className="photo-source" href={capsule.sourceUrl} rel="noreferrer" target="_blank" title={t("sourceTitle")}>
           <svg aria-hidden="true" viewBox="0 0 16 16"><path d="M9 3h4v4M13 3 7 9" /><path d="M11 9v3a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h3" /></svg>
         </a>
         <button
-          aria-label={`${entry.favorite ? "Убрать" : "Добавить"} ${capsule.name} в избранное`}
+          aria-label={entry.favorite ? t("removeFavorite", { name: capsule.name }) : t("addFavorite", { name: capsule.name })}
           aria-pressed={entry.favorite}
           className={`favorite-button${entry.favorite ? " is-favorite" : ""}`}
           onClick={() => onFavoriteToggle(capsule.id)}
-          title={entry.favorite ? "Убрать из избранного" : "Добавить в избранное"}
+          title={entry.favorite ? t("favoriteTitleRemove") : t("favoriteTitleAdd")}
           type="button"
         >
           <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z" /></svg>
@@ -71,10 +74,10 @@ export function CapsuleCard({ capsule, entry = createEmptyInventoryEntry(), lowS
       <div className="capsule-card__content">
         <div className="capsule-title-row">
           <div>
-            <p className="capsule-family">Original · Кофейные капсулы</p>
+            <p className="capsule-family">{t("capsuleFamily")}</p>
             <h2>{capsule.name}</h2>
           </div>
-          {typeof capsule.intensity === "number" && <span className="intensity-badge" aria-label={`Интенсивность ${capsule.intensity} из 13`}>{capsule.intensity}<small>/13</small></span>}
+          {typeof capsule.intensity === "number" && <span className="intensity-badge" aria-label={t("intensity", { value: capsule.intensity })}>{capsule.intensity}<small>/13</small></span>}
         </div>
         <p className="capsule-flavor">{capsule.flavor}</p>
 
@@ -83,12 +86,12 @@ export function CapsuleCard({ capsule, entry = createEmptyInventoryEntry(), lowS
             <button
               aria-controls={`capsule-recipes-${capsule.id}`}
               aria-expanded={recipesOpen}
-              aria-label={`Рецепты для ${capsule.name} (${matchingRecipes.length})`}
+              aria-label={t("recipesFor", { name: capsule.name, count: matchingRecipes.length })}
               className="capsule-recipe-toggle"
               onClick={() => setRecipesOpen((open) => !open)}
               type="button"
             >
-              <span>Рецепты <span className="capsule-recipe-count">{matchingRecipes.length}</span></span>
+              <span>{t("recipeCount")} <span className="capsule-recipe-count">{matchingRecipes.length}</span></span>
               <span aria-hidden="true" className="disclosure-chevron"><svg viewBox="0 0 16 16"><path d="m4 6 4 4 4-4" /></svg></span>
             </button>
             <div className="capsule-recipe-links" hidden={!recipesOpen} id={`capsule-recipes-${capsule.id}`}>
@@ -109,11 +112,11 @@ export function CapsuleCard({ capsule, entry = createEmptyInventoryEntry(), lowS
         )}
 
         <div className="stock-row">
-          <span className="stock-label">В наличии</span>
-          <div className="quantity-control" aria-label={`Управление остатком ${capsule.name}`}>
-            <button aria-label={`Уменьшить капсулы ${capsule.name}`} disabled={entry.quantity <= 0} onClick={() => onQuantitySet(capsule.id, Math.max(0, entry.quantity - 1))} type="button">−</button>
+          <span className="stock-label">{t("stock")}</span>
+          <div className="quantity-control" aria-label={t("manageStock", { name: capsule.name })}>
+            <button aria-label={t("reduceCapsule", { name: capsule.name })} disabled={entry.quantity <= 0} onClick={() => onQuantitySet(capsule.id, Math.max(0, entry.quantity - 1))} type="button">−</button>
             <input
-              aria-label={`Количество ${capsule.name}`}
+              aria-label={`${t("quantityLabel")} ${capsule.name}`}
               inputMode="numeric"
               max={Number.MAX_SAFE_INTEGER}
               min={0}
@@ -129,16 +132,16 @@ export function CapsuleCard({ capsule, entry = createEmptyInventoryEntry(), lowS
               type="number"
               value={quantityDraft}
             />
-            <button aria-label={`Добавить капсулу ${capsule.name}`} disabled={entry.quantity >= Number.MAX_SAFE_INTEGER} onClick={() => onQuantitySet(capsule.id, entry.quantity + 1)} type="button">+</button>
+            <button aria-label={t("addCapsule", { name: capsule.name })} disabled={entry.quantity >= Number.MAX_SAFE_INTEGER} onClick={() => onQuantitySet(capsule.id, entry.quantity + 1)} type="button">+</button>
           </div>
         </div>
         <div className="capsule-status-row">
           {status ? <span className={`stock-status${lowStock ? " stock-status--low" : ""}`}>{status}</span> : <span className="stock-status-placeholder">&nbsp;</span>}
           {entry.favorite && (
             <label className="threshold-control">
-              <span>Напомнить при</span>
+              <span>{t("remindAt")}</span>
               <input
-                aria-label={`Порог запаса ${capsule.name}`}
+                aria-label={`${t("thresholdLabel")} ${capsule.name}`}
                 min="0"
                 onChange={(event) => {
                   const value = event.currentTarget.valueAsNumber;
@@ -153,15 +156,15 @@ export function CapsuleCard({ capsule, entry = createEmptyInventoryEntry(), lowS
         </div>
 
         <div className="card-notes-row">
-          {hasNotes(entry.note) && <span className="note-indicator">Личная заметка добавлена</span>}
+          {hasNotes(entry.note) && <span className="note-indicator">{t("noteAdded")}</span>}
           <button
             aria-expanded={notesOpen}
-            aria-label={`Заметки ${capsule.name}`}
+            aria-label={t("notesButtonLabel", { name: capsule.name })}
             className="notes-toggle"
             onClick={() => setNotesOpen((open) => !open)}
             type="button"
           >
-            <span>{notesOpen ? "Свернуть заметки" : hasNotes(entry.note) ? "Мои заметки" : "Добавить заметку"}</span>
+            <span>{notesOpen ? t("collapseNotes") : hasNotes(entry.note) ? t("myNotes") : t("addNote")}</span>
             <span aria-hidden="true" className="disclosure-chevron"><svg viewBox="0 0 16 16"><path d="m4 6 4 4 4-4" /></svg></span>
           </button>
         </div>

@@ -1,4 +1,4 @@
-import { useRef, useState, type ChangeEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { CapsuleGrid } from "./components/CapsuleGrid";
 import { InventoryFilters } from "./components/InventoryFilters";
 import { InventorySummary } from "./components/InventorySummary";
@@ -6,8 +6,15 @@ import { RecipesPage } from "./components/RecipesPage";
 import { capsules as fullCatalog } from "./data/capsules";
 import { useInventory } from "./features/inventory/useInventory";
 import { parseInventoryBackup, serializeInventory } from "./storage/inventoryStorage";
+import { localizeCapsule } from "./i18n/catalogContent";
+import { LocaleProvider, useLocale, type Locale, type MessageKey } from "./i18n/locale";
 
 export default function App() {
+  return <LocaleProvider><CapsuleShelfApp /></LocaleProvider>;
+}
+
+function CapsuleShelfApp() {
+  const { locale, setLocale, t } = useLocale();
   const [activeView, setActiveView] = useState<"inventory" | "recipes">("inventory");
   const [pendingRecipeId, setPendingRecipeId] = useState<string | null>(null);
   const settingsFileInput = useRef<HTMLInputElement>(null);
@@ -29,6 +36,12 @@ export default function App() {
     updateThreshold,
     saveNote,
   } = useInventory();
+  const localizedCatalog = useMemo(() => fullCatalog.map((capsule) => localizeCapsule(capsule, locale)), [locale]);
+  const localizedCapsules = useMemo(() => capsules.map((capsule) => localizeCapsule(capsule, locale)), [capsules, locale]);
+
+  useEffect(() => {
+    document.documentElement.lang = locale;
+  }, [locale]);
 
   function openRecipe(recipeId: string) {
     setPendingRecipeId(recipeId);
@@ -59,7 +72,7 @@ export default function App() {
         importInventory(raw);
         return;
       }
-      if (window.confirm("Заменить текущие настройки данными из этого файла?")) {
+      if (window.confirm(t("replaceSettings"))) {
         importInventory(raw);
       }
     } catch {
@@ -74,37 +87,45 @@ export default function App() {
       <header className="page-header">
         <div className="brand-mark" aria-hidden="true"><svg viewBox="0 0 64 64"><path d="M47.9 15.3c8 7.2 7.2 21.3-1.7 32.4s-22.5 15-30.5 7.8S8.5 34.2 17.4 23.1s22.5-15 30.5-7.8Z" /><path className="brand-mark__crease" d="M18.9 49.6c8.2-2.7 14.8-8.2 19.5-16.1 4.5-7.5 5.7-14.2 3.7-20.1-1.6 1.5-3.1 3.2-4.5 5-3.2 4.3-5.1 9.2-7.8 13.9-2.8 4.8-6.6 9.1-11.2 12.5-1.1.8-2.3 1.6-3.6 2.3.9 1 2.2 1.9 3.9 2.5Z" /></svg></div>
         <div className="page-heading">
-          <h1>Моя кофейная полка</h1>
-          <p className="page-intro">Любимые вкусы, свежий запас и заметки — всё на виду.</p>
+          <h1>{t("title")}</h1>
+          <p className="page-intro">{t("subtitle")}</p>
         </div>
         <div className="line-chip"><span className="line-chip__dot" /> Nespresso Original</div>
+        <label className="language-switch">
+          <span>{t("language")}</span>
+          <select aria-label={t("language")} onChange={(event) => setLocale(event.target.value as Locale)} value={locale}>
+            <option value="en">English</option>
+            <option value="ru">Русский</option>
+            <option value="fr">Français</option>
+          </select>
+        </label>
       </header>
 
-      <nav className="page-nav" aria-label="Разделы приложения">
+      <nav className="page-nav" aria-label={t("navAria")}>
         <button
           aria-current={activeView === "inventory" ? "page" : undefined}
           className={`page-nav__button${activeView === "inventory" ? " is-active" : ""}`}
           onClick={() => setActiveView("inventory")}
           type="button"
-        >Капсулы</button>
+        >{t("inventoryTab")}</button>
         <button
           aria-current={activeView === "recipes" ? "page" : undefined}
           className={`page-nav__button${activeView === "recipes" ? " is-active" : ""}`}
           onClick={() => setActiveView("recipes")}
           type="button"
-        >Рецепты</button>
+        >{t("recipesTab")}</button>
       </nav>
 
-      {ready && storageNotice && <p className="storage-notice" role="status">{storageNotice}</p>}
+      {ready && storageNotice && <p className="storage-notice" role="status">{translateStorageNotice(storageNotice, t)}</p>}
 
       {!ready ? (
-        <p className="inventory-loading" role="status">Загружаю настройки…</p>
+        <p className="inventory-loading" role="status">{t("loading")}</p>
       ) : activeView === "recipes" ? (
         <RecipesPage onTargetHandled={() => setPendingRecipeId(null)} targetRecipeId={pendingRecipeId} />
       ) : (
         <>
           <InventorySummary
-            catalog={fullCatalog}
+            catalog={localizedCatalog}
             inventory={inventory}
             lowStockIds={lowStockIds}
             totalCapsules={totalCapsules}
@@ -114,13 +135,13 @@ export default function App() {
           <section className="catalog-section" aria-labelledby="catalog-title">
         <div className="catalog-heading-row">
           <div>
-            <h2 id="catalog-title">Сорта кофе <span>{fullCatalog.length}</span></h2>
+            <h2 id="catalog-title">{t("catalogTitle")} <span>{fullCatalog.length}</span></h2>
           </div>
-          <p className="catalog-hint">Введи количество капсул для каждого вкуса</p>
+          <p className="catalog-hint">{t("catalogHint")}</p>
         </div>
         <InventoryFilters category={categoryFilter} onCategoryChange={setCategoryFilter} onChange={setFilter} value={filter} />
         <CapsuleGrid
-          catalog={capsules}
+          catalog={localizedCapsules}
           inventory={inventory}
           lowStockIds={lowStockIds}
           onFavoriteToggle={toggleFavorite}
@@ -135,13 +156,13 @@ export default function App() {
 
       <footer className="page-footer">
         <div className="page-footer__storage">
-          <span>Настройки сохраняются в этом браузере</span>
+          <span>{t("browserStorage")}</span>
           <div className="settings-actions">
-            <button className="settings-action" disabled={!ready} onClick={downloadSettings} type="button">Скачать настройки</button>
-            <button className="settings-action" disabled={!ready} onClick={() => settingsFileInput.current?.click()} type="button">Загрузить файл</button>
+            <button className="settings-action" disabled={!ready} onClick={downloadSettings} type="button">{t("downloadSettings")}</button>
+            <button className="settings-action" disabled={!ready} onClick={() => settingsFileInput.current?.click()} type="button">{t("uploadFile")}</button>
             <input
               accept=".json,application/json"
-              aria-label="Выбрать файл настроек Capsule Shelf"
+              aria-label={t("fileInput")}
               className="visually-hidden"
               onChange={uploadSettings}
               ref={settingsFileInput}
@@ -149,8 +170,24 @@ export default function App() {
             />
           </div>
         </div>
-        <a className="page-footer__catalog" href="https://www.nespresso.com/ca/en/order/capsules/original" rel="noreferrer" target="_blank">Каталог Nespresso Canada ↗</a>
+        <a className="page-footer__catalog" href="https://www.nespresso.com/ca/en/order/capsules/original" rel="noreferrer" target="_blank">{t("catalogLink")}</a>
       </footer>
     </main>
   );
+}
+
+function translateStorageNotice(notice: string, t: (key: MessageKey) => string): string {
+  const noticeKeys: Record<string, MessageKey> = {
+    "Браузерное хранилище недоступно. Изменения могут не сохраниться после закрытия страницы.": "storageNoticeUnavailable",
+    "Не удалось прочитать настройки браузера. Загрузи резервную копию или скачай текущие данные перед продолжением.": "storageNoticeRead",
+    "Настройки перенесены из старого браузерного хранилища.": "storageNoticeMigrated",
+    "Не удалось сохранить данные в браузере. Попробуй скачать резервную копию.": "storageNoticeSave",
+    "Не удалось сохранить данные в браузере. Скачай резервную копию и освободи место в хранилище.": "storageNoticeSaveFull",
+    "Настройки загружены в этот браузер.": "storageNoticeLoaded",
+    "Файл не является корректным JSON.": "invalidJson",
+    "Формат файла настроек не распознан.": "invalidBackup",
+    "Не удалось загрузить файл настроек.": "storageNoticeImport",
+  };
+  const key = noticeKeys[notice];
+  return key ? t(key) : notice;
 }
