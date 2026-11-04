@@ -11,12 +11,13 @@ type Props = {
   onThresholdChange: (id: string, value: number) => void;
   onNoteSave: (id: string, note: CapsuleNote) => void;
   onRecipeSelect: (recipeId: string) => void;
+  searchActive?: boolean;
 };
 
-export function CapsuleGrid({ catalog, inventory, lowStockIds, onQuantitySet, onFavoriteToggle, onThresholdChange, onNoteSave, onRecipeSelect }: Props) {
+export function CapsuleGrid({ catalog, inventory, lowStockIds, onQuantitySet, onFavoriteToggle, onThresholdChange, onNoteSave, onRecipeSelect, searchActive = false }: Props) {
   const { t } = useLocale();
   if (catalog.length === 0) {
-    return <div className="empty-filter" role="status"><span aria-hidden="true">✦</span><p>{t("emptyTitle")}</p><small>{t("emptyTip")}</small></div>;
+    return <div className="empty-filter" role="status"><span aria-hidden="true">{searchActive ? "⌕" : "✦"}</span><p>{searchActive ? t("noSearchResults") : t("emptyTitle")}</p>{!searchActive && <small>{t("emptyTip")}</small>}</div>;
   }
 
   return (

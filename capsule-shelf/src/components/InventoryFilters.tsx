@@ -8,11 +8,13 @@ type Props = {
   onChange: (filter: InventoryFilter) => void;
   category: CategoryFilter;
   onCategoryChange: (category: CategoryFilter) => void;
+  search: string;
+  onSearchChange: (value: string) => void;
 };
 
 const categoryKeys = ["limited", "italian", "decaffeinated", "world", "origins", "flavoured", "heritage"] as const;
 
-export function InventoryFilters({ value, onChange, category, onCategoryChange }: Props) {
+export function InventoryFilters({ value, onChange, category, onCategoryChange, search, onSearchChange }: Props) {
   const { t } = useLocale();
   const filters = [
     { id: "all" as const, label: t("allVarieties") },
@@ -23,6 +25,10 @@ export function InventoryFilters({ value, onChange, category, onCategoryChange }
   const categories = categoryKeys.filter((itemCategory) => populatedCategories.has(itemCategory));
   return (
     <div className="filter-controls">
+      <label className="search-field search-field--capsules">
+        <svg aria-hidden="true" viewBox="0 0 20 20"><circle cx="8.8" cy="8.8" r="5.8"/><path d="m13.2 13.2 4 4"/></svg>
+        <input aria-label={t("searchCapsules")} onChange={(event) => onSearchChange(event.target.value)} placeholder={t("searchCapsules")} type="search" value={search} />
+      </label>
       <div className="filter-tabs" role="group" aria-label={t("filterAria")}>
         {filters.map((filter) => (
           <button

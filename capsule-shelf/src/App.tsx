@@ -15,8 +15,11 @@ export default function App() {
 
 function CapsuleShelfApp() {
   const { locale, setLocale, t } = useLocale();
-  const [activeView, setActiveView] = useState<"inventory" | "recipes">("inventory");
+  const initialHash = window.location.hash;
+  const [activeView, setActiveView] = useState<"inventory" | "recipes">(initialHash === "#recipes" ? "recipes" : "inventory");
+  const shouldScrollToView = useRef(initialHash === "#recipes" || initialHash === "#capsules");
   const [pendingRecipeId, setPendingRecipeId] = useState<string | null>(null);
+  const [capsuleSearch, setCapsuleSearch] = useState("");
   const settingsFileInput = useRef<HTMLInputElement>(null);
   const {
     capsules,
@@ -37,7 +40,36 @@ function CapsuleShelfApp() {
     saveNote,
   } = useInventory();
   const localizedCatalog = useMemo(() => fullCatalog.map((capsule) => localizeCapsule(capsule, locale)), [locale]);
-  const localizedCapsules = useMemo(() => capsules.map((capsule) => localizeCapsule(capsule, locale)), [capsules, locale]);
+  const localizedCapsules = useMemo(() => {
+    const query = normalizeSearch(capsuleSearch);
+    return capsules
+      .map((capsule) => localizeCapsule(capsule, locale))
+      .filter((capsule) => !query || (["en", "ru", "fr"] as const).some((searchLocale) => {
+        const translatedCapsule = localizeCapsule(capsule, searchLocale);
+        return normalizeSearch(translatedCapsule.name).includes(query)
+          || normalizeSearch(translatedCapsule.flavor).includes(query);
+      }));
+  }, [capsules, locale, capsuleSearch]);
+
+  useEffect(() => {
+    if (window.location.hash !== "#capsules" && window.location.hash !== "#recipes") {
+      window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}#capsules`);
+    }
+    const syncViewFromHash = () => {
+      const hash = window.location.hash;
+      if (hash !== "#capsules" && hash !== "#recipes") return;
+      shouldScrollToView.current = true;
+      setActiveView(hash === "#recipes" ? "recipes" : "inventory");
+    };
+    window.addEventListener("hashchange", syncViewFromHash);
+    return () => window.removeEventListener("hashchange", syncViewFromHash);
+  }, []);
+
+  useEffect(() => {
+    if (!shouldScrollToView.current) return;
+    shouldScrollToView.current = false;
+    window.requestAnimationFrame(() => document.getElementById(activeView === "recipes" ? "recipes" : "capsules")?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  }, [activeView]);
 
   useEffect(() => {
     document.documentElement.lang = locale;
@@ -45,7 +77,19 @@ function CapsuleShelfApp() {
 
   function openRecipe(recipeId: string) {
     setPendingRecipeId(recipeId);
-    setActiveView("recipes");
+    navigateToView("recipes");
+  }
+
+  function navigateToView(view: "inventory" | "recipes") {
+    const isCurrentView = view === activeView;
+    shouldScrollToView.current = true;
+    setActiveView(view);
+    const hash = view === "recipes" ? "#recipes" : "#capsules";
+    if (window.location.hash !== hash) window.location.hash = hash;
+    if (isCurrentView) {
+      window.requestAnimationFrame(() => document.getElementById(view === "recipes" ? "recipes" : "capsules")?.scrollIntoView({ behavior: "smooth", block: "start" }));
+      shouldScrollToView.current = false;
+    }
   }
 
   function downloadSettings() {
@@ -113,13 +157,13 @@ function CapsuleShelfApp() {
         <button
           aria-current={activeView === "inventory" ? "page" : undefined}
           className={`page-nav__button${activeView === "inventory" ? " is-active" : ""}`}
-          onClick={() => setActiveView("inventory")}
+          onClick={() => navigateToView("inventory")}
           type="button"
         >{t("inventoryTab")}</button>
         <button
           aria-current={activeView === "recipes" ? "page" : undefined}
           className={`page-nav__button${activeView === "recipes" ? " is-active" : ""}`}
-          onClick={() => setActiveView("recipes")}
+          onClick={() => navigateToView("recipes")}
           type="button"
         >{t("recipesTab")}</button>
       </nav>
@@ -131,7 +175,7 @@ function CapsuleShelfApp() {
       ) : activeView === "recipes" ? (
         <RecipesPage onTargetHandled={() => setPendingRecipeId(null)} targetRecipeId={pendingRecipeId} />
       ) : (
-        <>
+        <div id="capsules" className="capsules-view">
           <InventorySummary
             catalog={localizedCatalog}
             inventory={inventory}
@@ -147,7 +191,7 @@ function CapsuleShelfApp() {
           </div>
           <p className="catalog-hint">{t("catalogHint")}</p>
         </div>
-        <InventoryFilters category={categoryFilter} onCategoryChange={setCategoryFilter} onChange={setFilter} value={filter} />
+        <InventoryFilters category={categoryFilter} onCategoryChange={setCategoryFilter} onChange={setFilter} onSearchChange={setCapsuleSearch} search={capsuleSearch} value={filter} />
         <CapsuleGrid
           catalog={localizedCapsules}
           inventory={inventory}
@@ -157,9 +201,10 @@ function CapsuleShelfApp() {
           onQuantitySet={changeQuantity}
           onRecipeSelect={openRecipe}
           onThresholdChange={updateThreshold}
+          searchActive={capsuleSearch.trim().length > 0}
         />
           </section>
-        </>
+        </div>
       )}
 
       <footer className="page-footer">
@@ -182,6 +227,10 @@ function CapsuleShelfApp() {
       </footer>
     </main>
   );
+}
+
+function normalizeSearch(value: string) {
+  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLocaleLowerCase();
 }
 
 function translateStorageNotice(notice: string, t: (key: MessageKey) => string): string {
