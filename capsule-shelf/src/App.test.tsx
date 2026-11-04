@@ -2,28 +2,16 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-li
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
 
-const mockApi = vi.hoisted(() => ({
-  file: null as Record<string, unknown> | null,
-  readInventory: vi.fn(),
-  writeInventory: vi.fn(),
-}));
-
-vi.mock("./storage/inventoryApi", () => ({
-  readInventory: (...args: unknown[]) => mockApi.readInventory(...args),
-  writeInventory: (...args: unknown[]) => mockApi.writeInventory(...args),
-}));
-
 const legacyKey = "capsule-shelf:inventory:v1";
+const currentKey = "capsule-shelf:inventory:v2";
+
+function storedInventory() {
+  const raw = localStorage.getItem(currentKey);
+  return raw ? JSON.parse(raw).inventory as Record<string, Record<string, unknown>> : {};
+}
 
 beforeEach(() => {
   localStorage.clear();
-  mockApi.file = null;
-  mockApi.readInventory.mockReset().mockImplementation(async () => mockApi.file
-    ? { exists: true, inventory: structuredClone(mockApi.file) }
-    : { exists: false, inventory: {} });
-  mockApi.writeInventory.mockReset().mockImplementation(async (inventory: Record<string, unknown>) => {
-    mockApi.file = structuredClone(inventory);
-  });
 });
 afterEach(() => {
   cleanup();
@@ -56,7 +44,21 @@ describe("Capsule Shelf dashboard", () => {
     expect(screen.getByLabelText("Количество Arpeggio")).toHaveValue(3);
   });
 
-  it("loads the file before enabling stock controls and writes quantity changes to the API", async () => {
+  it("opens a matching recipe from its capsule card and focuses the recipe card", async () => {
+    render(<App />);
+    await waitForReady();
+
+    const capsuleCard = screen.getByRole("heading", { name: "Arpeggio" }).closest("article")!;
+    fireEvent.click(within(capsuleCard).getByRole("button", { name: /Рецепты для Arpeggio/ }));
+    const recipeLink = within(capsuleCard).getByRole("link", { name: "Кленовый капучино с пеканом" });
+    fireEvent.click(recipeLink);
+
+    const recipeHeading = await screen.findByRole("heading", { name: "Кленовый капучино с пеканом" });
+    await waitFor(() => expect(recipeHeading.closest("article")).toHaveFocus());
+    expect(recipeHeading.closest("article")).toHaveAttribute("id", "recipe-maple-pecan-cappuccino");
+  });
+
+  it("loads stock controls immediately and saves quantity changes to browser storage", async () => {
     render(<App />);
     await waitForReady();
     await addCapsules("Arpeggio", 3);
@@ -65,9 +67,20 @@ describe("Capsule Shelf dashboard", () => {
     expect(screen.getByLabelText("Количество Arpeggio")).toHaveValue(3);
     fireEvent.change(screen.getByLabelText("Количество Arpeggio"), { target: { value: "2" } });
     fireEvent.blur(screen.getByLabelText("Количество Arpeggio"));
-    await waitFor(() => expect(mockApi.file?.arpeggio).toMatchObject({ quantity: 2 }));
+    await waitFor(() => expect(storedInventory().arpeggio).toMatchObject({ quantity: 2 }));
     expect(screen.getByLabelText("Всего капсул")).toHaveTextContent("4");
     expect(localStorage.getItem(legacyKey)).toBeNull();
+  });
+
+  it("does not request a server API when loading or saving the inventory", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    render(<App />);
+    await waitForReady();
+    await addCapsules("Arpeggio", 1);
+    await waitFor(() => expect(storedInventory().arpeggio).toMatchObject({ quantity: 1 }));
+
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it("shows a favorite at the threshold and clears the alert above it", async () => {
@@ -81,7 +94,7 @@ describe("Capsule Shelf dashboard", () => {
     expect(screen.getByLabelText("Сорта, которым пора пополнить запас")).toHaveTextContent("0");
   });
 
-  it("lets a favorite use a custom low-stock threshold and persists it to the file", async () => {
+  it("lets a favorite use a custom low-stock threshold and persists it in the browser", async () => {
     render(<App />);
     await waitForReady();
     await addCapsules("Arpeggio", 5);
@@ -89,7 +102,7 @@ describe("Capsule Shelf dashboard", () => {
     expect(screen.getByText("Arpeggio — осталось 5")).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText("Порог запаса Arpeggio"), { target: { value: "3" } });
     expect(screen.queryByText("Arpeggio — осталось 5")).not.toBeInTheDocument();
-    await waitFor(() => expect(mockApi.file?.arpeggio).toMatchObject({ threshold: 3 }));
+    await waitFor(() => expect(storedInventory().arpeggio).toMatchObject({ threshold: 3 }));
   });
 
   it("filters the catalog to favorites and low stock", async () => {
@@ -126,7 +139,7 @@ describe("Capsule Shelf dashboard", () => {
   });
 
   it("composes category with low stock without exposing unknown saved IDs", async () => {
-    mockApi.file = { "retired-variety": { quantity: 4, favorite: true, threshold: 2, note: {} } };
+    localStorage.setItem(currentKey, JSON.stringify({ format: "capsule-shelf-settings", version: 1, inventory: { "retired-variety": { quantity: 4, favorite: true, threshold: 2, note: {} } } }));
     render(<App />);
     await waitForReady();
     await addCapsules("Colombia", 1);
@@ -138,7 +151,7 @@ describe("Capsule Shelf dashboard", () => {
     expect(screen.getAllByRole("article")).toHaveLength(1);
   });
 
-  it("sorts low-stock favorites before other favorites and the rest of the catalog", async () => {
+  it("keeps favorite capsules in their original catalog order", async () => {
     render(<App />);
     await waitForReady();
     await addCapsules("Arpeggio", 10);
@@ -146,16 +159,7 @@ describe("Capsule Shelf dashboard", () => {
     await addCapsules("Ristretto", 5);
     fireEvent.click(screen.getByRole("button", { name: "Добавить Ristretto в избранное" }));
     const names = screen.getAllByRole("article").map((article) => within(article).getByRole("heading", { level: 2 }).textContent);
-    expect(names).toEqual([
-      "Ristretto", "Arpeggio", "Ispirazione Napoli", "Kazaar", "Ispirazione Roma",
-      "Ispirazione Venezia", "Livanto", "Capriccio", "Volluto", "Cosi", "Colombia",
-      "Espresso Crystal Spark", "Hazelnut Brownie", "Blueberry Cheesecake", "Pumpkin Spice Cake",
-      "Yuzu Vanilla Over Ice", "Maple Pecan", "Arpeggio Decaffeinato", "Ristretto Decaffeinato",
-      "Vaniglia Decaffeinato", "Volluto Decaffeinato", "Vienna Lungo Decaffeinato", "Athens Freddo Intenso",
-      "Cape Town Lungo", "Miami Espresso", "Vienna Lungo", "Paris Espresso", "Tokyo Lungo", "Stockholm Lungo",
-      "Shanghai Lungo", "Buenos Aires Lungo", "Kahawa ya Congo", "India", "Indonesia - Fairtrade", "Nicaragua",
-      "Nocciola", "Caramello", "Vaniglia", "Cioccolatino", "Scuro",
-    ]);
+    expect(names.slice(0, 3)).toEqual(["Arpeggio", "Ristretto", "Ispirazione Napoli"]);
   });
 
   it("edits tasting notes and keeps them after the app reloads", async () => {
@@ -169,7 +173,7 @@ describe("Capsule Shelf dashboard", () => {
     fireEvent.change(screen.getByLabelText("Не подходит для"), { target: { value: "Очень длинного лунго" } });
     fireEvent.click(screen.getByRole("button", { name: "Сохранить заметки Arpeggio" }));
     expect(screen.getByText("Заметки сохранены")).toBeInTheDocument();
-    await waitFor(() => expect(mockApi.file?.arpeggio).toMatchObject({ note: { recipes: "Капучино", tastingNotes: "Какао и плотная crema" } }));
+    await waitFor(() => expect(storedInventory().arpeggio).toMatchObject({ note: { recipes: "Капучино", tastingNotes: "Какао и плотная crema" } }));
     first.unmount();
     render(<App />);
     await waitForReady();
@@ -181,7 +185,7 @@ describe("Capsule Shelf dashboard", () => {
     expect(screen.getByRole("button", { name: "Нравится" })).toHaveAttribute("aria-pressed", "true");
   });
 
-  it("migrates legacy browser inventory once and removes the key only after file write succeeds", async () => {
+  it("migrates legacy browser inventory once into the current browser key", async () => {
     localStorage.setItem(legacyKey, JSON.stringify({ version: 1, inventory: {
       arpeggio: { quantity: 8, favorite: true, threshold: 2, note: { rating: "like", tastingNotes: "Густой", recipes: "Капучино", suitableFor: "Молоко", unsuitableFor: "Лунго" } },
     } }));
@@ -189,16 +193,16 @@ describe("Capsule Shelf dashboard", () => {
     await waitForReady();
 
     expect(screen.getByLabelText("Количество Arpeggio")).toHaveValue(8);
-    await waitFor(() => expect(mockApi.file?.arpeggio).toMatchObject({
+    expect(storedInventory().arpeggio).toMatchObject({
       quantity: 8,
       favorite: true,
       threshold: 2,
       note: { rating: "like", tastingNotes: "Густой", recipes: "Капучино", suitableFor: "Молоко", unsuitableFor: "Лунго" },
-    }));
-    await waitFor(() => expect(localStorage.getItem(legacyKey)).toBeNull());
+    });
+    expect(localStorage.getItem(legacyKey)).toBeNull();
   });
 
-  it("preserves retired variety data when migrating legacy browser inventory to the file", async () => {
+  it("preserves retired variety data when migrating legacy browser inventory", async () => {
     localStorage.setItem(legacyKey, JSON.stringify({ version: 1, inventory: {
       arpeggio: { quantity: 2, favorite: false, threshold: 5, note: {} },
       "retired-variety": { quantity: 7, favorite: true, threshold: 3, note: { tastingNotes: "old" } },
@@ -206,13 +210,15 @@ describe("Capsule Shelf dashboard", () => {
     render(<App />);
     await waitForReady();
 
-    await waitFor(() => expect(mockApi.file?.["retired-variety"]).toMatchObject({ quantity: 7, favorite: true, threshold: 3 }));
-    expect(mockApi.file?.arpeggio).toMatchObject({ quantity: 2 });
-    await waitFor(() => expect(localStorage.getItem(legacyKey)).toBeNull());
+    expect(storedInventory()["retired-variety"]).toMatchObject({ quantity: 7, favorite: true, threshold: 3 });
+    expect(storedInventory().arpeggio).toMatchObject({ quantity: 2 });
+    expect(localStorage.getItem(legacyKey)).toBeNull();
   });
 
-  it("prefers the JSON file when it exists and does not read legacy browser data", async () => {
-    mockApi.file = { arpeggio: { quantity: 3, favorite: false, threshold: 5, note: { rating: null, tastingNotes: "", recipes: "", suitableFor: "", unsuitableFor: "" } } };
+  it("prefers current browser data over legacy browser data", async () => {
+    localStorage.setItem(currentKey, JSON.stringify({ version: 1, inventory: {
+      arpeggio: { quantity: 3, favorite: false, threshold: 5, note: { rating: null } },
+    } }));
     localStorage.setItem(legacyKey, JSON.stringify({ version: 1, inventory: {
       arpeggio: { quantity: 99, favorite: false, threshold: 5, note: { rating: null } },
     } }));
@@ -223,41 +229,46 @@ describe("Capsule Shelf dashboard", () => {
     expect(localStorage.getItem(legacyKey)).not.toBeNull();
   });
 
-  it("keeps legacy data when migration cannot be saved", async () => {
+  it("keeps legacy data when migration cannot be saved to browser storage", async () => {
     localStorage.setItem(legacyKey, JSON.stringify({ version: 1, inventory: {
       arpeggio: { quantity: 4, favorite: false, threshold: 5, note: {} },
       "retired-variety": { quantity: 7, favorite: true, threshold: 3, note: {} },
     } }));
-    mockApi.writeInventory.mockRejectedValueOnce(new Error("disk full"));
+    const realSetItem = Storage.prototype.setItem;
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(function (this: Storage, key: string, value: string) {
+      if (key === currentKey) throw new Error("quota exceeded");
+      realSetItem.call(this, key, value);
+    });
     render(<App />);
     await waitForReady();
 
-    expect(await screen.findByRole("alert")).toHaveTextContent("Не удалось");
+    expect(await screen.findByRole("status")).toHaveTextContent("Не удалось сохранить данные в браузере");
     expect(localStorage.getItem(legacyKey)).not.toBeNull();
     expect(screen.getByLabelText("Количество Arpeggio")).toHaveValue(4);
     expect(screen.getByLabelText("Всего капсул")).toHaveTextContent("4");
   });
 
-  it("keeps the in-memory shelf usable and shows a notice when file reads fail", async () => {
-    mockApi.readInventory.mockRejectedValueOnce(new Error("unavailable"));
+  it("keeps the in-memory shelf usable when browser storage is unavailable", async () => {
+    vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => { throw new Error("blocked"); });
     render(<App />);
     await waitForReady();
 
-    expect(await screen.findByRole("alert")).toHaveTextContent("Файл данных недоступен");
+    expect(await screen.findByRole("status")).toHaveTextContent("Браузерное хранилище недоступно");
     await addCapsules("Arpeggio", 1);
     expect(screen.getByLabelText("Количество Arpeggio")).toHaveValue(1);
-    expect(mockApi.writeInventory).not.toHaveBeenCalled();
   });
 
-  it("shows an unsaved-data notice when an inventory write fails", async () => {
-    mockApi.file = {};
-    mockApi.writeInventory.mockRejectedValueOnce(new Error("disk full"));
+  it("shows a backup notice when browser storage writes fail", async () => {
     render(<App />);
     await waitForReady();
+    const realSetItem = Storage.prototype.setItem;
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(function (this: Storage, key: string, value: string) {
+      if (key === currentKey) throw new Error("quota exceeded");
+      realSetItem.call(this, key, value);
+    });
     await addCapsules("Arpeggio", 1);
 
-    expect(await screen.findByRole("alert")).toHaveTextContent("Не удалось сохранить данные в JSON-файл");
-    expect(mockApi.file).not.toHaveProperty("arpeggio");
+    expect(await screen.findByRole("status")).toHaveTextContent("Не удалось сохранить данные в браузере");
   });
 
   it("sets a capsule stock count directly and persists the value across reloads", async () => {
@@ -267,7 +278,7 @@ describe("Capsule Shelf dashboard", () => {
     fireEvent.change(input, { target: { value: "40" } });
     fireEvent.blur(input);
     expect(input).toHaveValue(40);
-    await waitFor(() => expect(mockApi.file?.arpeggio).toMatchObject({ quantity: 40 }));
+    await waitFor(() => expect(storedInventory().arpeggio).toMatchObject({ quantity: 40 }));
     first.unmount();
     render(<App />);
     await waitForReady();
@@ -283,7 +294,7 @@ describe("Capsule Shelf dashboard", () => {
     fireEvent.keyDown(input, { key: "Enter", code: "Enter" });
 
     expect(input).toHaveValue(23);
-    await waitFor(() => expect(mockApi.file?.arpeggio).toMatchObject({ quantity: 23 }));
+    await waitFor(() => expect(storedInventory().arpeggio).toMatchObject({ quantity: 23 }));
   });
 
   it("rejects a negative or fractional stock count", async () => {
@@ -331,14 +342,14 @@ describe("Capsule Shelf dashboard", () => {
     expect(within(card as HTMLElement).getByText("Фото сорта временно недоступно")).toBeInTheDocument();
   });
 
-  it("preserves unknown file records when the catalog grows and another stock value is saved", async () => {
-    mockApi.file = {
+  it("preserves unknown browser records when the catalog grows and another stock value is saved", async () => {
+    localStorage.setItem(currentKey, JSON.stringify({ version: 1, inventory: {
       "retired-variety": { quantity: 7, favorite: true, threshold: 3, note: { rating: "like", tastingNotes: "old", recipes: "", suitableFor: "", unsuitableFor: "" } },
-    };
+    } }));
     render(<App />);
     await waitForReady();
     await addCapsules("Arpeggio", 1);
-    await waitFor(() => expect(mockApi.file?.["retired-variety"]).toMatchObject({ quantity: 7, favorite: true, threshold: 3 }));
+    await waitFor(() => expect(storedInventory()["retired-variety"]).toMatchObject({ quantity: 7, favorite: true, threshold: 3 }));
   });
 
 });

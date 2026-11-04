@@ -4,11 +4,10 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "node scripts/dev.mjs",
+    "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "test": "vitest",
-    "test:api": "node --test server/inventoryApi.node-test.mjs"
+    "test": "vitest"
   },
   "dependencies": {
     "@vitejs/plugin-react": "latest",

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { CapsuleNotes } from "./CapsuleNotes";
 import { createEmptyInventoryEntry, type Capsule, type CapsuleNote, type InventoryEntry } from "../domain/capsules";
+import { getRecipesForCapsule } from "../data/recipes";
 
 type Props = {
   capsule: Capsule;
@@ -10,16 +11,19 @@ type Props = {
   onFavoriteToggle: (capsuleId: string) => void;
   onThresholdChange: (capsuleId: string, threshold: number) => void;
   onNoteSave: (capsuleId: string, note: CapsuleNote) => void;
+  onRecipeSelect: (recipeId: string) => void;
 };
 
 function hasNotes(note: CapsuleNote): boolean {
   return note.rating !== null || Boolean(note.tastingNotes || note.recipes || note.suitableFor || note.unsuitableFor);
 }
 
-export function CapsuleCard({ capsule, entry = createEmptyInventoryEntry(), lowStock, onQuantitySet, onFavoriteToggle, onThresholdChange, onNoteSave }: Props) {
+export function CapsuleCard({ capsule, entry = createEmptyInventoryEntry(), lowStock, onQuantitySet, onFavoriteToggle, onThresholdChange, onNoteSave, onRecipeSelect }: Props) {
   const [notesOpen, setNotesOpen] = useState(false);
+  const [recipesOpen, setRecipesOpen] = useState(false);
   const [imageFailed, setImageFailed] = useState(false);
   const [quantityDraft, setQuantityDraft] = useState(String(entry.quantity));
+  const matchingRecipes = getRecipesForCapsule(capsule.id);
   useEffect(() => setQuantityDraft(String(entry.quantity)), [entry.quantity]);
   const status = lowStock ? (entry.quantity === 0 ? "Закончился" : "Пора пополнить") : entry.favorite ? "В запасе" : "";
   function commitQuantity() {
@@ -49,7 +53,9 @@ export function CapsuleCard({ capsule, entry = createEmptyInventoryEntry(), lowS
             <span>Фото сорта временно недоступно</span>
           </div>
         )}
-        <a className="photo-source" href={capsule.sourceUrl} rel="noreferrer" target="_blank">Источник</a>
+        <a aria-label={`Открыть источник Nespresso для ${capsule.name} в новой вкладке`} className="photo-source" href={capsule.sourceUrl} rel="noreferrer" target="_blank" title="Источник Nespresso">
+          <svg aria-hidden="true" viewBox="0 0 16 16"><path d="M9 3h4v4M13 3 7 9" /><path d="M11 9v3a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h3" /></svg>
+        </a>
         <button
           aria-label={`${entry.favorite ? "Убрать" : "Добавить"} ${capsule.name} в избранное`}
           aria-pressed={entry.favorite}
@@ -58,7 +64,7 @@ export function CapsuleCard({ capsule, entry = createEmptyInventoryEntry(), lowS
           title={entry.favorite ? "Убрать из избранного" : "Добавить в избранное"}
           type="button"
         >
-          <span aria-hidden="true">{entry.favorite ? "★" : "☆"}</span>
+          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z" /></svg>
         </button>
       </div>
 
@@ -71,6 +77,36 @@ export function CapsuleCard({ capsule, entry = createEmptyInventoryEntry(), lowS
           {typeof capsule.intensity === "number" && <span className="intensity-badge" aria-label={`Интенсивность ${capsule.intensity} из 13`}>{capsule.intensity}<small>/13</small></span>}
         </div>
         <p className="capsule-flavor">{capsule.flavor}</p>
+
+        {matchingRecipes.length > 0 && (
+          <div className="capsule-recipes">
+            <button
+              aria-controls={`capsule-recipes-${capsule.id}`}
+              aria-expanded={recipesOpen}
+              aria-label={`Рецепты для ${capsule.name} (${matchingRecipes.length})`}
+              className="capsule-recipe-toggle"
+              onClick={() => setRecipesOpen((open) => !open)}
+              type="button"
+            >
+              <span>Рецепты <span className="capsule-recipe-count">{matchingRecipes.length}</span></span>
+              <span aria-hidden="true" className="disclosure-chevron"><svg viewBox="0 0 16 16"><path d="m4 6 4 4 4-4" /></svg></span>
+            </button>
+            <div className="capsule-recipe-links" hidden={!recipesOpen} id={`capsule-recipes-${capsule.id}`}>
+              {matchingRecipes.map((recipe) => (
+                <a
+                  href={`#recipe-${recipe.id}`}
+                  key={recipe.id}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    onRecipeSelect(recipe.id);
+                  }}
+                >
+                  {recipe.title}
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="stock-row">
           <span className="stock-label">В наличии</span>
@@ -126,7 +162,7 @@ export function CapsuleCard({ capsule, entry = createEmptyInventoryEntry(), lowS
             type="button"
           >
             <span>{notesOpen ? "Свернуть заметки" : hasNotes(entry.note) ? "Мои заметки" : "Добавить заметку"}</span>
-            <span aria-hidden="true" className="notes-toggle__icon">{notesOpen ? "−" : "+"}</span>
+            <span aria-hidden="true" className="disclosure-chevron"><svg viewBox="0 0 16 16"><path d="m4 6 4 4 4-4" /></svg></span>
           </button>
         </div>
         {notesOpen && <CapsuleNotes capsuleName={capsule.name} note={entry.note} onSave={(note) => onNoteSave(capsule.id, note)} />}

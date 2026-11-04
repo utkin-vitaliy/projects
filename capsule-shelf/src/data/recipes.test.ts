@@ -1,7 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { recipes } from "./recipes";
+import { getRecipesForCapsule, recipes } from "./recipes";
 
 describe("Nespresso Original recipes", () => {
+  it("matches named and universal recipes to capsule IDs", () => {
+    expect(getRecipesForCapsule("arpeggio").map(({ id }) => id)).toContain("maple-pecan-cappuccino");
+    expect(getRecipesForCapsule("arpeggio").map(({ id }) => id)).toContain("cappuccino");
+    expect(getRecipesForCapsule("ristretto").map(({ id }) => id)).toContain("iced-cappuccino");
+    expect(getRecipesForCapsule("blueberry-cheesecake").map(({ id }) => id)).toEqual([
+      "cappuccino", "iced-latte", "latte-macchiato",
+    ]);
+  });
+
   it("contains the approved recipes and eleven translated book recipes", () => {
     expect(recipes.map(({ id, title }) => [id, title])).toEqual([
       ["cappuccino", "Капучино"],

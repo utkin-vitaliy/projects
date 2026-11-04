@@ -1,13 +1,26 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { recipes } from "../data/recipes";
 
 type RecipeTemperature = "all" | "hot" | "cold";
+type Props = {
+  targetRecipeId?: string | null;
+  onTargetHandled?: () => void;
+};
 
-export function RecipesPage() {
+export function RecipesPage({ targetRecipeId = null, onTargetHandled = () => undefined }: Props) {
   const [temperature, setTemperature] = useState<RecipeTemperature>("all");
   const visibleRecipes = temperature === "all"
     ? recipes
     : recipes.filter((recipe) => recipe.temperature === temperature);
+
+  useEffect(() => {
+    if (!targetRecipeId) return;
+    const target = document.getElementById(`recipe-${targetRecipeId}`);
+    if (!target) return;
+    target.scrollIntoView?.({ behavior: "smooth", block: "center" });
+    target.focus({ preventScroll: true });
+    onTargetHandled();
+  }, [onTargetHandled, targetRecipeId]);
 
   return (
     <section className="recipes-section" aria-labelledby="recipes-title">
@@ -40,7 +53,7 @@ export function RecipesPage() {
 
       <div className="recipe-grid">
         {visibleRecipes.map((recipe) => (
-          <article className="recipe-card" key={recipe.id}>
+          <article className="recipe-card" id={`recipe-${recipe.id}`} key={recipe.id} tabIndex={-1}>
             <div className={`recipe-card__photo${recipe.sourcePage ? " recipe-card__photo--book" : ""}`}>
               <img src={recipe.imageUrl} alt={recipe.imageAlt} loading="lazy" />
             </div>

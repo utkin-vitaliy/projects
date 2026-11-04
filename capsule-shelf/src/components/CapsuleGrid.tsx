@@ -9,9 +9,10 @@ type Props = {
   onFavoriteToggle: (id: string) => void;
   onThresholdChange: (id: string, value: number) => void;
   onNoteSave: (id: string, note: CapsuleNote) => void;
+  onRecipeSelect: (recipeId: string) => void;
 };
 
-export function CapsuleGrid({ catalog, inventory, lowStockIds, onQuantitySet, onFavoriteToggle, onThresholdChange, onNoteSave }: Props) {
+export function CapsuleGrid({ catalog, inventory, lowStockIds, onQuantitySet, onFavoriteToggle, onThresholdChange, onNoteSave, onRecipeSelect }: Props) {
   if (catalog.length === 0) {
     return <div className="empty-filter" role="status"><span aria-hidden="true">✦</span><p>Здесь пока пусто</p><small>Отметь любимый сорт или проверь пороги запаса.</small></div>;
   }
@@ -27,6 +28,7 @@ export function CapsuleGrid({ catalog, inventory, lowStockIds, onQuantitySet, on
           onFavoriteToggle={onFavoriteToggle}
           onNoteSave={onNoteSave}
           onQuantitySet={onQuantitySet}
+          onRecipeSelect={onRecipeSelect}
           onThresholdChange={onThresholdChange}
         />
       ))}

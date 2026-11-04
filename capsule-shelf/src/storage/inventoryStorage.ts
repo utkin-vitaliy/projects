@@ -8,7 +8,7 @@ import {
   type InventoryState,
 } from "../domain/capsules";
 
-const STORAGE_VERSION = 1;
+export const STORAGE_VERSION = 1;
 const ratings: CapsuleRating[] = ["like", "neutral", "dislike", null];
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -66,4 +66,26 @@ export function loadInventory(catalog: Capsule[], raw: string | null, preserveUn
   }
 
   return inventory;
+}
+
+export function serializeInventory(inventory: InventoryState): string {
+  return JSON.stringify({ format: "capsule-shelf-settings", version: STORAGE_VERSION, inventory }, null, 2);
+}
+
+export function parseInventoryBackup(catalog: Capsule[], raw: string): InventoryState {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    throw new Error("Файл не является корректным JSON.");
+  }
+
+  if (!isRecord(parsed)
+    || parsed.version !== STORAGE_VERSION
+    || !isRecord(parsed.inventory)
+    || (parsed.format !== undefined && parsed.format !== "capsule-shelf-settings")) {
+    throw new Error("Формат файла настроек не распознан.");
+  }
+
+  return loadInventory(catalog, raw, true);
 }
