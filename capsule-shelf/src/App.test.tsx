@@ -74,6 +74,30 @@ describe("Capsule Shelf dashboard", () => {
     expect(screen.getByText("GitHub s’ouvrira ; votre message sera public.")).toBeInTheDocument();
   });
 
+  it("places the Google Drive sync control in the header instead of the footer", async () => {
+    render(<App />);
+    await waitForReady();
+
+    const connect = screen.getByRole("button", { name: "Подключить Google Drive" });
+    expect(connect.closest(".page-header")).not.toBeNull();
+    expect(connect.closest(".page-footer")).toBeNull();
+  });
+
+  it("remembers a linked Google account and loads its inventory after reload", async () => {
+    localStorage.setItem("capsule-shelf:google-account:v1", JSON.stringify({ sub: "google-user-123", email: "user@example.com" }));
+    localStorage.setItem("capsule-shelf:locale:v1:google:google-user-123", "ru");
+    localStorage.setItem("capsule-shelf:inventory:v2:google:google-user-123", JSON.stringify({ version: 1, inventory: {
+      arpeggio: { quantity: 9, favorite: false, threshold: 5, note: {} },
+    } }));
+
+    render(<App />);
+    await waitForReady();
+
+    expect(screen.getByRole("button", { name: /Google Drive запомнен/ })).toHaveAttribute("data-state", "remembered");
+    expect(screen.getByLabelText("Количество капсул Arpeggio")).toHaveValue(9);
+    expect(localStorage.getItem("capsule-shelf:google-account:v1")).not.toContain("accessToken");
+  });
+
   it("switches to recipes and back without losing inventory quantities", async () => {
     render(<App />);
     await waitForReady();

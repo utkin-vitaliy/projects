@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { CapsuleGrid } from "./components/CapsuleGrid";
 import { InventoryFilters } from "./components/InventoryFilters";
 import { InventorySummary } from "./components/InventorySummary";
@@ -12,6 +12,8 @@ import { recipes } from "./data/recipes";
 import { parseUserSettings, serializeUserSettings, type UserSettings } from "./storage/userSettings";
 import { settingsStorageKey, type SettingsNamespace } from "./storage/settingsStorage";
 import { getGoogleAccount, readDriveSettings, requestGoogleAccessToken, writeDriveSettings, type DriveSettingsFile, type GoogleAccount } from "./storage/googleDrive";
+import { GoogleDriveControl, type GoogleDriveControlState } from "./components/GoogleDriveControl";
+import { clearRememberedGoogleAccount, readRememberedGoogleAccount, rememberGoogleAccount, type RememberedGoogleAccount } from "./storage/rememberedGoogleAccount";
 
 type ConnectedGoogleAccount = GoogleAccount & { accessToken: string; fileId: string };
 const USER_SETTINGS_STORAGE_KEY = "capsule-shelf:user-settings:v1";
@@ -24,11 +26,26 @@ const feedbackFormUrls: Record<Locale, string> = {
 
 export default function App() {
   const [account, setAccount] = useState<ConnectedGoogleAccount | null>(null);
-  const namespace: SettingsNamespace = account ? { provider: "google", subject: account.sub } : null;
-  return <LocaleProvider storageNamespace={namespace}><CapsuleShelfApp account={account} namespace={namespace} onAccountChange={setAccount} /></LocaleProvider>;
+  const [rememberedAccount, setRememberedAccount] = useState<RememberedGoogleAccount | null>(readRememberedGoogleAccount);
+  const activeAccount = account ?? rememberedAccount;
+  const namespace: SettingsNamespace = activeAccount ? { provider: "google", subject: activeAccount.sub } : null;
+  function changeAccount(next: ConnectedGoogleAccount | null) {
+    setAccount(next);
+    if (next) {
+      const remembered = { sub: next.sub, email: next.email };
+      rememberGoogleAccount(remembered);
+      setRememberedAccount(remembered);
+    }
+  }
+  function forgetAccount() {
+    clearRememberedGoogleAccount();
+    setRememberedAccount(null);
+    setAccount(null);
+  }
+  return <LocaleProvider storageNamespace={namespace}><CapsuleShelfApp account={account} rememberedAccount={rememberedAccount} namespace={namespace} onAccountChange={changeAccount} onDisconnect={forgetAccount} /></LocaleProvider>;
 }
 
-function CapsuleShelfApp({ account, namespace, onAccountChange }: { account: ConnectedGoogleAccount | null; namespace: SettingsNamespace; onAccountChange: (account: ConnectedGoogleAccount | null) => void }) {
+function CapsuleShelfApp({ account, rememberedAccount, namespace, onAccountChange, onDisconnect }: { account: ConnectedGoogleAccount | null; rememberedAccount: RememberedGoogleAccount | null; namespace: SettingsNamespace; onAccountChange: (account: ConnectedGoogleAccount | null) => void; onDisconnect: () => void }) {
   const { locale, setLocale, t } = useLocale();
   const initialHash = window.location.hash;
   const [activeView, setActiveView] = useState<"inventory" | "recipes">(initialHash === "#recipes" ? "recipes" : "inventory");
@@ -41,7 +58,6 @@ function CapsuleShelfApp({ account, namespace, onAccountChange }: { account: Con
   const [pendingConnection, setPendingConnection] = useState<{ account: GoogleAccount; accessToken: string; driveFile: DriveSettingsFile; localSettings: UserSettings; cloudSettings: UserSettings } | null>(null);
   const lastSyncedJson = useRef("");
   const driveWriteQueue = useRef<Promise<void>>(Promise.resolve());
-  const settingsFileInput = useRef<HTMLInputElement>(null);
   const {
     capsules,
     inventory,
@@ -55,7 +71,6 @@ function CapsuleShelfApp({ account, namespace, onAccountChange }: { account: Con
     ready,
     readyForNamespace,
     exportInventory,
-    importInventory,
     changeQuantity,
     toggleFavorite,
     updateThreshold,
@@ -186,37 +201,6 @@ function CapsuleShelfApp({ account, namespace, onAccountChange }: { account: Con
     }
   }
 
-  function downloadSettings() {
-    const file = new Blob([settingsJson], { type: "application/json" });
-    const url = URL.createObjectURL(file);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `capsule-shelf-${new Date().toISOString().slice(0, 10)}.json`;
-    document.body.append(link);
-    link.click();
-    link.remove();
-    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-  }
-
-  async function uploadSettings(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.currentTarget.files?.[0];
-    if (!file) return;
-    const input = event.currentTarget;
-    try {
-      const raw = await file.text();
-      const imported = parseUserSettings(raw, fullCatalog, recipes.map(({ id }) => id), locale);
-      if (window.confirm(t("replaceSettings"))) {
-        importInventory(serializeInventory(imported.inventory));
-        setFavoriteRecipeIds(imported.favoriteRecipes);
-        setLocale(imported.locale);
-      }
-    } catch {
-      importInventory("не удалось прочитать файл");
-    } finally {
-      input.value = "";
-    }
-  }
-
   async function connectGoogle() {
     setSyncState("connecting");
     setSyncError("");
@@ -276,12 +260,16 @@ function CapsuleShelfApp({ account, namespace, onAccountChange }: { account: Con
   }
 
   function disconnectGoogle() {
-    onAccountChange(null);
+    onDisconnect();
     setSyncState("idle");
     setSyncError("");
     setPendingConnection(null);
     lastSyncedJson.current = "";
   }
+
+  const driveControlState = getDriveControlState(account, rememberedAccount, syncState);
+  const driveControlLabels = syncCopy(locale);
+  if (syncError) driveControlLabels.error = `${driveControlLabels.error}: ${syncError}`;
 
   return (
       <main aria-busy={!ready} className="page-shell">
@@ -292,6 +280,15 @@ function CapsuleShelfApp({ account, namespace, onAccountChange }: { account: Con
           <p className="page-intro">{t("subtitle")}</p>
         </div>
         <div className="line-chip"><span className="line-chip__dot" /> Nespresso Original</div>
+        <div className="header-tools">
+        <GoogleDriveControl
+          disabled={!ready || syncState === "connecting" || syncState === "saving"}
+          email={account?.email ?? rememberedAccount?.email ?? null}
+          labels={driveControlLabels}
+          onConnect={() => { void connectGoogle(); }}
+          onDisconnect={disconnectGoogle}
+          state={driveControlState}
+        />
         <div aria-label={t("language")} className="language-switch" role="group">
           {([
             ["ru", "RU", "russianName"],
@@ -307,6 +304,7 @@ function CapsuleShelfApp({ account, namespace, onAccountChange }: { account: Con
               type="button"
             >{shortLabel}</button>
           ))}
+        </div>
         </div>
       </header>
 
@@ -366,38 +364,11 @@ function CapsuleShelfApp({ account, namespace, onAccountChange }: { account: Con
 
       <footer className="page-footer">
         <div className="page-footer__storage">
-          <span>{t("browserStorage")}</span>
-          <div className="settings-actions">
-            <button className="settings-action" disabled={!ready} onClick={downloadSettings} type="button">{t("downloadSettings")}</button>
-            <button className="settings-action" disabled={!ready} onClick={() => settingsFileInput.current?.click()} type="button">{t("uploadFile")}</button>
-            <input
-              accept=".json,application/json"
-              aria-label={t("fileInput")}
-              className="visually-hidden"
-              onChange={uploadSettings}
-              ref={settingsFileInput}
-              type="file"
-            />
-          </div>
-          <div className="google-drive-sync">
-            <div className="google-drive-sync__copy">
-              <strong>{syncLabel(locale, account, syncState)}</strong>
-              {syncError && <span role="status">{syncError}</span>}
-            </div>
-            {account ? (
-              <div className="settings-actions">
-                {syncState === "error" && <button className="settings-action" onClick={() => void connectGoogle()} type="button">{syncCopy(locale).reconnect}</button>}
-                <button className="settings-action" onClick={disconnectGoogle} type="button">{syncCopy(locale).disconnect}</button>
-              </div>
-            ) : (
-              <button className="settings-action" disabled={!ready || syncState === "connecting"} onClick={() => void connectGoogle()} type="button">{syncState === "connecting" ? syncCopy(locale).connecting : syncCopy(locale).connect}</button>
-            )}
-          </div>
+          <a className="page-footer__catalog" href="https://www.nespresso.com/ca/en/order/capsules/original" rel="noreferrer" target="_blank">{t("catalogLink")}</a>
         </div>
-        <a className="page-footer__catalog" href="https://www.nespresso.com/ca/en/order/capsules/original" rel="noreferrer" target="_blank">{t("catalogLink")}</a>
         <div className="page-footer__feedback">
-          <span className="page-footer__feedback-note">{t("feedbackPrivacy")}</span>
           <a className="settings-action page-footer__feedback-link" href={feedbackFormUrls[locale]} rel="noreferrer" target="_blank">{t("feedbackLink")}</a>
+          <span className="page-footer__feedback-note">{t("feedbackPrivacy")}</span>
         </div>
       </footer>
       {pendingConnection && (
@@ -440,22 +411,22 @@ function comparableSettings(settings: UserSettings): string {
   });
 }
 
-function syncCopy(locale: Locale) {
-  const copies = {
-    en: { connect: "Connect Google Drive", connecting: "Connecting…", reconnect: "Reconnect", disconnect: "Disconnect", chooseTitle: "Choose which settings to keep", chooseDescription: "This device and Google Drive have different settings. Your unselected copy will remain saved.", useDrive: "Use Google Drive", useDevice: "Use this device", cancel: "Cancel" },
-    ru: { connect: "Подключить Google Drive", connecting: "Подключение…", reconnect: "Подключить заново", disconnect: "Отключить", chooseTitle: "Выбери, какие настройки оставить", chooseDescription: "На устройстве и в Google Drive разные настройки. Вторая копия останется сохранённой.", useDrive: "Использовать Google Drive", useDevice: "Использовать это устройство", cancel: "Отмена" },
-    fr: { connect: "Connecter Google Drive", connecting: "Connexion…", reconnect: "Reconnecter", disconnect: "Déconnecter", chooseTitle: "Choisissez les paramètres à conserver", chooseDescription: "Les paramètres de cet appareil et de Google Drive diffèrent. L’autre copie restera enregistrée.", useDrive: "Utiliser Google Drive", useDevice: "Utiliser cet appareil", cancel: "Annuler" },
-  };
-  return copies[locale];
+function getDriveControlState(account: ConnectedGoogleAccount | null, rememberedAccount: RememberedGoogleAccount | null, state: "idle" | "connecting" | "saving" | "saved" | "error"): GoogleDriveControlState {
+  if (state === "connecting") return "connecting";
+  if (state === "saving") return "saving";
+  if (state === "error") return "error";
+  if (account) return "connected";
+  if (rememberedAccount) return "remembered";
+  return "disconnected";
 }
 
-function syncLabel(locale: Locale, account: ConnectedGoogleAccount | null, state: "idle" | "connecting" | "saving" | "saved" | "error") {
-  if (account) {
-    if (state === "saving") return `${account.email} · ${locale === "ru" ? "Синхронизация…" : locale === "fr" ? "Synchronisation…" : "Syncing…"}`;
-    if (state === "error") return `${account.email} · ${locale === "ru" ? "Ошибка синхронизации" : locale === "fr" ? "Échec de synchronisation" : "Sync error"}`;
-    return `${account.email} · ${locale === "ru" ? "Google Drive подключён" : locale === "fr" ? "Google Drive connecté" : "Google Drive connected"}`;
-  }
-  return locale === "ru" ? "Синхронизация настроек в Google Drive" : locale === "fr" ? "Synchroniser les paramètres avec Google Drive" : "Sync settings with Google Drive";
+function syncCopy(locale: Locale) {
+  const copies = {
+    en: { connect: "Connect Google Drive", reconnect: "Reconnect Google Drive", connecting: "Connecting to Google Drive…", saving: "Saving settings to Google Drive", connected: "Google Drive connected", remembered: "Google Drive remembered; click to resume sync", error: "Google Drive sync failed; click to reconnect", popover: "Google Drive status", disconnect: "Disconnect Google Drive", chooseTitle: "Choose which settings to keep", chooseDescription: "This device and Google Drive have different settings. Your unselected copy will remain saved.", useDrive: "Use Google Drive", useDevice: "Use this device", cancel: "Cancel" },
+    ru: { connect: "Подключить Google Drive", reconnect: "Продолжить синхронизацию с Google Drive", connecting: "Подключаю Google Drive…", saving: "Сохраняю настройки в Google Drive", connected: "Google Drive подключён", remembered: "Google Drive запомнен; нажми, чтобы продолжить синхронизацию", error: "Не удалось синхронизировать с Google Drive; нажми, чтобы подключить снова", popover: "Состояние Google Drive", disconnect: "Отключить Google Drive", chooseTitle: "Выбери, какие настройки оставить", chooseDescription: "На устройстве и в Google Drive разные настройки. Вторая копия останется сохранённой.", useDrive: "Использовать Google Drive", useDevice: "Использовать это устройство", cancel: "Отмена" },
+    fr: { connect: "Connecter Google Drive", reconnect: "Reprendre la synchronisation avec Google Drive", connecting: "Connexion à Google Drive…", saving: "Enregistrement des paramètres dans Google Drive", connected: "Google Drive est connecté", remembered: "Google Drive est mémorisé; cliquez pour reprendre la synchronisation", error: "Échec de la synchronisation avec Google Drive; cliquez pour reconnecter", popover: "État de Google Drive", disconnect: "Déconnecter Google Drive", chooseTitle: "Choisissez les paramètres à conserver", chooseDescription: "Les paramètres de cet appareil et de Google Drive diffèrent. L’autre copie restera enregistrée.", useDrive: "Utiliser Google Drive", useDevice: "Utiliser cet appareil", cancel: "Annuler" },
+  };
+  return copies[locale];
 }
 
 function translateStorageNotice(notice: string, t: (key: MessageKey) => string): string {
