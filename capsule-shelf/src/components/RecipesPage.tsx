@@ -14,11 +14,12 @@ function loadFavoriteIds(): string[] {
     return [];
   }
 }
-export function RecipesPage() {
+export function RecipesPage({ favoriteIds: controlledFavoriteIds, onFavoriteIdsChange }: { favoriteIds?: string[]; onFavoriteIdsChange?: (ids: string[]) => void } = {}) {
   const { locale, t } = useLocale();
   const [filter, setFilter] = useState<RecipeFilter>("all");
   const [search, setSearch] = useState("");
-  const [favoriteIds, setFavoriteIds] = useState<string[]>(loadFavoriteIds);
+  const [localFavoriteIds, setLocalFavoriteIds] = useState<string[]>(loadFavoriteIds);
+  const favoriteIds = controlledFavoriteIds ?? localFavoriteIds;
   const normalizedSearch = normalizeSearch(search);
   const visibleRecipes = recipes
     .filter((recipe) => filter === "all"
@@ -30,17 +31,16 @@ export function RecipesPage() {
     }));
 
   useEffect(() => {
-    try {
-      window.localStorage.setItem(RECIPE_FAVORITES_KEY, JSON.stringify(favoriteIds));
-    } catch {
-      // Keep favorite changes usable for the current page when browser storage is unavailable.
-    }
-  }, [favoriteIds]);
+    if (controlledFavoriteIds !== undefined) return;
+    try { window.localStorage.setItem(RECIPE_FAVORITES_KEY, JSON.stringify(favoriteIds)); } catch { /* Keep in-memory favorites usable. */ }
+  }, [favoriteIds, controlledFavoriteIds]);
 
   function toggleFavorite(recipeId: string) {
-    setFavoriteIds((current) => current.includes(recipeId)
-      ? current.filter((id) => id !== recipeId)
-      : [...current, recipeId]);
+    const updated = favoriteIds.includes(recipeId)
+      ? favoriteIds.filter((id) => id !== recipeId)
+      : [...favoriteIds, recipeId];
+    if (controlledFavoriteIds !== undefined) onFavoriteIdsChange?.(updated);
+    else setLocalFavoriteIds(updated);
   }
 
   return (

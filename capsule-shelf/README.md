@@ -12,7 +12,8 @@ Capsule Shelf is a small, static web app for tracking a personal Nespresso Origi
 - Add personal ratings, tasting notes, recipe ideas, and notes about which drinks a variety suits.
 - Browse 67 Original-compatible recipes, search across translated names and capsule names, filter by hot or cold drinks, and save favorite recipes.
 - Switch between English, Russian, and French. The app uses the browser's preferred language on the first visit.
-- Export settings as a JSON backup and import them on another browser or device.
+- Export all settings as one JSON backup and import them on another browser or device.
+- Optionally sync settings between devices using a private JSON file in the connected user's Google Drive app data.
 
 ## Run locally
 
@@ -38,9 +39,18 @@ npm test -- --run
 
 ## Your settings and privacy
 
-Capsule quantities, capsule favorites, restock thresholds, and capsule notes are stored in `localStorage` in the current browser. Recipe favorites are also stored locally, in a separate browser key. The app has no account system, database, or application server; settings do not sync between browsers or devices automatically. The JSON backup includes capsule inventory and notes; recipe favorites and language preference are not included.
+Capsule quantities, capsule favorites, restock thresholds, capsule notes, recipe favorites, and language preference are stored in the browser. The app remains static and has no application server or database. If you connect Google Drive, the app requests a short-lived Google access token in the current page and reads or writes one `capsule-shelf-settings.json` file in Google's hidden `appDataFolder`. The token is kept in memory and is not saved. Local settings remain available if Drive is disconnected or unavailable. When copies differ, the app asks which copy to use and preserves the unselected copy.
 
-Use **Download settings** to save a JSON backup. Use **Upload settings** to restore that backup elsewhere. Importing replaces the settings in the current browser after confirmation. Keep backup files private: they may contain personal notes and inventory details.
+Use **Download settings** to save a JSON backup. It includes inventory, notes, favorites, and language. Use **Upload settings** to restore that backup elsewhere. Importing replaces settings in the current browser after confirmation. Keep backup files private: they may contain personal notes and inventory details.
+
+### Configure Google Drive sync
+
+1. In Google Cloud Console, create a project, enable the Google Drive API, and create an OAuth client ID for a Web application.
+2. Add the app origins to the OAuth client's authorized JavaScript origins: `http://localhost:5173`, `http://localhost:5175`, and `https://utkin-vitaliy.github.io` for GitHub Pages. Do not create or expose a client secret for this browser-only app.
+3. In the GitHub repository settings, add the Actions variable `VITE_GOOGLE_CLIENT_ID` with the OAuth client ID. The Pages workflow injects it at build time.
+4. For local use, copy `.env.example` to `.env.local`, add the client ID, and restart Vite. Do not commit `.env.local`.
+
+Apple/iCloud sync is not included in this version.
 
 ## Catalog and images
 

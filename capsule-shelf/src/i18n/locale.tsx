@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { settingsStorageKey, type SettingsNamespace } from "../storage/settingsStorage";
 
 export type Locale = "en" | "ru" | "fr";
 export const LOCALE_STORAGE_KEY = "capsule-shelf:locale:v1";
@@ -54,9 +55,9 @@ export function detectLocale(languages: readonly string[]): Locale {
   return "en";
 }
 
-function initialLocale(): Locale {
+function initialLocale(storageKey = LOCALE_STORAGE_KEY): Locale {
   try {
-    const saved = window.localStorage.getItem(LOCALE_STORAGE_KEY);
+    const saved = window.localStorage.getItem(storageKey);
     if (saved === "en" || saved === "ru" || saved === "fr") return saved;
   } catch {
     // The language selector still works for this session if storage is blocked.
@@ -73,17 +74,25 @@ type LocaleContextValue = {
 
 const LocaleContext = createContext<LocaleContextValue | null>(null);
 
-export function LocaleProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>(initialLocale);
+export function LocaleProvider({ children, storageNamespace = null }: { children: ReactNode; storageNamespace?: SettingsNamespace }) {
+  const storageKey = settingsStorageKey(LOCALE_STORAGE_KEY, storageNamespace);
+  const [locale, setLocaleState] = useState<Locale>(() => initialLocale(storageKey));
+  const [hydratedStorageKey, setHydratedStorageKey] = useState(storageKey);
 
   useEffect(() => {
+    setLocaleState(initialLocale(storageKey));
+    setHydratedStorageKey(storageKey);
+  }, [storageKey]);
+
+  useEffect(() => {
+    if (hydratedStorageKey !== storageKey) return;
     document.documentElement.lang = locale;
     try {
-      window.localStorage.setItem(LOCALE_STORAGE_KEY, locale);
+      window.localStorage.setItem(storageKey, locale);
     } catch {
       // Keep the selected language in memory when browser storage is blocked.
     }
-  }, [locale]);
+  }, [locale, storageKey, hydratedStorageKey]);
 
   const value = useMemo<LocaleContextValue>(() => ({
     locale,

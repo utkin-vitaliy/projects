@@ -8,7 +8,7 @@ A small collection of static web projects by Vitaliy, published with GitHub Page
 
 ### Capsule Shelf
 
-A personal Nespresso Original capsule inventory and recipe collection. Track quantities, favorites, restock thresholds, tasting notes, and browse recipes in English, Russian, or French. Personal settings stay in the user's browser and can be backed up to or restored from a JSON file.
+A personal Nespresso Original capsule inventory and recipe collection. Track quantities, favorites, restock thresholds, tasting notes, and browse recipes in English, Russian, or French. Personal settings stay in the user's browser and can be backed up to or restored from a JSON file, or synced through the user's Google Drive.
 
 - **Open the app:** [Capsule Shelf](https://utkin-vitaliy.github.io/projects/capsule-shelf/)
 - **Project folder:** [`capsule-shelf/`](capsule-shelf/)

@@ -4,6 +4,7 @@ import type { CapsuleCategory } from "../../domain/capsules";
 import { getLowStockCapsuleIds, getTotalCapsules } from "../../domain/inventory";
 import { createEmptyInventoryEntry, DEFAULT_LOW_STOCK_THRESHOLD, type CapsuleNote, type InventoryState } from "../../domain/capsules";
 import { loadInventory, parseInventoryBackup, serializeInventory } from "../../storage/inventoryStorage";
+import { settingsStorageKey, type SettingsNamespace } from "../../storage/settingsStorage";
 
 export type InventoryFilter = "all" | "favorites" | "low";
 export type CategoryFilter = CapsuleCategory | "all";
@@ -14,21 +15,26 @@ function createCatalogInventory(): InventoryState {
   return Object.fromEntries(capsules.map(({ id }) => [id, createEmptyInventoryEntry()]));
 }
 
-export function useInventory() {
+export function useInventory(namespace: SettingsNamespace = null) {
   const [inventory, setInventory] = useState<InventoryState>(createCatalogInventory);
   const [filter, setFilter] = useState<InventoryFilter>("all");
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("all");
   const [storageNotice, setStorageNotice] = useState("");
   const [ready, setReady] = useState(false);
+  const [readyStorageKey, setReadyStorageKey] = useState("");
   const persistenceEnabled = useRef(false);
   const skipInitialWrite = useRef(true);
   const unlistedInventory = useRef<InventoryState>({});
   const lowStockIds = useMemo(() => getLowStockCapsuleIds(capsules, inventory), [inventory]);
   const lowStockSet = useMemo(() => new Set(lowStockIds), [lowStockIds]);
   const totalCapsules = useMemo(() => getTotalCapsules(inventory), [inventory]);
+  const inventoryStorageKey = settingsStorageKey(LOCAL_STORAGE_KEY, namespace);
+  const legacyStorageKey = namespace ? null : LEGACY_STORAGE_KEY;
 
   useEffect(() => {
     let active = true;
+    setReady(false);
+    persistenceEnabled.current = false;
 
     async function hydrate() {
       let persistedInventory = createCatalogInventory();
@@ -37,7 +43,7 @@ export function useInventory() {
       let localRaw: string | null = null;
 
       try {
-        localRaw = window.localStorage.getItem(LOCAL_STORAGE_KEY);
+          localRaw = window.localStorage.getItem(inventoryStorageKey);
       } catch {
         notice = "Браузерное хранилище недоступно. Изменения могут не сохраниться после закрытия страницы.";
       }
@@ -52,7 +58,7 @@ export function useInventory() {
       } else {
         let legacyRaw: string | null = null;
         try {
-          legacyRaw = window.localStorage.getItem(LEGACY_STORAGE_KEY);
+          legacyRaw = legacyStorageKey ? window.localStorage.getItem(legacyStorageKey) : null;
         } catch {
           // If browser storage is blocked, continue with an in-memory empty inventory.
         }
@@ -62,10 +68,10 @@ export function useInventory() {
         }
 
         try {
-          window.localStorage.setItem(LOCAL_STORAGE_KEY, serializeInventory(persistedInventory));
+          window.localStorage.setItem(inventoryStorageKey, serializeInventory(persistedInventory));
           localStorageAvailable = true;
           try {
-            window.localStorage.removeItem(LEGACY_STORAGE_KEY);
+            if (legacyStorageKey) window.localStorage.removeItem(legacyStorageKey);
           } catch {
             // Keep the original legacy copy if the browser refuses to remove it.
           }
@@ -88,12 +94,13 @@ export function useInventory() {
       skipInitialWrite.current = true;
       setInventory(currentInventory);
       setStorageNotice(notice);
+      setReadyStorageKey(inventoryStorageKey);
       setReady(true);
     }
 
     void hydrate();
     return () => { active = false; };
-  }, []);
+  }, [inventoryStorageKey, legacyStorageKey]);
 
   useEffect(() => {
     if (!ready || !persistenceEnabled.current) return;
@@ -105,7 +112,7 @@ export function useInventory() {
     const timeout = window.setTimeout(() => {
       const completeInventory = { ...unlistedInventory.current, ...inventory };
       try {
-        window.localStorage.setItem(LOCAL_STORAGE_KEY, serializeInventory(completeInventory));
+        window.localStorage.setItem(inventoryStorageKey, serializeInventory(completeInventory));
         setStorageNotice("");
       } catch {
         persistenceEnabled.current = false;
@@ -113,7 +120,7 @@ export function useInventory() {
       }
     }, 120);
     return () => window.clearTimeout(timeout);
-  }, [inventory, ready]);
+  }, [inventory, ready, inventoryStorageKey]);
 
   function exportInventory(): InventoryState {
     return { ...unlistedInventory.current, ...inventory };
@@ -123,7 +130,7 @@ export function useInventory() {
     let imported: InventoryState;
     try {
       imported = parseInventoryBackup(capsules, raw);
-      window.localStorage.setItem(LOCAL_STORAGE_KEY, serializeInventory(imported));
+      window.localStorage.setItem(inventoryStorageKey, serializeInventory(imported));
     } catch (error) {
       setStorageNotice(error instanceof Error ? error.message : "Не удалось загрузить файл настроек.");
       return false;
@@ -200,6 +207,7 @@ export function useInventory() {
     totalCapsules,
     storageNotice,
     ready,
+    readyForNamespace: ready && readyStorageKey === inventoryStorageKey,
     exportInventory,
     importInventory,
     changeQuantity,

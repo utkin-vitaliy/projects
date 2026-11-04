@@ -5,9 +5,16 @@ import { InventorySummary } from "./components/InventorySummary";
 import { RecipesPage } from "./components/RecipesPage";
 import { capsules as fullCatalog } from "./data/capsules";
 import { useInventory } from "./features/inventory/useInventory";
-import { parseInventoryBackup, serializeInventory } from "./storage/inventoryStorage";
+import { serializeInventory } from "./storage/inventoryStorage";
 import { localizeCapsule } from "./i18n/catalogContent";
 import { LocaleProvider, useLocale, type Locale, type MessageKey } from "./i18n/locale";
+import { recipes } from "./data/recipes";
+import { parseUserSettings, serializeUserSettings, type UserSettings } from "./storage/userSettings";
+import { settingsStorageKey, type SettingsNamespace } from "./storage/settingsStorage";
+import { getGoogleAccount, readDriveSettings, requestGoogleAccessToken, writeDriveSettings, type DriveSettingsFile, type GoogleAccount } from "./storage/googleDrive";
+
+type ConnectedGoogleAccount = GoogleAccount & { accessToken: string; fileId: string };
+const USER_SETTINGS_STORAGE_KEY = "capsule-shelf:user-settings:v1";
 
 const feedbackFormUrls: Record<Locale, string> = {
   en: "https://github.com/utkin-vitaliy/projects/issues/new?template=feedback-en.yml",
@@ -16,16 +23,24 @@ const feedbackFormUrls: Record<Locale, string> = {
 };
 
 export default function App() {
-  return <LocaleProvider><CapsuleShelfApp /></LocaleProvider>;
+  const [account, setAccount] = useState<ConnectedGoogleAccount | null>(null);
+  const namespace: SettingsNamespace = account ? { provider: "google", subject: account.sub } : null;
+  return <LocaleProvider storageNamespace={namespace}><CapsuleShelfApp account={account} namespace={namespace} onAccountChange={setAccount} /></LocaleProvider>;
 }
 
-function CapsuleShelfApp() {
+function CapsuleShelfApp({ account, namespace, onAccountChange }: { account: ConnectedGoogleAccount | null; namespace: SettingsNamespace; onAccountChange: (account: ConnectedGoogleAccount | null) => void }) {
   const { locale, setLocale, t } = useLocale();
   const initialHash = window.location.hash;
   const [activeView, setActiveView] = useState<"inventory" | "recipes">(initialHash === "#recipes" ? "recipes" : "inventory");
   const shouldScrollToView = useRef(initialHash === "#recipes" || initialHash === "#capsules");
   const [pendingRecipeId, setPendingRecipeId] = useState<string | null>(null);
   const [capsuleSearch, setCapsuleSearch] = useState("");
+  const [favoriteRecipeIds, setFavoriteRecipeIds] = useState<string[]>([]);
+  const [syncState, setSyncState] = useState<"idle" | "connecting" | "saving" | "saved" | "error">("idle");
+  const [syncError, setSyncError] = useState("");
+  const [pendingConnection, setPendingConnection] = useState<{ account: GoogleAccount; accessToken: string; driveFile: DriveSettingsFile; localSettings: UserSettings; cloudSettings: UserSettings } | null>(null);
+  const lastSyncedJson = useRef("");
+  const driveWriteQueue = useRef<Promise<void>>(Promise.resolve());
   const settingsFileInput = useRef<HTMLInputElement>(null);
   const {
     capsules,
@@ -38,13 +53,67 @@ function CapsuleShelfApp() {
     totalCapsules,
     storageNotice,
     ready,
+    readyForNamespace,
     exportInventory,
     importInventory,
     changeQuantity,
     toggleFavorite,
     updateThreshold,
     saveNote,
-  } = useInventory();
+  } = useInventory(namespace);
+
+  const recipeFavoritesStorageKey = settingsStorageKey("capsule-shelf:recipe-favorites:v1", namespace);
+  const completeSettings = useMemo<UserSettings>(() => ({
+    format: "capsule-shelf-user-settings",
+    version: 1,
+    updatedAt: new Date().toISOString(),
+    locale,
+    inventory: exportInventory(),
+    favoriteRecipes: favoriteRecipeIds,
+  }), [locale, inventory, favoriteRecipeIds]);
+  const settingsJson = useMemo(() => serializeUserSettings(completeSettings), [completeSettings]);
+
+  useEffect(() => {
+    try {
+      const storedFavorites: unknown = JSON.parse(window.localStorage.getItem(recipeFavoritesStorageKey) ?? "[]");
+      setFavoriteRecipeIds(Array.isArray(storedFavorites) ? storedFavorites.filter((id): id is string => typeof id === "string") : []);
+    } catch {
+      setFavoriteRecipeIds([]);
+    }
+  }, [recipeFavoritesStorageKey]);
+
+  useEffect(() => {
+    if (!readyForNamespace) return;
+    try {
+      window.localStorage.setItem(recipeFavoritesStorageKey, JSON.stringify(favoriteRecipeIds));
+      window.localStorage.setItem(settingsStorageKey(USER_SETTINGS_STORAGE_KEY, namespace), settingsJson);
+    } catch { /* Keep the in-memory copy available if browser storage is blocked. */ }
+  }, [favoriteRecipeIds, readyForNamespace, recipeFavoritesStorageKey, settingsJson, namespace]);
+
+  useEffect(() => {
+    if (!account || !readyForNamespace) return;
+    const payload = parseUserSettings(settingsJson, fullCatalog, recipes.map(({ id }) => id), locale);
+    const comparable = comparableSettings(payload);
+    if (comparable === lastSyncedJson.current) return;
+    setSyncState("saving");
+    const timeout = window.setTimeout(() => {
+      const save = driveWriteQueue.current
+        .catch(() => undefined)
+        .then(() => writeDriveSettings(account.accessToken, settingsJson, account.fileId));
+      driveWriteQueue.current = save.then(() => undefined, () => undefined);
+      void save
+        .then(() => {
+          lastSyncedJson.current = comparable;
+          setSyncState("saved");
+          setSyncError("");
+        })
+        .catch((error: unknown) => {
+          setSyncState("error");
+          setSyncError(error instanceof Error ? error.message : "Google Drive sync failed.");
+        });
+    }, 900);
+    return () => window.clearTimeout(timeout);
+  }, [account, readyForNamespace, settingsJson, locale]);
   const localizedCatalog = useMemo(() => fullCatalog.map((capsule) => localizeCapsule(capsule, locale)), [locale]);
   const localizedCapsules = useMemo(() => {
     const query = normalizeSearch(capsuleSearch);
@@ -118,7 +187,7 @@ function CapsuleShelfApp() {
   }
 
   function downloadSettings() {
-    const file = new Blob([serializeInventory(exportInventory())], { type: "application/json" });
+    const file = new Blob([settingsJson], { type: "application/json" });
     const url = URL.createObjectURL(file);
     const link = document.createElement("a");
     link.href = url;
@@ -135,14 +204,11 @@ function CapsuleShelfApp() {
     const input = event.currentTarget;
     try {
       const raw = await file.text();
-      try {
-        parseInventoryBackup(fullCatalog, raw);
-      } catch {
-        importInventory(raw);
-        return;
-      }
+      const imported = parseUserSettings(raw, fullCatalog, recipes.map(({ id }) => id), locale);
       if (window.confirm(t("replaceSettings"))) {
-        importInventory(raw);
+        importInventory(serializeInventory(imported.inventory));
+        setFavoriteRecipeIds(imported.favoriteRecipes);
+        setLocale(imported.locale);
       }
     } catch {
       importInventory("не удалось прочитать файл");
@@ -151,8 +217,74 @@ function CapsuleShelfApp() {
     }
   }
 
+  async function connectGoogle() {
+    setSyncState("connecting");
+    setSyncError("");
+    try {
+      const accessToken = await requestGoogleAccessToken(import.meta.env.VITE_GOOGLE_CLIENT_ID ?? "");
+      const googleAccount = await getGoogleAccount(accessToken);
+      const driveFile = await readDriveSettings(accessToken);
+      const accountNamespace: SettingsNamespace = { provider: "google", subject: googleAccount.sub };
+      const localRaw = window.localStorage.getItem(settingsStorageKey(USER_SETTINGS_STORAGE_KEY, accountNamespace));
+      const localSettings = localRaw
+        ? parseUserSettings(localRaw, fullCatalog, recipes.map(({ id }) => id), locale)
+        : parseUserSettings(settingsJson, fullCatalog, recipes.map(({ id }) => id), locale);
+      if (!driveFile) {
+        const saved = await writeDriveSettings(accessToken, serializeUserSettings(localSettings));
+        persistSettingsForNamespace(localSettings, accountNamespace);
+        setFavoriteRecipeIds(localSettings.favoriteRecipes);
+        setLocale(localSettings.locale);
+        lastSyncedJson.current = comparableSettings(localSettings);
+        onAccountChange({ ...googleAccount, accessToken, fileId: saved.fileId });
+        setSyncState("saved");
+        return;
+      }
+      const cloudSettings = parseUserSettings(driveFile.raw, fullCatalog, recipes.map(({ id }) => id), locale);
+      if (comparableSettings(localSettings) !== comparableSettings(cloudSettings)) {
+        setPendingConnection({ account: googleAccount, accessToken, driveFile, localSettings, cloudSettings });
+        setSyncState("idle");
+        return;
+      }
+      persistSettingsForNamespace(cloudSettings, accountNamespace);
+      setFavoriteRecipeIds(cloudSettings.favoriteRecipes);
+      setLocale(cloudSettings.locale);
+      lastSyncedJson.current = comparableSettings(cloudSettings);
+      onAccountChange({ ...googleAccount, accessToken, fileId: driveFile.fileId });
+      setSyncState("saved");
+    } catch (error) {
+      setSyncState("error");
+      setSyncError(error instanceof Error ? error.message : "Could not connect Google Drive.");
+    }
+  }
+
+  function resolveConnection(useCloud: boolean) {
+    if (!pendingConnection) return;
+    const selected = useCloud ? pendingConnection.cloudSettings : pendingConnection.localSettings;
+    const accountNamespace: SettingsNamespace = { provider: "google", subject: pendingConnection.account.sub };
+    persistSettingsForNamespace(selected, accountNamespace);
+    setFavoriteRecipeIds(selected.favoriteRecipes);
+    setLocale(selected.locale);
+    lastSyncedJson.current = comparableSettings(selected);
+    onAccountChange({ ...pendingConnection.account, accessToken: pendingConnection.accessToken, fileId: pendingConnection.driveFile.fileId });
+    if (!useCloud) {
+      setSyncState("saving");
+      void writeDriveSettings(pendingConnection.accessToken, serializeUserSettings(selected), pendingConnection.driveFile.fileId)
+        .then(() => setSyncState("saved"))
+        .catch((error: unknown) => { setSyncState("error"); setSyncError(error instanceof Error ? error.message : "Google Drive sync failed."); });
+    } else setSyncState("saved");
+    setPendingConnection(null);
+  }
+
+  function disconnectGoogle() {
+    onAccountChange(null);
+    setSyncState("idle");
+    setSyncError("");
+    setPendingConnection(null);
+    lastSyncedJson.current = "";
+  }
+
   return (
-    <main aria-busy={!ready} className="page-shell">
+      <main aria-busy={!ready} className="page-shell">
       <header className="page-header">
         <div className="brand-mark" aria-hidden="true"><svg viewBox="0 0 64 64"><g transform="translate(0 -3)"><path d="M47.9 15.3c8 7.2 7.2 21.3-1.7 32.4s-22.5 15-30.5 7.8S8.5 34.2 17.4 23.1s22.5-15 30.5-7.8Z"/><path className="brand-mark__crease" d="M18.9 49.6c8.2-2.7 14.8-8.2 19.5-16.1 4.5-7.5 5.7-14.2 3.7-20.1-1.6 1.5-3.1 3.2-4.5 5-3.2 4.3-5.1 9.2-7.8 13.9-2.8 4.8-6.6 9.1-11.2 12.5-1.1.8-2.3 1.6-3.6 2.3.9 1 2.2 1.9 3.9 2.5Z"/></g></svg></div>
         <div className="page-heading">
@@ -198,7 +330,7 @@ function CapsuleShelfApp() {
       {!ready ? (
         <p className="inventory-loading" role="status">{t("loading")}</p>
       ) : activeView === "recipes" ? (
-        <RecipesPage />
+        <RecipesPage favoriteIds={favoriteRecipeIds} onFavoriteIdsChange={setFavoriteRecipeIds} />
       ) : (
         <div id="capsules" className="capsules-view">
           <InventorySummary
@@ -247,6 +379,20 @@ function CapsuleShelfApp() {
               type="file"
             />
           </div>
+          <div className="google-drive-sync">
+            <div className="google-drive-sync__copy">
+              <strong>{syncLabel(locale, account, syncState)}</strong>
+              {syncError && <span role="status">{syncError}</span>}
+            </div>
+            {account ? (
+              <div className="settings-actions">
+                {syncState === "error" && <button className="settings-action" onClick={() => void connectGoogle()} type="button">{syncCopy(locale).reconnect}</button>}
+                <button className="settings-action" onClick={disconnectGoogle} type="button">{syncCopy(locale).disconnect}</button>
+              </div>
+            ) : (
+              <button className="settings-action" disabled={!ready || syncState === "connecting"} onClick={() => void connectGoogle()} type="button">{syncState === "connecting" ? syncCopy(locale).connecting : syncCopy(locale).connect}</button>
+            )}
+          </div>
         </div>
         <a className="page-footer__catalog" href="https://www.nespresso.com/ca/en/order/capsules/original" rel="noreferrer" target="_blank">{t("catalogLink")}</a>
         <div className="page-footer__feedback">
@@ -254,12 +400,62 @@ function CapsuleShelfApp() {
           <a className="settings-action page-footer__feedback-link" href={feedbackFormUrls[locale]} rel="noreferrer" target="_blank">{t("feedbackLink")}</a>
         </div>
       </footer>
+      {pendingConnection && (
+        <div className="sync-dialog-backdrop" role="presentation">
+          <section aria-labelledby="sync-dialog-title" aria-modal="true" className="sync-dialog" role="dialog">
+            <h2 id="sync-dialog-title">{syncCopy(locale).chooseTitle}</h2>
+            <p>{syncCopy(locale).chooseDescription}</p>
+            <p><strong>{pendingConnection.account.email}</strong></p>
+            <div className="sync-dialog__actions">
+              <button className="settings-action" onClick={() => resolveConnection(true)} type="button">{syncCopy(locale).useDrive}</button>
+              <button className="settings-action" onClick={() => resolveConnection(false)} type="button">{syncCopy(locale).useDevice}</button>
+              <button className="settings-action" onClick={() => setPendingConnection(null)} type="button">{syncCopy(locale).cancel}</button>
+            </div>
+          </section>
+        </div>
+      )}
     </main>
   );
 }
 
 function normalizeSearch(value: string) {
   return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLocaleLowerCase();
+}
+
+function persistSettingsForNamespace(settings: UserSettings, namespace: SettingsNamespace) {
+  const inventoryKey = settingsStorageKey("capsule-shelf:inventory:v2", namespace);
+  const favoritesKey = settingsStorageKey("capsule-shelf:recipe-favorites:v1", namespace);
+  const localeKey = settingsStorageKey("capsule-shelf:locale:v1", namespace);
+  window.localStorage.setItem(inventoryKey, serializeInventory(settings.inventory));
+  window.localStorage.setItem(favoritesKey, JSON.stringify(settings.favoriteRecipes));
+  window.localStorage.setItem(localeKey, settings.locale);
+  window.localStorage.setItem(settingsStorageKey(USER_SETTINGS_STORAGE_KEY, namespace), serializeUserSettings(settings));
+}
+
+function comparableSettings(settings: UserSettings): string {
+  return JSON.stringify({
+    locale: settings.locale,
+    inventory: Object.fromEntries(Object.entries(settings.inventory).sort(([a], [b]) => a.localeCompare(b))),
+    favoriteRecipes: [...settings.favoriteRecipes].sort(),
+  });
+}
+
+function syncCopy(locale: Locale) {
+  const copies = {
+    en: { connect: "Connect Google Drive", connecting: "Connecting…", reconnect: "Reconnect", disconnect: "Disconnect", chooseTitle: "Choose which settings to keep", chooseDescription: "This device and Google Drive have different settings. Your unselected copy will remain saved.", useDrive: "Use Google Drive", useDevice: "Use this device", cancel: "Cancel" },
+    ru: { connect: "Подключить Google Drive", connecting: "Подключение…", reconnect: "Подключить заново", disconnect: "Отключить", chooseTitle: "Выбери, какие настройки оставить", chooseDescription: "На устройстве и в Google Drive разные настройки. Вторая копия останется сохранённой.", useDrive: "Использовать Google Drive", useDevice: "Использовать это устройство", cancel: "Отмена" },
+    fr: { connect: "Connecter Google Drive", connecting: "Connexion…", reconnect: "Reconnecter", disconnect: "Déconnecter", chooseTitle: "Choisissez les paramètres à conserver", chooseDescription: "Les paramètres de cet appareil et de Google Drive diffèrent. L’autre copie restera enregistrée.", useDrive: "Utiliser Google Drive", useDevice: "Utiliser cet appareil", cancel: "Annuler" },
+  };
+  return copies[locale];
+}
+
+function syncLabel(locale: Locale, account: ConnectedGoogleAccount | null, state: "idle" | "connecting" | "saving" | "saved" | "error") {
+  if (account) {
+    if (state === "saving") return `${account.email} · ${locale === "ru" ? "Синхронизация…" : locale === "fr" ? "Synchronisation…" : "Syncing…"}`;
+    if (state === "error") return `${account.email} · ${locale === "ru" ? "Ошибка синхронизации" : locale === "fr" ? "Échec de synchronisation" : "Sync error"}`;
+    return `${account.email} · ${locale === "ru" ? "Google Drive подключён" : locale === "fr" ? "Google Drive connecté" : "Google Drive connected"}`;
+  }
+  return locale === "ru" ? "Синхронизация настроек в Google Drive" : locale === "fr" ? "Synchroniser les paramètres avec Google Drive" : "Sync settings with Google Drive";
 }
 
 function translateStorageNotice(notice: string, t: (key: MessageKey) => string): string {
