@@ -241,7 +241,9 @@ h1 { margin: 0; color: var(--ink); font-size: clamp(28px, 3.5vw, 40px); font-wei
 .page-footer__feedback-link { text-decoration: none; }
 .page-footer__feedback-note { max-width: 250px; color: #8c9087; font-size: 10px; line-height: 1.4; }
 .page-footer__catalog { color: #596d5a; text-decoration: none; }
+.page-footer__privacy { color: #8c9087; text-decoration: none; }
 .page-footer__catalog:hover { text-decoration: underline; }
+.page-footer__privacy:hover { color: #596d5a; text-decoration: underline; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; clip-path: inset(50%); }
 button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid rgb(111 137 112 / 43%); outline-offset: 2px; }
 

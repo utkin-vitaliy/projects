@@ -365,6 +365,7 @@ function CapsuleShelfApp({ account, rememberedAccount, namespace, onAccountChang
       <footer className="page-footer">
         <div className="page-footer__storage">
           <a className="page-footer__catalog" href="https://www.nespresso.com/ca/en/order/capsules/original" rel="noreferrer" target="_blank">{t("catalogLink")}</a>
+          <a className="page-footer__privacy" href={`${import.meta.env.BASE_URL}privacy.html`}>{t("privacyPolicyLink")}</a>
         </div>
         <div className="page-footer__feedback">
           <a className="settings-action page-footer__feedback-link" href={feedbackFormUrls[locale]} rel="noreferrer" target="_blank">{t("feedbackLink")}</a>
