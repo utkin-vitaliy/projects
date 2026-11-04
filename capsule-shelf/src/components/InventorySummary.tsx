@@ -45,7 +45,7 @@ export function InventorySummary({ totalCapsules, varietyCount, lowStockIds, cat
       )}
       {lowStockIds.length === 0 && (
         <div className="summary-tip" role="note">
-          <span className="summary-tip__mark" aria-hidden="true">✦</span>
+          <span className="summary-tip__mark" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="m8.5 12.2 2.3 2.3 4.8-5" /></svg></span>
           <div>
             <strong>{t("allCalm")}</strong>
             <p>{t("calmTip")}</p>

@@ -62,10 +62,11 @@ h1 { margin: 0; color: var(--ink); font-size: clamp(28px, 3.5vw, 40px); font-wei
 .summary-alert ul { display: flex; flex-wrap: wrap; gap: 3px 10px; margin: 0; padding: 0; list-style: none; color: #74544d; font-size: 12px; }
 .summary-alert li { animation: fade-in .2s ease both; }
 .summary-tip { display: flex; align-items: center; gap: 10px; padding: 9px 11px; border: 1px solid #e8e2d7; border-radius: 9px; background: #faf9f6; }
-.summary-tip__mark { display: grid; width: 26px; height: 26px; flex: 0 0 auto; place-items: center; border-radius: 50%; color: #76603f; background: #f0e7d5; font-size: 13px; }
+.summary-tip__mark { display: grid; width: 26px; height: 26px; flex: 0 0 auto; place-items: center; border-radius: 50%; color: #5b705d; background: #edf0e8; }
+.summary-tip__mark svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.7; }
 .summary-tip strong { color: #344238; font-size: 12px; font-weight: 600; }
 .summary-tip p { margin: 3px 0 0; color: #616b60; font-size: 12px; line-height: 1.4; }
-.storage-notice { margin: 14px 0 0; padding: 10px 13px; border-radius: 8px; color: #793b30; background: #f5e8e4; font-size: 12px; }
+.storage-notice { margin: 14px 0 18px; padding: 10px 13px; border-radius: 8px; color: #793b30; background: #f5e8e4; font-size: 12px; }
 .inventory-loading { min-height: 168px; margin: 32px 0; display: grid; place-items: center; border: 1px solid #e6e4dc; border-radius: 16px; color: #73796f; background: #f8f7f2; font: 18px Georgia, serif; }
 
 .recipes-section { margin-top: 39px; animation: rise-in .45s ease both; }
