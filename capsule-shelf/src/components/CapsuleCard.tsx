@@ -116,7 +116,7 @@ export function CapsuleCard({ capsule, entry = createEmptyInventoryEntry(), lowS
           <div className="quantity-control" aria-label={t("manageStock", { name: capsule.name })}>
             <button aria-label={t("reduceCapsule", { name: capsule.name })} disabled={entry.quantity <= 0} onClick={() => onQuantitySet(capsule.id, Math.max(0, entry.quantity - 1))} type="button">−</button>
             <input
-              aria-label={`${t("quantityLabel")} ${capsule.name}`}
+              aria-label={t("quantityLabel", { name: capsule.name })}
               inputMode="numeric"
               max={Number.MAX_SAFE_INTEGER}
               min={0}

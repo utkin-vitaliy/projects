@@ -14,12 +14,7 @@ function loadFavoriteIds(): string[] {
     return [];
   }
 }
-type Props = {
-  targetRecipeId?: string | null;
-  onTargetHandled?: () => void;
-};
-
-export function RecipesPage({ targetRecipeId = null, onTargetHandled = () => undefined }: Props) {
+export function RecipesPage() {
   const { locale, t } = useLocale();
   const [filter, setFilter] = useState<RecipeFilter>("all");
   const [search, setSearch] = useState("");
@@ -47,15 +42,6 @@ export function RecipesPage({ targetRecipeId = null, onTargetHandled = () => und
       ? current.filter((id) => id !== recipeId)
       : [...current, recipeId]);
   }
-
-  useEffect(() => {
-    if (!targetRecipeId) return;
-    const target = document.getElementById(`recipe-${targetRecipeId}`);
-    if (!target) return;
-    target.scrollIntoView?.({ behavior: "smooth", block: "center" });
-    target.focus({ preventScroll: true });
-    onTargetHandled();
-  }, [onTargetHandled, targetRecipeId]);
 
   return (
     <section className="recipes-section" id="recipes" aria-labelledby="recipes-title">

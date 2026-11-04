@@ -9,6 +9,12 @@ import { parseInventoryBackup, serializeInventory } from "./storage/inventorySto
 import { localizeCapsule } from "./i18n/catalogContent";
 import { LocaleProvider, useLocale, type Locale, type MessageKey } from "./i18n/locale";
 
+const feedbackFormUrls: Record<Locale, string> = {
+  en: "https://github.com/utkin-vitaliy/projects/issues/new?template=feedback-en.yml",
+  ru: "https://github.com/utkin-vitaliy/projects/issues/new?template=feedback-ru.yml",
+  fr: "https://github.com/utkin-vitaliy/projects/issues/new?template=feedback-fr.yml",
+};
+
 export default function App() {
   return <LocaleProvider><CapsuleShelfApp /></LocaleProvider>;
 }
@@ -62,14 +68,33 @@ function CapsuleShelfApp() {
       setActiveView(hash === "#recipes" ? "recipes" : "inventory");
     };
     window.addEventListener("hashchange", syncViewFromHash);
-    return () => window.removeEventListener("hashchange", syncViewFromHash);
+    window.addEventListener("popstate", syncViewFromHash);
+    return () => {
+      window.removeEventListener("hashchange", syncViewFromHash);
+      window.removeEventListener("popstate", syncViewFromHash);
+    };
   }, []);
 
   useEffect(() => {
     if (!shouldScrollToView.current) return;
     shouldScrollToView.current = false;
-    window.requestAnimationFrame(() => document.getElementById(activeView === "recipes" ? "recipes" : "capsules")?.scrollIntoView?.({ behavior: "smooth", block: "start" }));
-  }, [activeView]);
+    const targetRecipeId = activeView === "recipes" ? pendingRecipeId : null;
+    window.requestAnimationFrame(() => {
+      const target = document.getElementById(targetRecipeId ? `recipe-${targetRecipeId}` : activeView === "recipes" ? "recipes" : "capsules");
+      if (targetRecipeId && target instanceof HTMLElement) {
+        target.focus({ preventScroll: true });
+        const navBottom = document.querySelector(".page-nav")?.getBoundingClientRect().bottom ?? 0;
+        const visibleTop = Math.max(navBottom + 16, 16);
+        const availableHeight = window.innerHeight - visibleTop - 24;
+        const targetTop = visibleTop + Math.max(0, (availableHeight - target.getBoundingClientRect().height) / 2);
+        const scrollTop = target.getBoundingClientRect().top + window.scrollY - targetTop;
+        window.scrollTo(0, Math.max(0, scrollTop));
+        setPendingRecipeId(null);
+      } else {
+        target?.scrollIntoView?.({ behavior: "smooth", block: "start" });
+      }
+    });
+  }, [activeView, pendingRecipeId]);
 
   useEffect(() => {
     document.documentElement.lang = locale;
@@ -85,7 +110,7 @@ function CapsuleShelfApp() {
     shouldScrollToView.current = true;
     setActiveView(view);
     const hash = view === "recipes" ? "#recipes" : "#capsules";
-    if (window.location.hash !== hash) window.location.hash = hash;
+    if (window.location.hash !== hash) window.history.pushState(null, "", hash);
     if (isCurrentView) {
       window.requestAnimationFrame(() => document.getElementById(view === "recipes" ? "recipes" : "capsules")?.scrollIntoView?.({ behavior: "smooth", block: "start" }));
       shouldScrollToView.current = false;
@@ -173,7 +198,7 @@ function CapsuleShelfApp() {
       {!ready ? (
         <p className="inventory-loading" role="status">{t("loading")}</p>
       ) : activeView === "recipes" ? (
-        <RecipesPage onTargetHandled={() => setPendingRecipeId(null)} targetRecipeId={pendingRecipeId} />
+        <RecipesPage />
       ) : (
         <div id="capsules" className="capsules-view">
           <InventorySummary
@@ -224,6 +249,10 @@ function CapsuleShelfApp() {
           </div>
         </div>
         <a className="page-footer__catalog" href="https://www.nespresso.com/ca/en/order/capsules/original" rel="noreferrer" target="_blank">{t("catalogLink")}</a>
+        <div className="page-footer__feedback">
+          <span className="page-footer__feedback-note">{t("feedbackPrivacy")}</span>
+          <a className="settings-action page-footer__feedback-link" href={feedbackFormUrls[locale]} rel="noreferrer" target="_blank">{t("feedbackLink")}</a>
+        </div>
       </footer>
     </main>
   );

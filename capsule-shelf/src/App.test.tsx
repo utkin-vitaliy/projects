@@ -25,7 +25,7 @@ async function waitForReady() {
 }
 
 async function addCapsules(name: string, amount: number) {
-  const input = await screen.findByRole("spinbutton", { name: `Количество ${name}` }) as HTMLInputElement;
+  const input = await screen.findByRole("spinbutton", { name: `Количество капсул ${name}` }) as HTMLInputElement;
   const next = Number(input.value) + amount;
   fireEvent.change(input, { target: { value: String(next) } });
   fireEvent.blur(input);
@@ -38,7 +38,7 @@ describe("Capsule Shelf dashboard", () => {
 
     render(<App />);
 
-    expect(await screen.findByRole("heading", { name: "Ma collection de café" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Ma collection de cafés" })).toBeInTheDocument();
   });
 
   it("lets the user switch languages with compact code buttons and remembers the selection", async () => {
@@ -55,6 +55,25 @@ describe("Capsule Shelf dashboard", () => {
     expect(screen.getByRole("button", { name: "English" })).toHaveAttribute("aria-pressed", "true");
   });
 
+  it("opens the public GitHub feedback form in the selected language", async () => {
+    render(<App />);
+    await waitForReady();
+
+    const feedback = screen.getByRole("link", { name: "Оставить отзыв ↗" });
+    expect(feedback).toHaveAttribute("href", "https://github.com/utkin-vitaliy/projects/issues/new?template=feedback-ru.yml");
+    expect(feedback).toHaveAttribute("target", "_blank");
+    expect(feedback).toHaveAttribute("rel", "noreferrer");
+    expect(screen.getByText("Откроется GitHub; сообщение будет публичным.")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Английский" }));
+    expect(screen.getByRole("link", { name: "Leave feedback ↗" })).toHaveAttribute("href", "https://github.com/utkin-vitaliy/projects/issues/new?template=feedback-en.yml");
+    expect(screen.getByText("Opens GitHub; your post will be public.")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "French" }));
+    expect(screen.getByRole("link", { name: "Partager vos commentaires ↗" })).toHaveAttribute("href", "https://github.com/utkin-vitaliy/projects/issues/new?template=feedback-fr.yml");
+    expect(screen.getByText("GitHub s’ouvrira ; votre message sera public.")).toBeInTheDocument();
+  });
+
   it("switches to recipes and back without losing inventory quantities", async () => {
     render(<App />);
     await waitForReady();
@@ -63,13 +82,14 @@ describe("Capsule Shelf dashboard", () => {
     fireEvent.click(screen.getByRole("button", { name: "Рецепты" }));
     expect(screen.getByRole("heading", { name: "Рецепты для твоей полки" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Капучино" })).toBeInTheDocument();
-    expect(screen.queryByLabelText("Количество Arpeggio")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Количество капсул Arpeggio")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Капсулы" }));
-    expect(screen.getByLabelText("Количество Arpeggio")).toHaveValue(3);
+    expect(screen.getByLabelText("Количество капсул Arpeggio")).toHaveValue(3);
   });
 
   it("opens a matching recipe from its capsule card and focuses the recipe card", async () => {
+    const scrollTo = vi.spyOn(window, "scrollTo").mockImplementation(() => {});
     render(<App />);
     await waitForReady();
 
@@ -81,6 +101,7 @@ describe("Capsule Shelf dashboard", () => {
     const recipeHeading = await screen.findByRole("heading", { name: "Кленовый капучино с пеканом" });
     await waitFor(() => expect(recipeHeading.closest("article")).toHaveFocus());
     expect(recipeHeading.closest("article")).toHaveAttribute("id", "recipe-maple-pecan-cappuccino");
+    await waitFor(() => expect(scrollTo).toHaveBeenCalledWith(0, expect.any(Number)));
   });
 
   it("loads stock controls immediately and saves quantity changes to browser storage", async () => {
@@ -89,9 +110,9 @@ describe("Capsule Shelf dashboard", () => {
     await addCapsules("Arpeggio", 3);
     await addCapsules("Volluto", 2);
     expect(screen.getByLabelText("Всего капсул")).toHaveTextContent("5");
-    expect(screen.getByLabelText("Количество Arpeggio")).toHaveValue(3);
-    fireEvent.change(screen.getByLabelText("Количество Arpeggio"), { target: { value: "2" } });
-    fireEvent.blur(screen.getByLabelText("Количество Arpeggio"));
+    expect(screen.getByLabelText("Количество капсул Arpeggio")).toHaveValue(3);
+    fireEvent.change(screen.getByLabelText("Количество капсул Arpeggio"), { target: { value: "2" } });
+    fireEvent.blur(screen.getByLabelText("Количество капсул Arpeggio"));
     await waitFor(() => expect(storedInventory().arpeggio).toMatchObject({ quantity: 2 }));
     expect(screen.getByLabelText("Всего капсул")).toHaveTextContent("4");
     expect(localStorage.getItem(legacyKey)).toBeNull();
@@ -217,7 +238,7 @@ describe("Capsule Shelf dashboard", () => {
     render(<App />);
     await waitForReady();
 
-    expect(screen.getByLabelText("Количество Arpeggio")).toHaveValue(8);
+    expect(screen.getByLabelText("Количество капсул Arpeggio")).toHaveValue(8);
     expect(storedInventory().arpeggio).toMatchObject({
       quantity: 8,
       favorite: true,
@@ -250,7 +271,7 @@ describe("Capsule Shelf dashboard", () => {
     render(<App />);
     await waitForReady();
 
-    expect(screen.getByLabelText("Количество Arpeggio")).toHaveValue(3);
+    expect(screen.getByLabelText("Количество капсул Arpeggio")).toHaveValue(3);
     expect(localStorage.getItem(legacyKey)).not.toBeNull();
   });
 
@@ -269,7 +290,7 @@ describe("Capsule Shelf dashboard", () => {
 
     expect(await screen.findByRole("status")).toHaveTextContent("Не удалось сохранить данные в браузере");
     expect(localStorage.getItem(legacyKey)).not.toBeNull();
-    expect(screen.getByLabelText("Количество Arpeggio")).toHaveValue(4);
+    expect(screen.getByLabelText("Количество капсул Arpeggio")).toHaveValue(4);
     expect(screen.getByLabelText("Всего капсул")).toHaveTextContent("4");
   });
 
@@ -281,7 +302,7 @@ describe("Capsule Shelf dashboard", () => {
 
     expect(await screen.findByRole("status")).toHaveTextContent("Браузерное хранилище недоступно");
     await addCapsules("Arpeggio", 1);
-    expect(screen.getByLabelText("Количество Arpeggio")).toHaveValue(1);
+    expect(screen.getByLabelText("Количество капсул Arpeggio")).toHaveValue(1);
   });
 
   it("shows a backup notice when browser storage writes fail", async () => {
@@ -300,7 +321,7 @@ describe("Capsule Shelf dashboard", () => {
   it("sets a capsule stock count directly and persists the value across reloads", async () => {
     const first = render(<App />);
     await waitForReady();
-    const input = screen.getByRole("spinbutton", { name: "Количество Arpeggio" });
+    const input = screen.getByRole("spinbutton", { name: "Количество капсул Arpeggio" });
     fireEvent.change(input, { target: { value: "40" } });
     fireEvent.blur(input);
     expect(input).toHaveValue(40);
@@ -308,13 +329,13 @@ describe("Capsule Shelf dashboard", () => {
     first.unmount();
     render(<App />);
     await waitForReady();
-    expect(screen.getByRole("spinbutton", { name: "Количество Arpeggio" })).toHaveValue(40);
+    expect(screen.getByRole("spinbutton", { name: "Количество капсул Arpeggio" })).toHaveValue(40);
   });
 
   it("commits and persists a direct stock count when Enter is pressed", async () => {
     render(<App />);
     await waitForReady();
-    const input = screen.getByRole("spinbutton", { name: "Количество Arpeggio" });
+    const input = screen.getByRole("spinbutton", { name: "Количество капсул Arpeggio" });
     input.focus();
     fireEvent.change(input, { target: { value: "23" } });
     fireEvent.keyDown(input, { key: "Enter", code: "Enter" });
@@ -326,7 +347,7 @@ describe("Capsule Shelf dashboard", () => {
   it("rejects a negative or fractional stock count", async () => {
     render(<App />);
     await waitForReady();
-    const input = screen.getByRole("spinbutton", { name: "Количество Arpeggio" });
+    const input = screen.getByRole("spinbutton", { name: "Количество капсул Arpeggio" });
     fireEvent.change(input, { target: { value: "40" } });
     fireEvent.blur(input);
     fireEvent.change(input, { target: { value: "-2" } });
@@ -344,11 +365,11 @@ describe("Capsule Shelf dashboard", () => {
     const plus = screen.getByRole("button", { name: "Добавить капсулу Arpeggio" });
     expect(minus).toBeDisabled();
     fireEvent.click(plus);
-    expect(screen.getByRole("spinbutton", { name: "Количество Arpeggio" })).toHaveValue(1);
+    expect(screen.getByRole("spinbutton", { name: "Количество капсул Arpeggio" })).toHaveValue(1);
     expect(minus).toBeEnabled();
     fireEvent.click(minus);
     fireEvent.click(minus);
-    expect(screen.getByRole("spinbutton", { name: "Количество Arpeggio" })).toHaveValue(0);
+    expect(screen.getByRole("spinbutton", { name: "Количество капсул Arpeggio" })).toHaveValue(0);
     expect(minus).toBeDisabled();
   });
 
