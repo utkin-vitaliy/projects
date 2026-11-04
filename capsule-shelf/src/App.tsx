@@ -68,7 +68,7 @@ function CapsuleShelfApp() {
   useEffect(() => {
     if (!shouldScrollToView.current) return;
     shouldScrollToView.current = false;
-    window.requestAnimationFrame(() => document.getElementById(activeView === "recipes" ? "recipes" : "capsules")?.scrollIntoView({ behavior: "smooth", block: "start" }));
+    window.requestAnimationFrame(() => document.getElementById(activeView === "recipes" ? "recipes" : "capsules")?.scrollIntoView?.({ behavior: "smooth", block: "start" }));
   }, [activeView]);
 
   useEffect(() => {
@@ -87,7 +87,7 @@ function CapsuleShelfApp() {
     const hash = view === "recipes" ? "#recipes" : "#capsules";
     if (window.location.hash !== hash) window.location.hash = hash;
     if (isCurrentView) {
-      window.requestAnimationFrame(() => document.getElementById(view === "recipes" ? "recipes" : "capsules")?.scrollIntoView({ behavior: "smooth", block: "start" }));
+      window.requestAnimationFrame(() => document.getElementById(view === "recipes" ? "recipes" : "capsules")?.scrollIntoView?.({ behavior: "smooth", block: "start" }));
       shouldScrollToView.current = false;
     }
   }

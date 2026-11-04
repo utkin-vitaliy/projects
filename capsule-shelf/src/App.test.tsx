@@ -11,6 +11,7 @@ function storedInventory() {
 }
 
 beforeEach(() => {
+  window.history.replaceState(null, "", "/");
   localStorage.clear();
   localStorage.setItem("capsule-shelf:locale:v1", "ru");
 });
