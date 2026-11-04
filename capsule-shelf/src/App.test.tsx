@@ -40,15 +40,18 @@ describe("Capsule Shelf dashboard", () => {
     expect(await screen.findByRole("heading", { name: "Ma collection de café" })).toBeInTheDocument();
   });
 
-  it("lets the user switch languages and remembers the selection", async () => {
+  it("lets the user switch languages with compact code buttons and remembers the selection", async () => {
     render(<App />);
     await waitForReady();
 
-    fireEvent.change(screen.getByRole("combobox", { name: "Язык" }), { target: { value: "en" } });
+    expect(screen.queryByText("Язык")).not.toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "Язык" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Английский" }));
 
     expect(screen.getByRole("heading", { name: "My Coffee Shelf" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Recipes" })).toBeInTheDocument();
     expect(localStorage.getItem("capsule-shelf:locale:v1")).toBe("en");
+    expect(screen.getByRole("button", { name: "English" })).toHaveAttribute("aria-pressed", "true");
   });
 
   it("switches to recipes and back without losing inventory quantities", async () => {

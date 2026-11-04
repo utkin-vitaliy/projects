@@ -5,7 +5,7 @@ export const LOCALE_STORAGE_KEY = "capsule-shelf:locale:v1";
 
 const messages = {
   en: {
-    language: "Language", title: "My Coffee Shelf", subtitle: "Favorite flavors, fresh stock, and tasting notes — all in view.",
+    language: "Language", russianName: "Russian", frenchName: "French", englishName: "English", title: "My Coffee Shelf", subtitle: "Favorite flavors, fresh stock, and tasting notes — all in view.",
     navAria: "App sections", inventoryTab: "Capsules", recipesTab: "Recipes", loading: "Loading your settings…",
     catalogTitle: "Coffee varieties", catalogHint: "Enter how many capsules you have for each flavor",
     browserStorage: "Settings are saved in this browser", downloadSettings: "Download settings", uploadFile: "Upload file", fileInput: "Choose a Capsule Shelf settings file", catalogLink: "Nespresso Canada catalogue ↗",
@@ -18,7 +18,7 @@ const messages = {
     storageNoticeUnavailable: "Browser storage is unavailable. Changes may not be saved after you close the page.", storageNoticeRead: "Could not read browser settings. Upload a backup or download the current data before continuing.", storageNoticeMigrated: "Settings were moved from the older browser storage.", storageNoticeSave: "Could not save data in this browser. Try downloading a backup.", storageNoticeSaveFull: "Could not save data in this browser. Download a backup and free up storage space.", storageNoticeLoaded: "Settings loaded into this browser.", storageNoticeImport: "Could not load the settings file.",
   },
   ru: {
-    language: "Язык", title: "Моя кофейная полка", subtitle: "Любимые вкусы, свежий запас и заметки — всё на виду.",
+    language: "Язык", russianName: "Русский", frenchName: "Французский", englishName: "Английский", title: "Моя кофейная полка", subtitle: "Любимые вкусы, свежий запас и заметки — всё на виду.",
     navAria: "Разделы приложения", inventoryTab: "Капсулы", recipesTab: "Рецепты", loading: "Загружаю настройки…",
     catalogTitle: "Сорта кофе", catalogHint: "Введи количество капсул для каждого вкуса",
     browserStorage: "Настройки сохраняются в этом браузере", downloadSettings: "Скачать настройки", uploadFile: "Загрузить файл", fileInput: "Выбрать файл настроек Capsule Shelf", catalogLink: "Каталог Nespresso Canada ↗",
@@ -31,7 +31,7 @@ const messages = {
     storageNoticeUnavailable: "Браузерное хранилище недоступно. Изменения могут не сохраниться после закрытия страницы.", storageNoticeRead: "Не удалось прочитать настройки браузера. Загрузи резервную копию или скачай текущие данные перед продолжением.", storageNoticeMigrated: "Настройки перенесены из старого браузерного хранилища.", storageNoticeSave: "Не удалось сохранить данные в браузере. Попробуй скачать резервную копию.", storageNoticeSaveFull: "Не удалось сохранить данные в браузере. Скачай резервную копию и освободи место в хранилище.", storageNoticeLoaded: "Настройки загружены в этот браузер.", storageNoticeImport: "Не удалось загрузить файл настроек.",
   },
   fr: {
-    language: "Langue", title: "Ma collection de café", subtitle: "Vos cafés préférés, vos stocks et vos notes — tout est à portée de main.",
+    language: "Langue", russianName: "Russe", frenchName: "Français", englishName: "Anglais", title: "Ma collection de café", subtitle: "Vos cafés préférés, vos stocks et vos notes — tout est à portée de main.",
     navAria: "Sections de l’application", inventoryTab: "Capsules", recipesTab: "Recettes", loading: "Chargement de vos paramètres…",
     catalogTitle: "Variétés de café", catalogHint: "Saisissez le nombre de capsules pour chaque variété",
     browserStorage: "Les paramètres sont enregistrés dans ce navigateur", downloadSettings: "Télécharger les paramètres", uploadFile: "Importer un fichier", fileInput: "Choisir un fichier de paramètres Capsule Shelf", catalogLink: "Catalogue Nespresso Canada ↗",

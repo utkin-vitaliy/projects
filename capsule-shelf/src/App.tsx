@@ -91,14 +91,22 @@ function CapsuleShelfApp() {
           <p className="page-intro">{t("subtitle")}</p>
         </div>
         <div className="line-chip"><span className="line-chip__dot" /> Nespresso Original</div>
-        <label className="language-switch">
-          <span>{t("language")}</span>
-          <select aria-label={t("language")} onChange={(event) => setLocale(event.target.value as Locale)} value={locale}>
-            <option value="en">English</option>
-            <option value="ru">Русский</option>
-            <option value="fr">Français</option>
-          </select>
-        </label>
+        <div aria-label={t("language")} className="language-switch" role="group">
+          {([
+            ["ru", "RU", "russianName"],
+            ["fr", "FR", "frenchName"],
+            ["en", "EN", "englishName"],
+          ] as const).map(([code, shortLabel, nameKey]) => (
+            <button
+              aria-label={t(nameKey)}
+              aria-pressed={locale === code}
+              className={`language-switch__button${locale === code ? " is-active" : ""}`}
+              key={code}
+              onClick={() => setLocale(code as Locale)}
+              type="button"
+            >{shortLabel}</button>
+          ))}
+        </div>
       </header>
 
       <nav className="page-nav" aria-label={t("navAria")}>
