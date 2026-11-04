@@ -18,6 +18,11 @@ export type CoffeeRecipe = {
   sourceUrl: string;
 };
 
+export function resolvePublicAssetUrl(path: string, baseUrl = import.meta.env.BASE_URL): string {
+  const base = baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`;
+  return `${base}${path.replace(/^\/+/, "")}`;
+}
+
 export const recipes: CoffeeRecipe[] = [
   {
     id: "cappuccino",
@@ -272,7 +277,7 @@ export const recipes: CoffeeRecipe[] = [
     capsule: "Arpeggio",
     capsuleIds: ["arpeggio"],
     line: "Original",
-    imageUrl: "/recipe-book/spiced-cookie-butter-latte.jpg",
+    imageUrl: resolvePublicAssetUrl("recipe-book/spiced-cookie-butter-latte.jpg"),
     imageAlt: "Пряный латте с пастой из печенья — фото из книги Nespresso",
     sourceLabel: "Книга Nespresso · стр. 6",
     sourcePage: 6,
@@ -294,7 +299,7 @@ export const recipes: CoffeeRecipe[] = [
     capsule: "Ristretto × 2",
     capsuleIds: ["ristretto"],
     line: "Original",
-    imageUrl: "/recipe-book/dark-chocolate-pistachio-latte.jpg",
+    imageUrl: resolvePublicAssetUrl("recipe-book/dark-chocolate-pistachio-latte.jpg"),
     imageAlt: "Латте с тёмным шоколадом и фисташкой — фото из книги Nespresso",
     sourceLabel: "Книга Nespresso · стр. 21",
     sourcePage: 21,
@@ -316,7 +321,7 @@ export const recipes: CoffeeRecipe[] = [
     capsule: "Ristretto",
     capsuleIds: ["ristretto"],
     line: "Original",
-    imageUrl: "/recipe-book/dark-chocolate-peppermint-latte.jpg",
+    imageUrl: resolvePublicAssetUrl("recipe-book/dark-chocolate-peppermint-latte.jpg"),
     imageAlt: "Латте с тёмным шоколадом и мятой — фото из книги Nespresso",
     sourceLabel: "Книга Nespresso · стр. 23",
     sourcePage: 23,
@@ -337,7 +342,7 @@ export const recipes: CoffeeRecipe[] = [
     capsule: "Ristretto",
     capsuleIds: ["ristretto"],
     line: "Original",
-    imageUrl: "/recipe-book/campfire-latte.jpg",
+    imageUrl: resolvePublicAssetUrl("recipe-book/campfire-latte.jpg"),
     imageAlt: "Латте «У костра» с шоколадом и пеной — фото из книги Nespresso",
     sourceLabel: "Книга Nespresso · стр. 25",
     sourcePage: 25,
@@ -359,7 +364,7 @@ export const recipes: CoffeeRecipe[] = [
     capsule: "Ristretto",
     capsuleIds: ["ristretto"],
     line: "Original",
-    imageUrl: "/recipe-book/fig-and-honey-latte-macchiato.jpg",
+    imageUrl: resolvePublicAssetUrl("recipe-book/fig-and-honey-latte-macchiato.jpg"),
     imageAlt: "Латте макиато с инжиром и мёдом — фото из книги Nespresso",
     sourceLabel: "Книга Nespresso · стр. 27",
     sourcePage: 27,
@@ -380,7 +385,7 @@ export const recipes: CoffeeRecipe[] = [
     capsule: "Athens Freddo Intenso",
     capsuleIds: ["athens-freddo-intenso"],
     line: "Original",
-    imageUrl: "/recipe-book/shaken-vietnamese-coffee.jpg",
+    imageUrl: resolvePublicAssetUrl("recipe-book/shaken-vietnamese-coffee.jpg"),
     imageAlt: "Вьетнамский кофе со льдом и молоком — фото из книги Nespresso",
     sourceLabel: "Книга Nespresso · стр. 36",
     sourcePage: 36,
@@ -403,7 +408,7 @@ export const recipes: CoffeeRecipe[] = [
     capsule: "Cosi",
     capsuleIds: ["cosi"],
     line: "Original",
-    imageUrl: "/recipe-book/iced-caramel-oat-latte.jpg",
+    imageUrl: resolvePublicAssetUrl("recipe-book/iced-caramel-oat-latte.jpg"),
     imageAlt: "Айс-латте с карамелью и овсяным молоком — фото из книги Nespresso",
     sourceLabel: "Книга Nespresso · стр. 38",
     sourcePage: 38,
@@ -425,7 +430,7 @@ export const recipes: CoffeeRecipe[] = [
     capsule: "Cosi",
     capsuleIds: ["cosi"],
     line: "Original",
-    imageUrl: "/recipe-book/iced-mocha-mint-latte.jpg",
+    imageUrl: resolvePublicAssetUrl("recipe-book/iced-mocha-mint-latte.jpg"),
     imageAlt: "Айс-мокка с мятой, шоколадом и льдом — фото из книги Nespresso",
     sourceLabel: "Книга Nespresso · стр. 42",
     sourcePage: 42,
@@ -447,7 +452,7 @@ export const recipes: CoffeeRecipe[] = [
     capsule: "Caramello",
     capsuleIds: ["caramello"],
     line: "Original",
-    imageUrl: "/recipe-book/iced-salted-caramel-latte.jpg",
+    imageUrl: resolvePublicAssetUrl("recipe-book/iced-salted-caramel-latte.jpg"),
     imageAlt: "Айс-латте с солёной карамелью и сливками — фото из книги Nespresso",
     sourceLabel: "Книга Nespresso · стр. 54",
     sourcePage: 54,
@@ -470,7 +475,7 @@ export const recipes: CoffeeRecipe[] = [
     capsule: "Ristretto × 2",
     capsuleIds: ["ristretto"],
     line: "Original",
-    imageUrl: "/recipe-book/pistachio-latte-milkshake.jpg",
+    imageUrl: resolvePublicAssetUrl("recipe-book/pistachio-latte-milkshake.jpg"),
     imageAlt: "Фисташковый кофейный милкшейк с мороженым — фото из книги Nespresso",
     sourceLabel: "Книга Nespresso · стр. 60",
     sourcePage: 60,
@@ -492,7 +497,7 @@ export const recipes: CoffeeRecipe[] = [
     capsule: "Nocciola",
     capsuleIds: ["nocciola"],
     line: "Original",
-    imageUrl: "/recipe-book/sweet-hazelnut-coffee-float.jpg",
+    imageUrl: resolvePublicAssetUrl("recipe-book/sweet-hazelnut-coffee-float.jpg"),
     imageAlt: "Кофейный флоат с фундуком, ванильным мороженым и содовой — фото из книги Nespresso",
     sourceLabel: "Книга Nespresso · стр. 65",
     sourcePage: 65,

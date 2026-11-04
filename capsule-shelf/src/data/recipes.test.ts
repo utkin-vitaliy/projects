@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import * as recipeData from "./recipes";
 import { getRecipesForCapsule, recipes } from "./recipes";
 
 describe("Nespresso Original recipes", () => {
@@ -70,6 +71,13 @@ describe("Nespresso Original recipes", () => {
       }
       expect(recipe.imageAlt).toContain(recipe.title);
     }
+  });
+
+  it("builds public photo URLs under the configured application base path", () => {
+    const resolvePublicAssetUrl = Reflect.get(recipeData, "resolvePublicAssetUrl") as ((path: string, baseUrl: string) => string) | undefined;
+    expect(resolvePublicAssetUrl).toBeTypeOf("function");
+    expect(resolvePublicAssetUrl?.("/recipe-book/example.jpg", "/projects/capsule-shelf/"))
+      .toBe("/projects/capsule-shelf/recipe-book/example.jpg");
   });
 
   it("marks every professional-capsule substitution as an Original adaptation", () => {
