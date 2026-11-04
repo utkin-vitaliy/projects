@@ -1,34 +1,57 @@
 # Capsule Shelf
 
-Личный каталог Nespresso Original: остатки капсул, избранные вкусы, напоминания о пополнении и заметки к сортам и рецептам.
+Capsule Shelf is a small, static web app for tracking a personal Nespresso Original capsule collection. Keep an eye on stock, mark favorite coffees, set a low-stock threshold for each variety, and save tasting notes and recipe ideas.
 
-## Запуск локально
+**Live app:** [utkin-vitaliy.github.io/projects/capsule-shelf](https://utkin-vitaliy.github.io/projects/capsule-shelf/)
+
+## Features
+
+- Browse a manually maintained catalog of Nespresso Original varieties sold in Canada.
+- Track capsule quantities, favorites, and per-variety restock thresholds.
+- Search capsule names and tasting profiles in English, Russian, or French.
+- Add personal ratings, tasting notes, recipe ideas, and notes about which drinks a variety suits.
+- Browse 67 Original-compatible recipes, search across translated names and capsule names, filter by hot or cold drinks, and save favorite recipes.
+- Switch between English, Russian, and French. The app uses the browser's preferred language on the first visit.
+- Export settings as a JSON backup and import them on another browser or device.
+
+## Run locally
+
+Requirements: Node.js 22 or a compatible current LTS release, and npm.
 
 ```bash
 npm ci
 npm run dev
 ```
 
-Vite запускает приложение без локального сервера данных. Для production-сборки выполни `npm run build`; готовые статические файлы появятся в `dist/`.
+Vite prints a local URL, usually `http://localhost:5173/`. To create and preview a production build:
 
-## Пользовательские данные
+```bash
+npm run build
+npm run preview
+```
 
-Количество капсул, избранное, пороги пополнения и заметки сохраняются в localStorage этого браузера и на этом устройстве. Они не отправляются приложению на сервер. Кнопки внизу страницы позволяют скачать JSON-резервную копию и загрузить её на другом устройстве. Загрузка заменяет текущие настройки после подтверждения.
+Run the automated tests with:
 
-При первом запуске новая версия один раз перенесёт старые настройки из ключа `capsule-shelf:inventory:v1` в актуальное хранилище браузера. Для переноса с другого устройства скачай настройки из старой установки и загрузи файл в новой.
+```bash
+npm test -- --run
+```
 
-## GitHub Pages
+## Your settings and privacy
 
-В репозитории `projects` приложение находится в папке `capsule-shelf`, а workflow `.github/workflows/pages.yml` должен находиться в корне репозитория. Он проверяет тесты, собирает приложение из `capsule-shelf` и публикует его `dist` при push в `main` или вручную через GitHub Actions. Vite автоматически использует корневой путь `/projects/` для project Pages.
+Capsule quantities, capsule favorites, restock thresholds, and capsule notes are stored in `localStorage` in the current browser. Recipe favorites are also stored locally, in a separate browser key. The app has no account system, database, or application server; settings do not sync between browsers or devices automatically. The JSON backup includes capsule inventory and notes; recipe favorites and language preference are not included.
 
-В корне репозитория открой **Settings → Pages** и выбери **GitHub Actions** в качестве источника публикации. GitHub Pages делает сайт общедоступным. Для приватного репозитория нужна подписка GitHub Pro или другой план с поддержкой Pages для private repositories.
+Use **Download settings** to save a JSON backup. Use **Upload settings** to restore that backup elsewhere. Importing replaces the settings in the current browser after confirmation. Keep backup files private: they may contain personal notes and inventory details.
 
-Персональные данные храните только в браузере или резервной копии пользователя. Не добавляй в Git файл `data/inventory.json` или экспортированные настройки.
+## Catalog and images
 
-## Каталог и изображения
+The catalog is a manually maintained snapshot of 40 Nespresso Original varieties from the [Nespresso Canada Original catalog](https://www.nespresso.com/ca/en/order/capsules/original). Product availability can change; the app does not automatically sync with Nespresso.
 
-Каталог — вручную поддерживаемый снимок из 40 сортов Nespresso Original Canada, проверенный 3 ноября 2026 года. Актуальность ассортимента обновляется вручную; приложение не сканирует сайт. Источники и ссылки: [каталог Nespresso Canada Original](https://www.nespresso.com/ca/en/order/capsules/original). Категории позволяют сузить каталог, фильтры «Избранное» и «Пора пополнить» работают вместе с ними.
+Capsule and recipe card photographs are bundled locally under [`public/images`](public/images/README.md), so the deployed site does not depend on Nespresso's image servers at runtime. Eleven additional recipe-book photographs are included under [`public/recipe-book`](public/recipe-book/README.md). Their original sources and attribution notes are documented alongside the assets. Product names, images, and trademarks belong to their respective owners.
 
-Фотографии загружаются браузером напрямую с `nespresso.com`; если изображение недоступно, карточка показывает заглушку. Перед публичным запуском следует отдельно проверить разрешения на использование фотографий и товарных знаков.
+Capsule Shelf is an independent personal project and is not affiliated with, endorsed by, or sponsored by Nestlé Nespresso S.A.
 
-Этот личный проект не является официальным приложением Nespresso и не связан с компанией Nestlé Nespresso S.A.
+## GitHub Pages deployment
+
+In the `utkin-vitaliy/projects` repository, the app lives in `capsule-shelf/`. The [Pages workflow](https://github.com/utkin-vitaliy/projects/blob/main/.github/workflows/pages.yml) runs tests, builds the app from that directory, and publishes the static output under `/projects/capsule-shelf/`. A push to `main` or a manual run from GitHub Actions starts deployment. The same workflow generates the static-project index at `/projects/`.
+
+The app uses the repository Pages base path during the workflow build. For a local production build, Vite uses its default root path.
