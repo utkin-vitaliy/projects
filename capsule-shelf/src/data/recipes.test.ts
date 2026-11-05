@@ -1,6 +1,16 @@
 import { describe, expect, it } from "vitest";
+// The Vitest file check runs in Node; the production TypeScript config omits Node globals.
+// @ts-expect-error Node typings are intentionally not included in the browser app tsconfig.
+import { existsSync } from "node:fs";
+// @ts-expect-error Node typings are intentionally not included in the browser app tsconfig.
+import { resolve } from "node:path";
 import * as recipeData from "./recipes";
 import { getRecipesForCapsule, recipes } from "./recipes";
+import { vertuoCapsules } from "./vertuoCapsules";
+import { vertuoRecipes } from "./vertuoRecipes";
+import { localizeRecipe } from "../i18n/catalogContent";
+
+declare const process: { cwd(): string };
 
 describe("Nespresso Original recipes", () => {
   it("matches named and universal recipes to capsule IDs", () => {
@@ -84,6 +94,61 @@ describe("Nespresso Original recipes", () => {
     expect(bookRecipes.filter(({ adaptationNote }) => adaptationNote)).toHaveLength(7);
     for (const recipe of bookRecipes) {
       expect(recipe.sourceUrl).toContain(`#page=${recipe.sourcePage}`);
+    }
+  });
+});
+
+describe("Nespresso Canada Vertuo recipes", () => {
+  it("contains only uniquely identified recipes that name current Vertuo capsules", () => {
+    const ids = vertuoRecipes.map(({ id }) => id);
+    const capsuleIds = new Set(vertuoCapsules.map(({ id }) => id));
+
+    expect(ids).toHaveLength(17);
+    expect(ids.length).toBeGreaterThan(0);
+    expect(new Set(ids).size).toBe(ids.length);
+    for (const recipe of vertuoRecipes) {
+      expect(recipe.id).toMatch(/^vertuo-/);
+      expect(recipe.line).toBe("Vertuo");
+      expect(recipe.capsuleIds.length).toBeGreaterThan(0);
+      expect(recipe.capsuleIds.every((capsuleId) => capsuleIds.has(capsuleId))).toBe(true);
+      expect(recipe.sourceUrl).toMatch(/^https:\/\/www\.nespresso\.com\//);
+      expect(recipe.sourceUrl).toMatch(/^https:\/\/www\.nespresso\.com\/(?:ca\/en\/recipe\?id=[a-z0-9-]+|recipes\/ca\/en\/[A-Za-z0-9-]+\.html|ncp\/res\/generated\/recipes\/[A-Za-z0-9_]+\.pdf)$/);
+      expect(recipe.ingredients.length).toBeGreaterThan(0);
+      expect(recipe.steps.length).toBeGreaterThan(0);
+      expect(recipe.imageUrl).toContain("/images/recipes/vertuo/");
+    }
+  });
+
+  it("keeps the Vertuo-only Fireplace Pumpkin Latte variant and source metadata", () => {
+    const recipe = vertuoRecipes.find(({ id }) => id === "vertuo-fireplace-pumpkin-latte");
+    expect(recipe?.sourceUrl).toBe("https://www.nespresso.com/ca/en/recipe?id=fireplace-pumpkin-latte-vl");
+    expect(recipe?.capsuleIds).toEqual(["vertuo-pumpkin-spice-cake"]);
+    expect(recipe?.ingredients).toContain("1 капсула Pumpkin Spice Cake (230 мл)");
+    expect(recipe?.steps).toContain("Приготовь сверху одну капсулу Pumpkin Spice Cake объёмом 230 мл.");
+  });
+
+  it("has a local official photo for every recipe", () => {
+    for (const recipe of vertuoRecipes) {
+      const imagePath = new URL(recipe.imageUrl, "https://capsule-shelf.test").pathname;
+      const imageMarker = "/images/recipes/vertuo/";
+      const markerIndex = imagePath.indexOf(imageMarker);
+      expect(markerIndex).toBeGreaterThanOrEqual(0);
+      const imageName = imagePath.slice(markerIndex + imageMarker.length);
+      expect(existsSync(resolve(process.cwd(), "public/images/recipes/vertuo", imageName))).toBe(true);
+    }
+  });
+
+  it("has English and French copy for every recipe field", () => {
+    for (const recipe of vertuoRecipes) {
+      for (const locale of ["en", "fr"] as const) {
+        const localized = localizeRecipe(recipe, locale);
+        expect(localized.title).not.toBe(recipe.title);
+        expect(localized.capsule, `${recipe.id} (${locale})`).not.toBe(recipe.capsule);
+        expect(localized.ingredients).not.toEqual(recipe.ingredients);
+        expect(localized.steps).not.toEqual(recipe.steps);
+        expect(localized.ingredients.join(" ")).toBeTruthy();
+        expect(localized.steps.join(" ")).toBeTruthy();
+      }
     }
   });
 });

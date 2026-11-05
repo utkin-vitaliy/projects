@@ -7,7 +7,7 @@ export type CoffeeRecipe = {
   capsule: string;
   capsuleIds: string[];
   allOriginalCapsules?: boolean;
-  line: "Original";
+  line: "Original" | "Vertuo";
   imageUrl: string;
   imageAlt: string;
   sourceLabel: string;
