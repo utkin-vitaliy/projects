@@ -11,6 +11,7 @@ const labels = {
   remembered: "Google Drive запомнен; нажми, чтобы продолжить",
   error: "Не удалось синхронизировать с Google Drive",
   popover: "Состояние Google Drive",
+  syncDescription: "Изменения сразу сохраняются в этом браузере и автоматически отправляются в Google Drive после короткой паузы. После перезагрузки нажмите значок, чтобы возобновить синхронизацию.",
   disconnect: "Отключить Google Drive",
 };
 
@@ -32,7 +33,9 @@ describe("GoogleDriveControl", () => {
     const button = screen.getByRole("button", { name: labels.connected });
     expect(button).toHaveAttribute("data-state", "connected");
     fireEvent.click(button);
-    expect(screen.getByRole("dialog", { name: labels.popover })).toHaveTextContent("user@example.com");
+    const popover = screen.getByRole("dialog", { name: labels.popover });
+    expect(popover).toHaveTextContent("user@example.com");
+    expect(popover).toHaveTextContent(labels.syncDescription);
     expect(screen.getByRole("button", { name: labels.disconnect })).toBeInTheDocument();
   });
 

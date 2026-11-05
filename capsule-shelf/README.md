@@ -46,7 +46,7 @@ Use **Download settings** to save a JSON backup. It includes inventory, notes, f
 ### Configure Google Drive sync
 
 1. In Google Cloud Console, create a project, enable the Google Drive API, and create an OAuth client ID for a Web application.
-2. Add the app origins to the OAuth client's authorized JavaScript origins: `http://localhost:5173`, `http://localhost:5175`, and `https://utkin-vitaliy.github.io` for GitHub Pages. Do not create or expose a client secret for this browser-only app.
+2. Add the app origins to the OAuth client's authorized JavaScript origins: `http://localhost:5173`, `http://localhost:5175`, `http://localhost:5177`, and `https://utkin-vitaliy.github.io` for GitHub Pages. Local development uses port `5177`; Vite is configured to fail if that port is occupied instead of silently switching to an unauthorized one. Do not create or expose a client secret for this browser-only app.
 3. In the GitHub repository settings, add the Actions variable `VITE_GOOGLE_CLIENT_ID` with the OAuth client ID. The Pages workflow injects it at build time.
 4. For local use, copy `.env.example` to `.env.local`, add the client ID, and restart Vite. Do not commit `.env.local`.
 

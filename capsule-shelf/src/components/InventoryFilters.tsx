@@ -11,11 +11,12 @@ type Props = {
   search: string;
   onSearchChange: (value: string) => void;
   catalog: Capsule[];
+  favoriteCount: number;
 };
 
 const categoryKeys = ["limited", "italian", "decaffeinated", "world", "origins", "flavoured", "heritage"] as const;
 
-export function InventoryFilters({ value, onChange, category, onCategoryChange, search, onSearchChange, catalog }: Props) {
+export function InventoryFilters({ value, onChange, category, onCategoryChange, search, onSearchChange, catalog, favoriteCount }: Props) {
   const { t } = useLocale();
   const filters = [
     { id: "all" as const, label: t("allVarieties") },
@@ -40,6 +41,7 @@ export function InventoryFilters({ value, onChange, category, onCategoryChange, 
             type="button"
           >
             {filter.label}
+            {filter.id === "favorites" && <span aria-hidden="true" className="filter-tab__count">{favoriteCount}</span>}
           </button>
         ))}
       </div>

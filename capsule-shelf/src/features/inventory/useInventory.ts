@@ -6,7 +6,8 @@ import { createEmptyInventoryEntry, DEFAULT_LOW_STOCK_THRESHOLD, type CapsuleNot
 import { loadInventory, parseInventoryBackup, serializeInventory } from "../../storage/inventoryStorage";
 import { settingsStorageKey, type SettingsNamespace } from "../../storage/settingsStorage";
 
-export type InventoryFilter = "all" | "favorites" | "low";
+import type { InventoryFilter } from "../../storage/userSettings";
+export type { InventoryFilter } from "../../storage/userSettings";
 export type CategoryFilter = CapsuleCategory | "all";
 const LEGACY_STORAGE_KEY = "capsule-shelf:inventory:v1";
 const LOCAL_STORAGE_KEY = "capsule-shelf:inventory:v2";

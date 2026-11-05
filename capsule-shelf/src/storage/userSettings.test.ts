@@ -28,6 +28,8 @@ describe("user settings storage", () => {
       updatedAt: "2026-11-04T12:00:00.000Z",
       locale: "fr" as const,
       system: "vertuo" as const,
+      filters: { original: "favorites" as const, vertuo: "low" as const },
+      recipeFilters: { original: "cold" as const, vertuo: "favorites" as const },
       inventory,
       favoriteRecipes: ["cappuccino", "nespresso-martini-original"],
     };
@@ -46,6 +48,25 @@ describe("user settings storage", () => {
     });
 
     expect(parseUserSettings(raw, capsules, recipes.map(({ id }) => id)).system).toBe("original");
+    expect(parseUserSettings(raw, capsules, recipes.map(({ id }) => id)).filters).toEqual({ original: "all", vertuo: "all" });
+    expect(parseUserSettings(raw, capsules, recipes.map(({ id }) => id)).recipeFilters).toEqual({ original: "all", vertuo: "all" });
+  });
+
+  it("keeps independent capsule filters for Original and Vertuo", () => {
+    const settings = {
+      format: "capsule-shelf-user-settings" as const,
+      version: 1 as const,
+      updatedAt: "2026-11-04T12:00:00.000Z",
+      locale: "en" as const,
+      system: "original" as const,
+      filters: { original: "favorites" as const, vertuo: "low" as const },
+      recipeFilters: { original: "favorites" as const, vertuo: "hot" as const },
+      inventory,
+      favoriteRecipes: [],
+    };
+
+    expect(parseUserSettings(serializeUserSettings(settings), capsules, []).filters).toEqual(settings.filters);
+    expect(parseUserSettings(serializeUserSettings(settings), capsules, []).recipeFilters).toEqual(settings.recipeFilters);
   });
 
   it("imports existing inventory-only backups without dropping unknown varieties", () => {

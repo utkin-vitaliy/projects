@@ -11,6 +11,7 @@ export type GoogleDriveControlLabels = {
   remembered: string;
   error: string;
   popover: string;
+  syncDescription: string;
   disconnect: string;
 };
 
@@ -95,6 +96,7 @@ export function GoogleDriveControl({ state, email, labels, onConnect, onDisconne
         <section aria-label={labels.popover} className="sync-control-popover" id={popoverId} role="dialog">
           <strong>{labels.connected}</strong>
           {email && <span className="sync-control-popover__email">{email}</span>}
+          <p className="sync-control-popover__description">{labels.syncDescription}</p>
           <button className="settings-action" onClick={handleDisconnect} type="button">{labels.disconnect}</button>
         </section>
       )}

@@ -74,6 +74,62 @@ describe("Capsule Shelf dashboard", () => {
     expect(screen.getByText("GitHub s’ouvrira ; votre message sera public.")).toBeInTheDocument();
   });
 
+  it("keeps backup controls and feedback together on the right side of the footer", async () => {
+    render(<App />);
+    await waitForReady();
+
+    const actionGroup = document.querySelector(".page-footer__actions");
+    expect(actionGroup).not.toBeNull();
+    const settingsDropdown = within(actionGroup as HTMLElement).getByRole("button", { name: "Настройки" });
+    fireEvent.click(settingsDropdown);
+    expect(within(actionGroup as HTMLElement).getByRole("button", { name: "Скачать настройки" })).toBeInTheDocument();
+    expect(within(actionGroup as HTMLElement).getByRole("button", { name: "Загрузить настройки" })).toBeInTheDocument();
+    expect(within(actionGroup as HTMLElement).getByRole("link", { name: "Оставить отзыв ↗" })).toBeInTheDocument();
+    expect(actionGroup?.querySelector('input[type="file"]')).not.toBeNull();
+  });
+
+  it("closes the settings dropdown on Escape and returns focus to its trigger", async () => {
+    render(<App />);
+    await waitForReady();
+
+    const trigger = screen.getByRole("button", { name: "Настройки" });
+    fireEvent.click(trigger);
+    expect(screen.getByRole("button", { name: "Скачать настройки" })).toBeInTheDocument();
+    fireEvent.keyDown(trigger, { key: "Escape" });
+
+    expect(document.querySelector(".settings-dropdown")?.hasAttribute("open")).toBe(false);
+    expect(trigger).toHaveFocus();
+  });
+
+  it("imports a settings backup into this browser", async () => {
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
+    render(<App />);
+    await waitForReady();
+
+    const backup = new File([""], "capsule-shelf.json", { type: "application/json" });
+    Object.defineProperty(backup, "text", { value: async () => JSON.stringify({
+      format: "capsule-shelf-user-settings",
+      version: 1,
+      updatedAt: "2026-11-04T12:00:00.000Z",
+      locale: "en",
+      system: "vertuo",
+      inventory: { "vertuo-melozio": { quantity: 17, favorite: true, threshold: 5, note: { tastingNotes: "Honey" } } },
+      favoriteRecipes: ["vertuo-black-iced"],
+    }) });
+    fireEvent.click(screen.getByRole("button", { name: "Настройки" }));
+    fireEvent.click(screen.getByRole("button", { name: "Загрузить настройки" }));
+    fireEvent.change(document.querySelector('input[type="file"]')!, { target: { files: [backup] } });
+
+    await waitFor(() => expect(confirm).toHaveBeenCalledOnce());
+    expect(await screen.findByRole("heading", { name: "Melozio" })).toBeInTheDocument();
+    await waitFor(() => {
+      const imported = JSON.parse(localStorage.getItem("capsule-shelf:user-settings:v1") ?? "{}");
+      expect(imported.inventory["vertuo-melozio"]).toMatchObject({ quantity: 17, favorite: true, note: { tastingNotes: "Honey" } });
+      expect(imported.favoriteRecipes).toContain("vertuo-black-iced");
+      expect(imported.system).toBe("vertuo");
+    });
+  });
+
   it("places the Google Drive sync control in the header instead of the footer", async () => {
     render(<App />);
     await waitForReady();
@@ -252,6 +308,119 @@ describe("Capsule Shelf dashboard", () => {
     expect(screen.queryByRole("heading", { name: "Volluto" })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Пора пополнить" }));
     expect(screen.getByRole("heading", { name: "Arpeggio" })).toBeInTheDocument();
+  });
+
+  it("shows the favorite variety count and remembers each system's selected filter after reload", async () => {
+    render(<App />);
+    await waitForReady();
+    fireEvent.click(screen.getByRole("button", { name: "Добавить Arpeggio в избранное" }));
+    fireEvent.click(screen.getByRole("button", { name: "Избранное" }));
+    expect(screen.getByRole("button", { name: "Избранное" })).toHaveTextContent("1");
+
+    fireEvent.click(screen.getByRole("button", { name: "Vertuo" }));
+    fireEvent.click(screen.getByRole("button", { name: "Пора пополнить" }));
+    fireEvent.click(screen.getByRole("button", { name: "Original" }));
+    expect(screen.getByRole("button", { name: "Избранное" })).toHaveAttribute("aria-pressed", "true");
+
+    fireEvent.click(screen.getByRole("button", { name: "Vertuo" }));
+    expect(screen.getByRole("button", { name: "Пора пополнить" })).toHaveAttribute("aria-pressed", "true");
+    await waitFor(() => expect(JSON.parse(localStorage.getItem("capsule-shelf:user-settings:v1") ?? "{}").filters).toEqual({ original: "favorites", vertuo: "low" }));
+
+    cleanup();
+    render(<App />);
+    await waitForReady();
+    expect(screen.getByRole("button", { name: "Vertuo" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Пора пополнить" })).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(screen.getByRole("button", { name: "Original" }));
+    expect(screen.getByRole("button", { name: "Избранное" })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("does not briefly show All varieties while restoring a saved Favorites filter", async () => {
+    localStorage.setItem("capsule-shelf:user-settings:v1", JSON.stringify({
+      format: "capsule-shelf-user-settings",
+      version: 1,
+      updatedAt: "2026-11-05T12:00:00.000Z",
+      locale: "ru",
+      system: "original",
+      filters: { original: "favorites", vertuo: "all" },
+      inventory: {},
+      favoriteRecipes: [],
+    }));
+    const brieflySelectedAll: string[] = [];
+    const observer = new MutationObserver((records) => {
+      for (const record of records) {
+        if (record.attributeName === "aria-pressed" && record.oldValue === "true" && record.target instanceof HTMLButtonElement && record.target.classList.contains("filter-tab")) {
+          brieflySelectedAll.push(record.target.textContent?.trim() ?? "");
+        }
+      }
+    });
+    observer.observe(document.body, { subtree: true, attributes: true, attributeOldValue: true, attributeFilter: ["aria-pressed"] });
+
+    render(<App />);
+    await waitForReady();
+    await waitFor(() => expect(screen.getByRole("button", { name: "Избранное" })).toHaveAttribute("aria-pressed", "true"));
+    await new Promise((resolve) => window.setTimeout(resolve, 0));
+    observer.disconnect();
+
+    expect(brieflySelectedAll).not.toContain("Все сорта");
+  });
+
+  it("restores saved recipe Favorites without briefly selecting All recipes", async () => {
+    window.history.replaceState(null, "", "/#recipes");
+    localStorage.setItem("capsule-shelf:user-settings:v1", JSON.stringify({
+      format: "capsule-shelf-user-settings",
+      version: 1,
+      updatedAt: "2026-11-05T12:00:00.000Z",
+      locale: "ru",
+      system: "original",
+      filters: { original: "all", vertuo: "all" },
+      recipeFilters: { original: "favorites", vertuo: "all" },
+      inventory: {},
+      favoriteRecipes: ["cappuccino"],
+    }));
+    const brieflySelectedAll: string[] = [];
+    const observer = new MutationObserver((records) => {
+      for (const record of records) {
+        if (record.attributeName === "aria-pressed" && record.oldValue === "true" && record.target instanceof HTMLButtonElement && record.target.classList.contains("recipe-filter")) {
+          brieflySelectedAll.push(record.target.textContent?.trim() ?? "");
+        }
+      }
+    });
+    observer.observe(document.body, { subtree: true, attributes: true, attributeOldValue: true, attributeFilter: ["aria-pressed"] });
+
+    render(<App />);
+    await waitForReady();
+    const recipeFilters = screen.getByRole("group", { name: "Фильтр рецептов" });
+    await waitFor(() => expect(within(recipeFilters).getByRole("button", { name: /Избранное/ })).toHaveAttribute("aria-pressed", "true"));
+    expect(screen.getByRole("heading", { name: "Капучино" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Эспрессо мартини Nespresso" })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Vertuo" }));
+    const vertuoFilters = screen.getByRole("group", { name: "Фильтр рецептов" });
+    expect(within(vertuoFilters).getByRole("button", { name: /Все рецепты/ })).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(screen.getByRole("button", { name: "Добавить рецепт «Чёрный кофе со льдом» в избранное" }));
+    fireEvent.click(within(vertuoFilters).getByRole("button", { name: /Избранное/ }));
+    expect(screen.getByRole("heading", { name: "Чёрный кофе со льдом" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Original" }));
+    const originalFilters = screen.getByRole("group", { name: "Фильтр рецептов" });
+    expect(within(originalFilters).getByRole("button", { name: /Избранное/ })).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(within(originalFilters).getByRole("button", { name: /Все рецепты/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Vertuo" }));
+    expect(within(screen.getByRole("group", { name: "Фильтр рецептов" })).getByRole("button", { name: /Избранное/ })).toHaveAttribute("aria-pressed", "true");
+    await waitFor(() => expect(JSON.parse(localStorage.getItem("capsule-shelf:user-settings:v1") ?? "{}").recipeFilters).toEqual({ original: "all", vertuo: "favorites" }));
+
+    cleanup();
+    render(<App />);
+    await waitForReady();
+    expect(screen.getByRole("button", { name: "Vertuo" })).toHaveAttribute("aria-pressed", "true");
+    const reloadedFilters = screen.getByRole("group", { name: "Фильтр рецептов" });
+    expect(within(reloadedFilters).getByRole("button", { name: /Избранное/ })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("heading", { name: "Чёрный кофе со льдом" })).toBeInTheDocument();
+    await new Promise((resolve) => window.setTimeout(resolve, 0));
+    observer.disconnect();
+
+    expect(brieflySelectedAll).not.toContain("Все рецепты");
   });
 
   it("offers only populated categories and filters the catalog by category", async () => {

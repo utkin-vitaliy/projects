@@ -5,6 +5,12 @@ import { parseInventoryBackup } from "./inventoryStorage";
 export const USER_SETTINGS_FORMAT = "capsule-shelf-user-settings";
 export const USER_SETTINGS_VERSION = 1;
 export type CoffeeSystem = "original" | "vertuo";
+export type InventoryFilter = "all" | "favorites" | "low";
+export type InventoryFilterPreferences = Record<CoffeeSystem, InventoryFilter>;
+export const DEFAULT_INVENTORY_FILTERS: InventoryFilterPreferences = { original: "all", vertuo: "all" };
+export type RecipeFilter = "all" | "favorites" | "hot" | "cold";
+export type RecipeFilterPreferences = Record<CoffeeSystem, RecipeFilter>;
+export const DEFAULT_RECIPE_FILTERS: RecipeFilterPreferences = { original: "all", vertuo: "all" };
 
 export type UserSettings = {
   format: typeof USER_SETTINGS_FORMAT;
@@ -12,6 +18,8 @@ export type UserSettings = {
   updatedAt: string;
   locale: Locale;
   system: CoffeeSystem;
+  filters: InventoryFilterPreferences;
+  recipeFilters: RecipeFilterPreferences;
   inventory: InventoryState;
   favoriteRecipes: string[];
 };
@@ -26,6 +34,27 @@ function isLocale(value: unknown): value is Locale {
 
 function isCoffeeSystem(value: unknown): value is CoffeeSystem {
   return value === "original" || value === "vertuo";
+}
+
+function isInventoryFilter(value: unknown): value is InventoryFilter {
+  return value === "all" || value === "favorites" || value === "low";
+}
+
+function parseInventoryFilters(value: unknown): InventoryFilterPreferences {
+  if (!isRecord(value)) return { ...DEFAULT_INVENTORY_FILTERS };
+  return {
+    original: isInventoryFilter(value.original) ? value.original : "all",
+    vertuo: isInventoryFilter(value.vertuo) ? value.vertuo : "all",
+  };
+}
+
+function parseRecipeFilters(value: unknown): RecipeFilterPreferences {
+  if (!isRecord(value)) return { ...DEFAULT_RECIPE_FILTERS };
+  const isRecipeFilter = (filter: unknown): filter is RecipeFilter => filter === "all" || filter === "favorites" || filter === "hot" || filter === "cold";
+  return {
+    original: isRecipeFilter(value.original) ? value.original : "all",
+    vertuo: isRecipeFilter(value.vertuo) ? value.vertuo : "all",
+  };
 }
 
 export function serializeUserSettings(settings: UserSettings): string {
@@ -58,6 +87,8 @@ export function parseUserSettings(
       updatedAt: now,
       locale: fallbackLocale,
       system: "original",
+      filters: { ...DEFAULT_INVENTORY_FILTERS },
+      recipeFilters: { ...DEFAULT_RECIPE_FILTERS },
       inventory,
       favoriteRecipes: [],
     };
@@ -85,6 +116,8 @@ export function parseUserSettings(
     updatedAt,
     locale: isLocale(parsed.locale) ? parsed.locale : "en",
     system: isCoffeeSystem(parsed.system) ? parsed.system : "original",
+    filters: parseInventoryFilters(parsed.filters),
+    recipeFilters: parseRecipeFilters(parsed.recipeFilters),
     inventory,
     favoriteRecipes,
   };

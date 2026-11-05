@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { CapsuleNotes } from "./CapsuleNotes";
 import { createEmptyInventoryEntry, type Capsule, type CapsuleCupSize, type CapsuleNote, type InventoryEntry } from "../domain/capsules";
-import { getRecipesForCapsule } from "../data/recipeCatalog";
+import { getRecipeIdsForCapsule } from "../data/recipeIndex";
 import { useLocale, type MessageKey } from "../i18n/locale";
-import { localizeRecipe } from "../i18n/catalogContent";
+
+const RecipeLinks = lazy(() => import("./RecipeLinks").then(({ RecipeLinks: Component }) => ({ default: Component })));
 
 type Props = {
   capsule: Capsule;
@@ -30,12 +31,12 @@ const cupSizeMessage: Record<CapsuleCupSize, MessageKey> = {
 };
 
 export function CapsuleCard({ capsule, entry = createEmptyInventoryEntry(), lowStock, onQuantitySet, onFavoriteToggle, onThresholdChange, onNoteSave, onRecipeSelect }: Props) {
-  const { locale, t } = useLocale();
+  const { t } = useLocale();
   const [notesOpen, setNotesOpen] = useState(false);
   const [recipesOpen, setRecipesOpen] = useState(false);
   const [imageFailed, setImageFailed] = useState(false);
   const [quantityDraft, setQuantityDraft] = useState(String(entry.quantity));
-  const matchingRecipes = getRecipesForCapsule(capsule.id).map((recipe) => localizeRecipe(recipe, locale));
+  const recipeIds = getRecipeIdsForCapsule(capsule.id, capsule.system ?? "original");
   useEffect(() => setQuantityDraft(String(entry.quantity)), [entry.quantity]);
   const status = lowStock ? (entry.quantity === 0 ? t("finished") : t("restock")) : entry.favorite ? t("inStock") : "";
   function commitQuantity() {
@@ -91,32 +92,21 @@ export function CapsuleCard({ capsule, entry = createEmptyInventoryEntry(), lowS
         <p className="capsule-flavor">{capsule.flavor}</p>
         {capsule.cupSize && <p className="capsule-cup-size">{t(cupSizeMessage[capsule.cupSize.type])} · {capsule.cupSize.millilitres} ml</p>}
 
-        {matchingRecipes.length > 0 && (
+        {recipeIds.length > 0 && (
           <div className="capsule-recipes">
             <button
               aria-controls={`capsule-recipes-${capsule.id}`}
               aria-expanded={recipesOpen}
-              aria-label={t("recipesFor", { name: capsule.name, count: matchingRecipes.length })}
+              aria-label={t("recipesFor", { name: capsule.name, count: recipeIds.length })}
               className="capsule-recipe-toggle"
               onClick={() => setRecipesOpen((open) => !open)}
               type="button"
             >
-              <span>{t("recipeCount")} <span className="capsule-recipe-count">{matchingRecipes.length}</span></span>
+              <span>{t("recipeCount")} <span className="capsule-recipe-count">{recipeIds.length}</span></span>
               <span aria-hidden="true" className="disclosure-chevron"><svg viewBox="0 0 16 16"><path d="m4 6 4 4 4-4" /></svg></span>
             </button>
             <div className="capsule-recipe-links" hidden={!recipesOpen} id={`capsule-recipes-${capsule.id}`}>
-              {matchingRecipes.map((recipe) => (
-                <a
-                  href={`#recipe-${recipe.id}`}
-                  key={recipe.id}
-                  onClick={(event) => {
-                    event.preventDefault();
-                    onRecipeSelect(recipe.id);
-                  }}
-                >
-                  {recipe.title}
-                </a>
-              ))}
+              {recipesOpen && <Suspense fallback={<span>{t("loading")}</span>}><RecipeLinks capsuleId={capsule.id} onRecipeSelect={onRecipeSelect} /></Suspense>}
             </div>
           </div>
         )}

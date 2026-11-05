@@ -3,6 +3,7 @@ node_modules
 dist/
 coverage/
 *.tsbuildinfo
+.env*.local
 .superpowers/
 /data/inventory.json
 /data/inventory.json.*.tmp

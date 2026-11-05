@@ -1,10 +1,9 @@
 import { Fragment, useEffect, useRef, useState, type CSSProperties, type MouseEvent } from "react";
 import { allRecipes } from "../data/recipeCatalog";
-import type { CoffeeSystem } from "../storage/userSettings";
+import type { CoffeeSystem, RecipeFilter } from "../storage/userSettings";
 import { useLocale } from "../i18n/locale";
 import { localizeRecipe } from "../i18n/catalogContent";
 
-type RecipeFilter = "all" | "favorites" | "hot" | "cold";
 const RECIPE_FAVORITES_KEY = "capsule-shelf:recipe-favorites:v1";
 
 function loadFavoriteIds(): string[] {
@@ -15,9 +14,10 @@ function loadFavoriteIds(): string[] {
     return [];
   }
 }
-export function RecipesPage({ system, favoriteIds: controlledFavoriteIds, onFavoriteIdsChange, initialFocusRecipeId, onFocusRecipeChange }: { system: CoffeeSystem; favoriteIds?: string[]; onFavoriteIdsChange?: (ids: string[]) => void; initialFocusRecipeId?: string | null; onFocusRecipeChange?: (id: string | null) => void }) {
+export function RecipesPage({ system, activeFilter, onFilterChange, favoriteIds: controlledFavoriteIds, onFavoriteIdsChange, initialFocusRecipeId, onFocusRecipeChange }: { system: CoffeeSystem; activeFilter?: RecipeFilter; onFilterChange?: (filter: RecipeFilter) => void; favoriteIds?: string[]; onFavoriteIdsChange?: (ids: string[]) => void; initialFocusRecipeId?: string | null; onFocusRecipeChange?: (id: string | null) => void }) {
   const { locale, t } = useLocale();
-  const [filter, setFilter] = useState<RecipeFilter>("all");
+  const [localFilter, setLocalFilter] = useState<RecipeFilter>("all");
+  const filter = activeFilter ?? localFilter;
   const [search, setSearch] = useState("");
   const [localFavoriteIds, setLocalFavoriteIds] = useState<string[]>(loadFavoriteIds);
   const [focusedRecipeId, setFocusedRecipeId] = useState<string | null>(null);
@@ -37,6 +37,11 @@ export function RecipesPage({ system, favoriteIds: controlledFavoriteIds, onFavo
       return normalizeSearch(translatedRecipe.title).includes(normalizedSearch)
         || normalizeSearch(translatedRecipe.capsule).includes(normalizedSearch);
     }));
+
+  function selectFilter(nextFilter: RecipeFilter) {
+    if (onFilterChange) onFilterChange(nextFilter);
+    else setLocalFilter(nextFilter);
+  }
 
   useEffect(() => {
     if (controlledFavoriteIds !== undefined) return;
@@ -147,7 +152,7 @@ export function RecipesPage({ system, favoriteIds: controlledFavoriteIds, onFavo
                 aria-pressed={filter === value}
                 className={`recipe-filter${filter === value ? " is-active" : ""}`}
                 key={value}
-                onClick={() => setFilter(value)}
+                onClick={() => selectFilter(value)}
                 type="button"
               >
                 {t(label)} <span>{count}</span>
