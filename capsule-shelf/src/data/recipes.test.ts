@@ -114,7 +114,7 @@ describe("Nespresso Canada Vertuo recipes", () => {
     const ids = vertuoRecipes.map(({ id }) => id);
     const capsuleIds = new Set(vertuoCapsules.map(({ id }) => id));
 
-    expect(ids).toHaveLength(17);
+    expect(ids).toHaveLength(39);
     expect(ids.length).toBeGreaterThan(0);
     expect(new Set(ids).size).toBe(ids.length);
     for (const recipe of vertuoRecipes) {
@@ -123,11 +123,24 @@ describe("Nespresso Canada Vertuo recipes", () => {
       expect(recipe.capsuleIds.length).toBeGreaterThan(0);
       expect(recipe.capsuleIds.every((capsuleId) => capsuleIds.has(capsuleId))).toBe(true);
       expect(recipe.sourceUrl).toMatch(/^https:\/\/www\.nespresso\.com\//);
-      expect(recipe.sourceUrl).toMatch(/^https:\/\/www\.nespresso\.com\/(?:ca\/en\/recipe\?id=[a-z0-9-]+|recipes\/ca\/en\/[A-Za-z0-9-]+\.html|ncp\/res\/generated\/recipes\/[A-Za-z0-9_]+\.pdf)$/);
+      expect(recipe.sourceUrl).toMatch(/^https:\/\/www\.nespresso\.com\/(?:ca\/en\/recipe\?id=[a-z0-9-]+|recipes\/ca\/en\/[A-Za-z0-9-]+\.html|ncp\/res\/generated\/recipes\/[A-Za-z0-9_]+\.pdf|static\/us\/solutions\/b2b\/documents\/NESP_POD_RecipeBookPDF_Digital_041425_v7-02\.pdf#page=\d+)$/);
       expect(recipe.ingredients.length).toBeGreaterThan(0);
       expect(recipe.steps.length).toBeGreaterThan(0);
       expect(recipe.imageUrl).toContain("/images/recipes/vertuo/");
     }
+  });
+
+  it("includes the visually reviewed recipe-book adaptations and links them to Vertuo capsules", () => {
+    const bookRecipes = vertuoRecipes.filter(({ sourcePage }) => sourcePage !== undefined);
+    expect(bookRecipes.length).toBeGreaterThanOrEqual(20);
+    expect(bookRecipes.map(({ sourcePage }) => sourcePage)).toContain(12);
+    expect(bookRecipes.map(({ sourcePage }) => sourcePage)).toContain(21);
+    expect(bookRecipes.map(({ sourcePage }) => sourcePage)).toContain(36);
+    expect(bookRecipes.every(({ adaptationNote }) => Boolean(adaptationNote))).toBe(true);
+    expect(getRecipesForCapsule("vertuo-sweet-vanilla").some(({ sourcePage }) => sourcePage !== undefined)).toBe(true);
+    expect(getRecipesForCapsule("vertuo-roasted-hazelnut").some(({ sourcePage }) => sourcePage !== undefined)).toBe(true);
+    expect(getRecipesForCapsule("vertuo-ristretto-classico").some(({ sourcePage }) => sourcePage !== undefined)).toBe(true);
+    expect(getRecipesForCapsule("vertuo-kahawa-ya-congo").some(({ sourcePage }) => sourcePage !== undefined)).toBe(true);
   });
 
   it("keeps the Vertuo-only Fireplace Pumpkin Latte variant and source metadata", () => {
