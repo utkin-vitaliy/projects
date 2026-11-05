@@ -9,7 +9,9 @@ describe("Nespresso Canada Vertuo catalog", () => {
     expect(ids.length).toBeGreaterThan(35);
     expect(new Set(ids).size).toBe(ids.length);
     expect(ids.every((id) => id.startsWith("vertuo-"))).toBe(true);
-    expect(vertuoCapsules.every(({ sourceUrl }) => sourceUrl === "https://www.nespresso.com/ca/en/order/capsules/vertuo")).toBe(true);
+    expect(vertuoCapsules.every(({ sourceUrl }) =>
+      /^https:\/\/www\.nespresso\.com\/ca\/en\/order\/capsules\/vertuo\/[a-z0-9-]+$/.test(sourceUrl),
+    )).toBe(true);
     expect(vertuoCapsules.every(({ imageUrl }) =>
       /^https:\/\/www\.nespresso\.com\/ecom\/medias\/sys_master\/public\/[^/]+\/[^?]+\?/.test(imageUrl),
     )).toBe(true);

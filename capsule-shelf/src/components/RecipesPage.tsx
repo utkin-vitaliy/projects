@@ -169,6 +169,7 @@ export function RecipesPage({ system, activeFilter, onFilterChange, favoriteIds:
         {visibleRecipes.map((item) => {
           const recipe = localizeRecipe(item, locale);
           const isFavorite = favoriteIds.includes(recipe.id);
+          const useZoomedOutPhoto = recipe.id.startsWith("vertuo-us-") || recipe.id === "vertuo-almond-coffee" || recipe.id === "vertuo-gourmandise-coffee";
           return (
           <Fragment key={recipe.id}>
           {focusedRecipeId === recipe.id && <div aria-hidden="true" className="recipe-card-placeholder" style={{ height: focusMotion?.height }} />}
@@ -199,7 +200,10 @@ export function RecipesPage({ system, activeFilter, onFilterChange, favoriteIds:
             >
               <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20.8 8.7c0 5.1-8.8 10.2-8.8 10.2S3.2 13.8 3.2 8.7A4.7 4.7 0 0 1 12 6.3a4.7 4.7 0 0 1 8.8 2.4Z" /></svg>
             </button>
-            <div className={`recipe-card__photo${recipe.sourcePage ? " recipe-card__photo--book" : ""}${focusedRecipeId === recipe.id ? " recipe-card__photo--focused" : ""}`}>
+            <div
+              className={`recipe-card__photo${recipe.sourcePage ? " recipe-card__photo--book" : ""}${useZoomedOutPhoto ? " recipe-card__photo--zoomed-out" : ""}${focusedRecipeId === recipe.id ? " recipe-card__photo--focused" : ""}`}
+              style={useZoomedOutPhoto ? { "--recipe-photo": `url("${recipe.imageUrl}")` } as CSSProperties : undefined}
+            >
               <RecipeImage src={recipe.imageUrl} alt={recipe.imageAlt} unavailableLabel={t("recipeImageUnavailable")} />
             </div>
             <div className="recipe-card__meta">

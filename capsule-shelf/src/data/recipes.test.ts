@@ -114,7 +114,7 @@ describe("Nespresso Canada Vertuo recipes", () => {
     const ids = vertuoRecipes.map(({ id }) => id);
     const capsuleIds = new Set(vertuoCapsules.map(({ id }) => id));
 
-    expect(ids).toHaveLength(39);
+    expect(ids).toHaveLength(63);
     expect(ids.length).toBeGreaterThan(0);
     expect(new Set(ids).size).toBe(ids.length);
     for (const recipe of vertuoRecipes) {
@@ -123,7 +123,7 @@ describe("Nespresso Canada Vertuo recipes", () => {
       expect(recipe.capsuleIds.length).toBeGreaterThan(0);
       expect(recipe.capsuleIds.every((capsuleId) => capsuleIds.has(capsuleId))).toBe(true);
       expect(recipe.sourceUrl).toMatch(/^https:\/\/www\.nespresso\.com\//);
-      expect(recipe.sourceUrl).toMatch(/^https:\/\/www\.nespresso\.com\/(?:ca\/en\/recipe\?id=[a-z0-9-]+|recipes\/ca\/en\/[A-Za-z0-9-]+\.html|ncp\/res\/generated\/recipes\/[A-Za-z0-9_]+\.pdf|static\/us\/solutions\/b2b\/documents\/NESP_POD_RecipeBookPDF_Digital_041425_v7-02\.pdf#page=\d+)$/);
+      expect(recipe.sourceUrl).toMatch(/^https:\/\/www\.nespresso\.com\/(?:ca\/en\/recipe\?id=[a-z0-9-]+|ca\/en\/order\/capsules\/vertuo\/[a-z0-9-]+|recipes\/(?:ca|us)\/en\/[A-Za-z0-9-]+\.html|us\/en\/vertuo-coffee-recipe-[a-z-]+|ncp\/res\/generated\/recipes\/[A-Za-z0-9_]+\.pdf|static\/us\/solutions\/b2b\/documents\/NESP_POD_RecipeBookPDF_Digital_041425_v7-02\.pdf#page=\d+)$/);
       expect(recipe.ingredients.length).toBeGreaterThan(0);
       expect(recipe.steps.length).toBeGreaterThan(0);
       expect(recipe.imageUrl).toContain("/images/recipes/vertuo/");

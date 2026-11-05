@@ -29,6 +29,14 @@ const recipeReferences: readonly RecipeReference[] = [
   ["vertuo-espresso-martini", "vertuo", ["vertuo-ristretto-classico"]], ["vertuo-almond-intenso-mocha", "vertuo", ["vertuo-intenso"]], ["vertuo-intenso-affogato-float", "vertuo", ["vertuo-intenso"]], ["vertuo-chilled-lungo-chai", "vertuo", ["vertuo-intenso"]],
   ["vertuo-shaken-vietnamese-coffee", "vertuo", ["vertuo-ice-forte"]], ["vertuo-watermelon-intenso-spritzer", "vertuo", ["vertuo-ice-forte"]], ["vertuo-intenso-breakfast-smoothie", "vertuo", ["vertuo-ice-forte"]], ["vertuo-vanilla-matcha-cappuccino", "vertuo", ["vertuo-colombia"]],
   ["vertuo-boozy-berry", "vertuo", ["vertuo-colombia"]], ["vertuo-iced-ginger-fizz", "vertuo", ["vertuo-kahawa-ya-congo"]], ["vertuo-congo-sunset-spritz", "vertuo", ["vertuo-kahawa-ya-congo"]],
+  ["vertuo-peppermint-pinwheel-viennois", "vertuo", ["vertuo-peppermint-pinwheel"]], ["vertuo-gingerbread-viennois", "vertuo", ["vertuo-gingerbread"]],
+  ["vertuo-almond-reverso", "vertuo", ["vertuo-bianco-forte"]], ["vertuo-mango-sesame-viennois", "vertuo", ["vertuo-el-salvador"]],
+  ["vertuo-roasted-hazelnut-honey-oat-reverso", "vertuo", ["vertuo-roasted-hazelnut"]], ["vertuo-rich-chocolate-pear-almond-viennois", "vertuo", ["vertuo-rich-chocolate"]],
+  ["vertuo-golden-delight", "vertuo", ["vertuo-melozio"]],
+  ["vertuo-coconut-chocolate-iced-latte", "vertuo", ["vertuo-fortado"]], ["vertuo-spicy-oat-latte", "vertuo", ["vertuo-oatly-barista-edition"]],
+  ["vertuo-reverso-intenso", "vertuo", ["vertuo-bianco-forte"]], ["vertuo-symphony-golden-dragon", "vertuo", ["vertuo-melozio"]],
+  ["vertuo-sweet-active-delight", "vertuo", ["vertuo-active-vitamin-b6"]], ["vertuo-almond-coffee", "vertuo", ["vertuo-odacio"]],
+  ["vertuo-gourmandise-coffee", "vertuo", ["vertuo-melozio"]],
 ];
 
 export const recipeIds = recipeReferences.map(([id]) => id);
