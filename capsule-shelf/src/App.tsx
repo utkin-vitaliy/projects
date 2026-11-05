@@ -9,7 +9,7 @@ import { useInventory } from "./features/inventory/useInventory";
 import { serializeInventory } from "./storage/inventoryStorage";
 import { localizeCapsule } from "./i18n/catalogContent";
 import { LocaleProvider, useLocale, type Locale, type MessageKey } from "./i18n/locale";
-import { recipes } from "./data/recipes";
+import { allRecipes } from "./data/recipeCatalog";
 import { parseUserSettings, serializeUserSettings, type CoffeeSystem, type UserSettings } from "./storage/userSettings";
 import { settingsStorageKey, type SettingsNamespace } from "./storage/settingsStorage";
 import { getGoogleAccount, readDriveSettings, requestGoogleAccessToken, writeDriveSettings, type DriveSettingsFile, type GoogleAccount } from "./storage/googleDrive";
@@ -100,7 +100,7 @@ function CapsuleShelfApp({ account, rememberedAccount, namespace, onAccountChang
     let nextSystem: CoffeeSystem = "original";
     try {
       const raw = window.localStorage.getItem(completeSettingsStorageKey);
-      if (raw) nextSystem = parseUserSettings(raw, allCapsules, recipes.map(({ id }) => id), locale).system;
+      if (raw) nextSystem = parseUserSettings(raw, allCapsules, allRecipes.map(({ id }) => id), locale).system;
     } catch {
       // Missing or older settings safely select Original.
     }
@@ -127,7 +127,7 @@ function CapsuleShelfApp({ account, rememberedAccount, namespace, onAccountChang
 
   useEffect(() => {
     if (!account || !readyForNamespace || loadedSettingsKey !== completeSettingsStorageKey) return;
-    const payload = parseUserSettings(settingsJson, allCapsules, recipes.map(({ id }) => id), locale);
+    const payload = parseUserSettings(settingsJson, allCapsules, allRecipes.map(({ id }) => id), locale);
     const comparable = comparableSettings(payload);
     if (comparable === lastSyncedJson.current) return;
     setSyncState("saving");
@@ -237,8 +237,8 @@ function CapsuleShelfApp({ account, rememberedAccount, namespace, onAccountChang
       const accountNamespace: SettingsNamespace = { provider: "google", subject: googleAccount.sub };
       const localRaw = window.localStorage.getItem(settingsStorageKey(USER_SETTINGS_STORAGE_KEY, accountNamespace));
       const localSettings = localRaw
-        ? parseUserSettings(localRaw, allCapsules, recipes.map(({ id }) => id), locale)
-        : parseUserSettings(settingsJson, allCapsules, recipes.map(({ id }) => id), locale);
+        ? parseUserSettings(localRaw, allCapsules, allRecipes.map(({ id }) => id), locale)
+        : parseUserSettings(settingsJson, allCapsules, allRecipes.map(({ id }) => id), locale);
       if (!driveFile) {
         const saved = await writeDriveSettings(accessToken, serializeUserSettings(localSettings));
         persistSettingsForNamespace(localSettings, accountNamespace);
@@ -250,7 +250,7 @@ function CapsuleShelfApp({ account, rememberedAccount, namespace, onAccountChang
         setSyncState("saved");
         return;
       }
-      const cloudSettings = parseUserSettings(driveFile.raw, allCapsules, recipes.map(({ id }) => id), locale);
+      const cloudSettings = parseUserSettings(driveFile.raw, allCapsules, allRecipes.map(({ id }) => id), locale);
       if (comparableSettings(localSettings) !== comparableSettings(cloudSettings)) {
         setPendingConnection({ account: googleAccount, accessToken, driveFile, localSettings, cloudSettings });
         setSyncState("idle");
@@ -366,10 +366,8 @@ function CapsuleShelfApp({ account, rememberedAccount, namespace, onAccountChang
 
       {!ready ? (
         <p className="inventory-loading" role="status">{t("loading")}</p>
-      ) : coffeeSystem === "vertuo" && activeView === "recipes" ? (
-        <section className="system-coming-soon" aria-live="polite"><p>{t("vertuoRecipesComingSoon")}</p></section>
       ) : activeView === "recipes" ? (
-        <RecipesPage favoriteIds={favoriteRecipeIds} onFavoriteIdsChange={setFavoriteRecipeIds} />
+        <RecipesPage system={coffeeSystem} favoriteIds={favoriteRecipeIds} onFavoriteIdsChange={setFavoriteRecipeIds} />
       ) : (
         <div id="capsules" className="capsules-view">
           <InventorySummary

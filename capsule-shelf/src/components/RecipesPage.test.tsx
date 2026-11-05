@@ -1,12 +1,13 @@
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { recipes } from "../data/recipes";
+import { vertuoRecipes } from "../data/vertuoRecipes";
 import { RecipesPage } from "./RecipesPage";
 import { LocaleProvider } from "../i18n/locale";
 
-function renderRecipesPage() {
-  localStorage.setItem("capsule-shelf:locale:v1", "ru");
-  return render(<LocaleProvider><RecipesPage /></LocaleProvider>);
+function renderRecipesPage(system: "original" | "vertuo" = "original", favoriteIds?: string[], locale: "en" | "ru" | "fr" = "ru") {
+  localStorage.setItem("capsule-shelf:locale:v1", locale);
+  return render(<LocaleProvider><RecipesPage system={system} {...(favoriteIds === undefined ? {} : { favoriteIds })} /></LocaleProvider>);
 }
 
 afterEach(cleanup);
@@ -88,5 +89,35 @@ describe("RecipesPage", () => {
     const matchingCards = screen.getAllByRole("article");
     expect(matchingCards.length).toBeGreaterThan(0);
     for (const card of matchingCards) expect(card).toHaveTextContent("Arpeggio");
+  });
+
+  it("shows only the selected system and scopes filter counts and favorites to it", () => {
+    renderRecipesPage("vertuo", ["vertuo-black-iced", "cappuccino"]);
+
+    expect(screen.getAllByRole("article")).toHaveLength(vertuoRecipes.length);
+    expect(screen.getByRole("heading", { name: "Чёрный кофе со льдом" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Капучино" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: `Все рецепты ${vertuoRecipes.length}` })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Избранное 1" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: `Горячие ${vertuoRecipes.filter(({ temperature }) => temperature === "hot").length}` })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: `Холодные ${vertuoRecipes.filter(({ temperature }) => temperature === "cold").length}` })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Избранное 1" }));
+    expect(screen.getAllByRole("article")).toHaveLength(1);
+    expect(screen.getByRole("heading", { name: "Чёрный кофе со льдом" })).toBeInTheDocument();
+  });
+
+  it("searches Vertuo recipes using titles and capsule names from any supported language", () => {
+    renderRecipesPage("vertuo", [], "en");
+    const search = screen.getByRole("searchbox", { name: "Find a recipe…" });
+
+    fireEvent.change(search, { target: { value: "Чёрный кофе со льдом" } });
+    expect(screen.getByRole("heading", { name: "Black Iced" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Капучино" })).not.toBeInTheDocument();
+
+    fireEvent.change(search, { target: { value: "Capsule Ice Forte" } });
+    expect(screen.getByRole("heading", { name: "Black Iced" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Refreshing Citrus Latte" })).toBeInTheDocument();
+    expect(screen.getAllByRole("article")).toHaveLength(2);
   });
 });

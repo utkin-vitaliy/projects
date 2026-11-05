@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { recipes } from "../data/recipes";
+import { allRecipes } from "../data/recipeCatalog";
+import type { CoffeeSystem } from "../storage/userSettings";
 import { useLocale } from "../i18n/locale";
 import { localizeRecipe } from "../i18n/catalogContent";
 
@@ -14,14 +15,17 @@ function loadFavoriteIds(): string[] {
     return [];
   }
 }
-export function RecipesPage({ favoriteIds: controlledFavoriteIds, onFavoriteIdsChange }: { favoriteIds?: string[]; onFavoriteIdsChange?: (ids: string[]) => void } = {}) {
+export function RecipesPage({ system, favoriteIds: controlledFavoriteIds, onFavoriteIdsChange }: { system: CoffeeSystem; favoriteIds?: string[]; onFavoriteIdsChange?: (ids: string[]) => void }) {
   const { locale, t } = useLocale();
   const [filter, setFilter] = useState<RecipeFilter>("all");
   const [search, setSearch] = useState("");
   const [localFavoriteIds, setLocalFavoriteIds] = useState<string[]>(loadFavoriteIds);
   const favoriteIds = controlledFavoriteIds ?? localFavoriteIds;
   const normalizedSearch = normalizeSearch(search);
-  const visibleRecipes = recipes
+  const line = system === "vertuo" ? "Vertuo" : "Original";
+  const systemRecipes = allRecipes.filter((recipe) => recipe.line === line);
+  const systemFavoriteCount = systemRecipes.filter((recipe) => favoriteIds.includes(recipe.id)).length;
+  const visibleRecipes = systemRecipes
     .filter((recipe) => filter === "all"
       || (filter === "favorites" ? favoriteIds.includes(recipe.id) : recipe.temperature === filter))
     .filter((recipe) => (["en", "ru", "fr"] as const).some((searchLocale) => {
@@ -62,7 +66,7 @@ export function RecipesPage({ favoriteIds: controlledFavoriteIds, onFavoriteIdsC
             ["hot", "hot"],
             ["cold", "cold"],
           ] as const).map(([value, label]) => {
-            const count = value === "all" ? recipes.length : value === "favorites" ? favoriteIds.length : recipes.filter((recipe) => recipe.temperature === value).length;
+            const count = value === "all" ? systemRecipes.length : value === "favorites" ? systemFavoriteCount : systemRecipes.filter((recipe) => recipe.temperature === value).length;
             return (
               <button
                 aria-pressed={filter === value}

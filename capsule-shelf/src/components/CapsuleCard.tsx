@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { CapsuleNotes } from "./CapsuleNotes";
 import { createEmptyInventoryEntry, type Capsule, type CapsuleCupSize, type CapsuleNote, type InventoryEntry } from "../domain/capsules";
-import { getRecipesForCapsule } from "../data/recipes";
+import { getRecipesForCapsule } from "../data/recipeCatalog";
 import { useLocale, type MessageKey } from "../i18n/locale";
 import { localizeRecipe } from "../i18n/catalogContent";
 
@@ -35,9 +35,7 @@ export function CapsuleCard({ capsule, entry = createEmptyInventoryEntry(), lowS
   const [recipesOpen, setRecipesOpen] = useState(false);
   const [imageFailed, setImageFailed] = useState(false);
   const [quantityDraft, setQuantityDraft] = useState(String(entry.quantity));
-  const matchingRecipes = capsule.system === "vertuo"
-    ? []
-    : getRecipesForCapsule(capsule.id).map((recipe) => localizeRecipe(recipe, locale));
+  const matchingRecipes = getRecipesForCapsule(capsule.id).map((recipe) => localizeRecipe(recipe, locale));
   useEffect(() => setQuantityDraft(String(entry.quantity)), [entry.quantity]);
   const status = lowStock ? (entry.quantity === 0 ? t("finished") : t("restock")) : entry.favorite ? t("inStock") : "";
   function commitQuantity() {

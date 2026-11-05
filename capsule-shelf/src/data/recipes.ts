@@ -1216,7 +1216,3 @@ export const recipes: CoffeeRecipe[] = [
     sourceUrl: "https://www.nespresso.com/recipes/ca/en/33875VAN-vanilla-latte.html",
   },
 ];
-
-export function getRecipesForCapsule(capsuleId: string): CoffeeRecipe[] {
-  return recipes.filter((recipe) => recipe.allOriginalCapsules || recipe.capsuleIds.includes(capsuleId));
-}

@@ -5,7 +5,8 @@ import { existsSync } from "node:fs";
 // @ts-expect-error Node typings are intentionally not included in the browser app tsconfig.
 import { resolve } from "node:path";
 import * as recipeData from "./recipes";
-import { getRecipesForCapsule, recipes } from "./recipes";
+import { recipes } from "./recipes";
+import { getRecipesForCapsule } from "./recipeCatalog";
 import { vertuoCapsules } from "./vertuoCapsules";
 import { vertuoRecipes } from "./vertuoRecipes";
 import { localizeRecipe } from "../i18n/catalogContent";
@@ -95,6 +96,16 @@ describe("Nespresso Original recipes", () => {
     for (const recipe of bookRecipes) {
       expect(recipe.sourceUrl).toContain(`#page=${recipe.sourcePage}`);
     }
+  });
+});
+
+describe("cross-system recipe matching", () => {
+  it("matches each capsule only to recipes from its own system", () => {
+    expect(getRecipesForCapsule("vertuo-ice-forte").map(({ id }) => id)).toContain("vertuo-black-iced");
+    expect(getRecipesForCapsule("vertuo-ice-forte").every(({ line }) => line === "Vertuo")).toBe(true);
+    expect(getRecipesForCapsule("vertuo-intenso").every(({ line }) => line === "Vertuo")).toBe(true);
+    expect(getRecipesForCapsule("arpeggio").every(({ line }) => line === "Original")).toBe(true);
+    expect(getRecipesForCapsule("arpeggio").map(({ id }) => id)).toContain("cappuccino");
   });
 });
 

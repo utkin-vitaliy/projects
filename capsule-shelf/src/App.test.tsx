@@ -89,7 +89,7 @@ describe("Capsule Shelf dashboard", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Vertuo" }));
     expect(screen.getByRole("heading", { name: "Melozio" })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /Рецепты для Melozio/ })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Рецепты для Melozio/ })).toBeInTheDocument();
     expect(screen.getAllByText(/230 ml/).length).toBeGreaterThan(0);
     const vertuoCount = screen.getByRole("spinbutton", { name: "Количество капсул Melozio" });
     fireEvent.change(vertuoCount, { target: { value: "12" } });
@@ -112,14 +112,45 @@ describe("Capsule Shelf dashboard", () => {
     expect(screen.getByLabelText("Количество капсул Melozio")).toHaveValue(12);
 
     unmount();
-    render(<App />);
+    const second = render(<App />);
     await waitForReady();
     expect(screen.getByRole("button", { name: "Vertuo" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByLabelText("Количество капсул Melozio")).toHaveValue(12);
     expect(screen.getByRole("button", { name: "Рецепты" })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Рецепты" }));
-    expect(screen.getByText("Рецепты Vertuo скоро появятся.")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Рецепты для твоей полки" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Чёрный кофе со льдом" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Капучино" })).not.toBeInTheDocument();
+    const favorite = screen.getByRole("button", { name: "Добавить рецепт «Чёрный кофе со льдом» в избранное" });
+    fireEvent.click(favorite);
+    await waitFor(() => {
+      const stored = JSON.parse(localStorage.getItem("capsule-shelf:user-settings:v1") ?? "{}");
+      expect(stored.favoriteRecipes).toContain("vertuo-black-iced");
+    });
+    second.unmount();
+    render(<App />);
+    await waitForReady();
+    expect(screen.getByRole("button", { name: "Vertuo" })).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(screen.getByRole("button", { name: "Рецепты" }));
+    expect(screen.getByRole("button", { name: "Убрать рецепт «Чёрный кофе со льдом» из избранного" })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("opens a Vertuo recipe from its Vertuo capsule and keeps the official source", async () => {
+    render(<App />);
+    await waitForReady();
+    fireEvent.click(screen.getByRole("button", { name: "Vertuo" }));
+    const search = screen.getByRole("searchbox", { name: "Найти капсулу…" });
+    fireEvent.change(search, { target: { value: "Ice Forte" } });
+
+    const capsuleCard = screen.getByRole("heading", { name: "Ice Forte" }).closest("article")!;
+    fireEvent.click(within(capsuleCard).getByRole("button", { name: /Рецепты для Ice Forte/ }));
+    fireEvent.click(within(capsuleCard).getByRole("link", { name: "Чёрный кофе со льдом" }));
+
+    const recipeHeading = await screen.findByRole("heading", { name: "Чёрный кофе со льдом" });
+    expect(recipeHeading.closest("article")).toHaveAttribute("id", "recipe-vertuo-black-iced");
+    expect(within(recipeHeading.closest("article")!).getByRole("link", { name: /Источник: Nespresso/ }))
+      .toHaveAttribute("href", "https://www.nespresso.com/ca/en/recipe?id=black-iced");
   });
 
   it("remembers a linked Google account and loads its inventory after reload", async () => {

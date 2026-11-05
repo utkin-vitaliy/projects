@@ -7,7 +7,7 @@ export const LOCALE_STORAGE_KEY = "capsule-shelf:locale:v1";
 const messages = {
   en: {
     language: "Language", russianName: "Russian", frenchName: "French", englishName: "English", title: "My Coffee Shelf", subtitle: "Favourite capsules, stock levels, and tasting notes — all in one place.",
-    navAria: "App sections", inventoryTab: "Capsules", recipesTab: "Recipes", loading: "Loading your settings…", systemSelector: "Choose capsule system", originalSystem: "Original", vertuoSystem: "Vertuo", vertuoComingSoon: "The Vertuo catalogue is coming soon.", vertuoRecipesComingSoon: "Vertuo recipes are coming soon.",
+    navAria: "App sections", inventoryTab: "Capsules", recipesTab: "Recipes", loading: "Loading your settings…", systemSelector: "Choose capsule system", originalSystem: "Original", vertuoSystem: "Vertuo", vertuoComingSoon: "The Vertuo catalogue is coming soon.",
     catalogTitle: "Coffee varieties", catalogHint: "Enter the number of capsules you have for each variety",
     browserStorage: "Settings are saved in this browser", downloadSettings: "Download settings", uploadFile: "Upload file", fileInput: "Choose a Capsule Shelf settings file", catalogLink: "Nespresso Canada catalogue ↗", privacyPolicyLink: "Privacy policy", feedbackLink: "Leave feedback ↗", feedbackPrivacy: "Opens GitHub; your post will be public.",
     replaceSettings: "Replace your current settings with the data in this file?", readFileError: "Could not read the selected file.", invalidJson: "This file is not valid JSON.", invalidBackup: "The settings file format is not recognized.",
@@ -20,7 +20,7 @@ const messages = {
   },
   ru: {
     language: "Язык", russianName: "Русский", frenchName: "Французский", englishName: "Английский", title: "Моя кофейная полка", subtitle: "Любимые вкусы, свежий запас и заметки — всё на виду.",
-    navAria: "Разделы приложения", inventoryTab: "Капсулы", recipesTab: "Рецепты", loading: "Загружаю настройки…", systemSelector: "Выбрать систему капсул", originalSystem: "Original", vertuoSystem: "Vertuo", vertuoComingSoon: "Каталог Vertuo скоро появится.", vertuoRecipesComingSoon: "Рецепты Vertuo скоро появятся.",
+    navAria: "Разделы приложения", inventoryTab: "Капсулы", recipesTab: "Рецепты", loading: "Загружаю настройки…", systemSelector: "Выбрать систему капсул", originalSystem: "Original", vertuoSystem: "Vertuo", vertuoComingSoon: "Каталог Vertuo скоро появится.",
     catalogTitle: "Сорта кофе", catalogHint: "Введи количество капсул для каждого вкуса",
     browserStorage: "Настройки сохраняются в этом браузере", downloadSettings: "Скачать настройки", uploadFile: "Загрузить файл", fileInput: "Выбрать файл настроек Capsule Shelf", catalogLink: "Каталог Nespresso Canada ↗", privacyPolicyLink: "Конфиденциальность", feedbackLink: "Оставить отзыв ↗", feedbackPrivacy: "Откроется GitHub; сообщение будет публичным.",
     replaceSettings: "Заменить текущие настройки данными из этого файла?", readFileError: "Не удалось прочитать выбранный файл.", invalidJson: "Файл не является корректным JSON.", invalidBackup: "Формат файла настроек не распознан.",
@@ -33,7 +33,7 @@ const messages = {
   },
   fr: {
     language: "Langue", russianName: "Russe", frenchName: "Français", englishName: "Anglais", title: "Ma collection de cafés", subtitle: "Vos capsules préférées, vos stocks et vos notes de dégustation — tout au même endroit.",
-    navAria: "Sections de l’application", inventoryTab: "Capsules", recipesTab: "Recettes", loading: "Chargement de vos paramètres…", systemSelector: "Choisir un système de capsules", originalSystem: "Original", vertuoSystem: "Vertuo", vertuoComingSoon: "Le catalogue Vertuo sera bientôt disponible.", vertuoRecipesComingSoon: "Les recettes Vertuo seront bientôt disponibles.",
+    navAria: "Sections de l’application", inventoryTab: "Capsules", recipesTab: "Recettes", loading: "Chargement de vos paramètres…", systemSelector: "Choisir un système de capsules", originalSystem: "Original", vertuoSystem: "Vertuo", vertuoComingSoon: "Le catalogue Vertuo sera bientôt disponible.",
     catalogTitle: "Variétés de café", catalogHint: "Indiquez le nombre de capsules que vous avez pour chaque variété",
     browserStorage: "Les paramètres sont enregistrés dans ce navigateur", downloadSettings: "Télécharger vos paramètres", uploadFile: "Importer un fichier", fileInput: "Choisir un fichier de paramètres Capsule Shelf", catalogLink: "Catalogue Nespresso Canada ↗", privacyPolicyLink: "Confidentialité", feedbackLink: "Partager vos commentaires ↗", feedbackPrivacy: "GitHub s’ouvrira ; votre message sera public.",
     replaceSettings: "Remplacer vos paramètres actuels par les données de ce fichier ?", readFileError: "Impossible de lire le fichier sélectionné.", invalidJson: "Ce fichier n’est pas un JSON valide.", invalidBackup: "Le format du fichier de paramètres n’est pas reconnu.",
