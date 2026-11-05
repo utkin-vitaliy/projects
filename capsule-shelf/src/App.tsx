@@ -189,20 +189,9 @@ function CapsuleShelfApp({ account, rememberedAccount, namespace, onAccountChang
     if (!shouldScrollToView.current) return;
     shouldScrollToView.current = false;
     const targetRecipeId = activeView === "recipes" ? pendingRecipeId : null;
+    if (targetRecipeId) return;
     window.requestAnimationFrame(() => {
-      const target = document.getElementById(targetRecipeId ? `recipe-${targetRecipeId}` : activeView === "recipes" ? "recipes" : "capsules");
-      if (targetRecipeId && target instanceof HTMLElement) {
-        target.focus({ preventScroll: true });
-        const navBottom = document.querySelector(".page-nav")?.getBoundingClientRect().bottom ?? 0;
-        const visibleTop = Math.max(navBottom + 16, 16);
-        const availableHeight = window.innerHeight - visibleTop - 24;
-        const targetTop = visibleTop + Math.max(0, (availableHeight - target.getBoundingClientRect().height) / 2);
-        const scrollTop = target.getBoundingClientRect().top + window.scrollY - targetTop;
-        window.scrollTo(0, Math.max(0, scrollTop));
-        setPendingRecipeId(null);
-      } else {
-        target?.scrollIntoView?.({ behavior: "smooth", block: "start" });
-      }
+      document.getElementById(activeView === "recipes" ? "recipes" : "capsules")?.scrollIntoView?.({ behavior: "smooth", block: "start" });
     });
   }, [activeView, pendingRecipeId]);
 
@@ -367,7 +356,7 @@ function CapsuleShelfApp({ account, rememberedAccount, namespace, onAccountChang
       {!ready ? (
         <p className="inventory-loading" role="status">{t("loading")}</p>
       ) : activeView === "recipes" ? (
-        <RecipesPage system={coffeeSystem} favoriteIds={favoriteRecipeIds} onFavoriteIdsChange={setFavoriteRecipeIds} />
+        <RecipesPage system={coffeeSystem} favoriteIds={favoriteRecipeIds} onFavoriteIdsChange={setFavoriteRecipeIds} initialFocusRecipeId={pendingRecipeId} onFocusRecipeChange={setPendingRecipeId} />
       ) : (
         <div id="capsules" className="capsules-view">
           <InventorySummary

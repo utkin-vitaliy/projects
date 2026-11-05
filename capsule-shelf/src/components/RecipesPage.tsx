@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useRef, useState, type CSSProperties, type MouseEvent } from "react";
 import { allRecipes } from "../data/recipeCatalog";
 import type { CoffeeSystem } from "../storage/userSettings";
 import { useLocale } from "../i18n/locale";
@@ -15,11 +15,15 @@ function loadFavoriteIds(): string[] {
     return [];
   }
 }
-export function RecipesPage({ system, favoriteIds: controlledFavoriteIds, onFavoriteIdsChange }: { system: CoffeeSystem; favoriteIds?: string[]; onFavoriteIdsChange?: (ids: string[]) => void }) {
+export function RecipesPage({ system, favoriteIds: controlledFavoriteIds, onFavoriteIdsChange, initialFocusRecipeId, onFocusRecipeChange }: { system: CoffeeSystem; favoriteIds?: string[]; onFavoriteIdsChange?: (ids: string[]) => void; initialFocusRecipeId?: string | null; onFocusRecipeChange?: (id: string | null) => void }) {
   const { locale, t } = useLocale();
   const [filter, setFilter] = useState<RecipeFilter>("all");
   const [search, setSearch] = useState("");
   const [localFavoriteIds, setLocalFavoriteIds] = useState<string[]>(loadFavoriteIds);
+  const [focusedRecipeId, setFocusedRecipeId] = useState<string | null>(null);
+  const [focusMotion, setFocusMotion] = useState<{ x: number; y: number; scale: number; height: number } | null>(null);
+  const previousScrollY = useRef(0);
+  const returnFocusTarget = useRef<HTMLElement | null>(null);
   const favoriteIds = controlledFavoriteIds ?? localFavoriteIds;
   const normalizedSearch = normalizeSearch(search);
   const line = system === "vertuo" ? "Vertuo" : "Original";
@@ -39,6 +43,77 @@ export function RecipesPage({ system, favoriteIds: controlledFavoriteIds, onFavo
     try { window.localStorage.setItem(RECIPE_FAVORITES_KEY, JSON.stringify(favoriteIds)); } catch { /* Keep in-memory favorites usable. */ }
   }, [favoriteIds, controlledFavoriteIds]);
 
+  function openFocusedRecipe(recipeId: string, card: HTMLElement) {
+    const rect = card.getBoundingClientRect();
+    const targetWidth = Math.min(960, Math.max(320, window.innerWidth - 48));
+    previousScrollY.current = window.scrollY;
+    returnFocusTarget.current = card;
+    setFocusMotion({
+      x: rect.left + rect.width / 2 - window.innerWidth / 2,
+      y: rect.top + rect.height / 2 - (window.innerHeight / 2 - 24),
+      scale: Math.min(1, rect.width / targetWidth),
+      height: rect.height,
+    });
+    setFocusedRecipeId(recipeId);
+  }
+
+  function closeFocusedRecipe() {
+    setFocusedRecipeId(null);
+    setFocusMotion(null);
+    onFocusRecipeChange?.(null);
+    window.requestAnimationFrame(() => {
+      if (window.scrollY !== previousScrollY.current) window.scrollTo(0, previousScrollY.current);
+      returnFocusTarget.current?.focus({ preventScroll: true });
+    });
+  }
+
+  useEffect(() => {
+    if (!focusedRecipeId) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const card = document.getElementById(`recipe-${focusedRecipeId}`);
+    card?.focus({ preventScroll: true });
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        closeFocusedRecipe();
+        return;
+      }
+      if (event.key !== "Tab" || !card) return;
+      const focusable = Array.from(card.querySelectorAll<HTMLElement>('button:not(:disabled), a[href], input:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])'));
+      if (!focusable.length) {
+        event.preventDefault();
+        card.focus();
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && (document.activeElement === first || !card.contains(document.activeElement))) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && (document.activeElement === last || !card.contains(document.activeElement))) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [focusedRecipeId]);
+
+  useEffect(() => {
+    if (!initialFocusRecipeId || !systemRecipes.some(({ id }) => id === initialFocusRecipeId)) return;
+    const frame = window.requestAnimationFrame(() => {
+      const target = document.getElementById(`recipe-${initialFocusRecipeId}`);
+      if (!(target instanceof HTMLElement)) return;
+      target.scrollIntoView?.({ behavior: "smooth", block: "center" });
+      openFocusedRecipe(initialFocusRecipeId, target);
+      onFocusRecipeChange?.(null);
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [initialFocusRecipeId, system]);
+
   function toggleFavorite(recipeId: string) {
     const updated = favoriteIds.includes(recipeId)
       ? favoriteIds.filter((id) => id !== recipeId)
@@ -48,7 +123,7 @@ export function RecipesPage({ system, favoriteIds: controlledFavoriteIds, onFavo
   }
 
   return (
-    <section className="recipes-section" id="recipes" aria-labelledby="recipes-title">
+    <section className={`recipes-section${focusedRecipeId ? " recipes-section--focused" : ""}`} id="recipes" aria-labelledby="recipes-title">
       <div className="recipes-toolbar">
         <header className="recipes-heading">
           <h2 id="recipes-title">{t("recipeHeading")}</h2>
@@ -83,13 +158,32 @@ export function RecipesPage({ system, favoriteIds: controlledFavoriteIds, onFavo
         </div>
       </div>
 
+      {focusedRecipeId && <div aria-hidden="true" className="recipe-focus-backdrop" onClick={closeFocusedRecipe} />}
       <div className="recipe-grid">
         {visibleRecipes.length === 0 && <div className="empty-filter" role="status"><span aria-hidden="true">⌕</span><p>{filter === "favorites" && !normalizedSearch ? t("noFavoriteRecipes") : t("noSearchResults")}</p></div>}
         {visibleRecipes.map((item) => {
           const recipe = localizeRecipe(item, locale);
           const isFavorite = favoriteIds.includes(recipe.id);
           return (
-          <article className="recipe-card" id={`recipe-${recipe.id}`} key={recipe.id} tabIndex={-1}>
+          <Fragment key={recipe.id}>
+          {focusedRecipeId === recipe.id && <div aria-hidden="true" className="recipe-card-placeholder" style={{ height: focusMotion?.height }} />}
+          <article
+            aria-label={focusedRecipeId === recipe.id ? recipe.title : undefined}
+            aria-modal={focusedRecipeId === recipe.id || undefined}
+            className={`recipe-card${focusedRecipeId === recipe.id ? " recipe-card--focused" : ""}`}
+            id={`recipe-${recipe.id}`}
+            onClick={(event: MouseEvent<HTMLElement>) => {
+              if (focusedRecipeId === recipe.id || (event.target as HTMLElement).closest("button, a, input, textarea")) return;
+              openFocusedRecipe(recipe.id, event.currentTarget);
+            }}
+            role={focusedRecipeId === recipe.id ? "dialog" : undefined}
+            style={focusedRecipeId === recipe.id && focusMotion ? {
+              "--focus-from-x": `${focusMotion.x}px`,
+              "--focus-from-y": `${focusMotion.y}px`,
+              "--focus-from-scale": focusMotion.scale,
+            } as CSSProperties : undefined}
+            tabIndex={-1}
+          >
             <button
               aria-label={isFavorite ? t("removeRecipeFavorite", { name: recipe.title }) : t("addRecipeFavorite", { name: recipe.title })}
               aria-pressed={isFavorite}
@@ -100,7 +194,7 @@ export function RecipesPage({ system, favoriteIds: controlledFavoriteIds, onFavo
             >
               <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20.8 8.7c0 5.1-8.8 10.2-8.8 10.2S3.2 13.8 3.2 8.7A4.7 4.7 0 0 1 12 6.3a4.7 4.7 0 0 1 8.8 2.4Z" /></svg>
             </button>
-            <div className={`recipe-card__photo${recipe.sourcePage ? " recipe-card__photo--book" : ""}`}>
+            <div className={`recipe-card__photo${recipe.sourcePage ? " recipe-card__photo--book" : ""}${focusedRecipeId === recipe.id ? " recipe-card__photo--focused" : ""}`}>
               <RecipeImage src={recipe.imageUrl} alt={recipe.imageAlt} unavailableLabel={t("recipeImageUnavailable")} />
             </div>
             <div className="recipe-card__meta">
@@ -112,7 +206,7 @@ export function RecipesPage({ system, favoriteIds: controlledFavoriteIds, onFavo
             <p className="recipe-card__capsule">{t("capsuleLabel")} <strong>{recipe.capsule}</strong></p>
             {recipe.adaptationNote && <p className="recipe-card__adaptation">{recipe.adaptationNote}</p>}
 
-            <div className="recipe-card__body">
+            <div className={`recipe-card__body${focusedRecipeId === recipe.id ? " recipe-card__body--vertical" : ""}`}>
               <div>
                 <h4>{t("ingredients")}</h4>
                 <ul aria-label={t("ingredients")}>
@@ -131,6 +225,7 @@ export function RecipesPage({ system, favoriteIds: controlledFavoriteIds, onFavo
               {recipe.sourceLabel} <span aria-hidden="true">↗</span>
             </a>
           </article>
+          </Fragment>
           );
         })}
       </div>

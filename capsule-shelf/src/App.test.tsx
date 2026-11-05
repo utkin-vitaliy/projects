@@ -182,8 +182,7 @@ describe("Capsule Shelf dashboard", () => {
     expect(screen.getByLabelText("Количество капсул Arpeggio")).toHaveValue(3);
   });
 
-  it("opens a matching recipe from its capsule card and focuses the recipe card", async () => {
-    const scrollTo = vi.spyOn(window, "scrollTo").mockImplementation(() => {});
+  it("opens a matching recipe from its capsule card in the focus dialog", async () => {
     render(<App />);
     await waitForReady();
 
@@ -193,9 +192,8 @@ describe("Capsule Shelf dashboard", () => {
     fireEvent.click(recipeLink);
 
     const recipeHeading = await screen.findByRole("heading", { name: "Кленовый капучино с пеканом" });
-    await waitFor(() => expect(recipeHeading.closest("article")).toHaveFocus());
+    await waitFor(() => expect(recipeHeading.closest("article")).toHaveAttribute("role", "dialog"));
     expect(recipeHeading.closest("article")).toHaveAttribute("id", "recipe-maple-pecan-cappuccino");
-    await waitFor(() => expect(scrollTo).toHaveBeenCalledWith(0, expect.any(Number)));
   });
 
   it("loads stock controls immediately and saves quantity changes to browser storage", async () => {

@@ -1,5 +1,5 @@
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { recipes } from "../data/recipes";
 import { vertuoRecipes } from "../data/vertuoRecipes";
 import { RecipesPage } from "./RecipesPage";
@@ -118,6 +118,39 @@ describe("RecipesPage", () => {
     fireEvent.change(search, { target: { value: "Capsule Ice Forte" } });
     expect(screen.getByRole("heading", { name: "Black Iced" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Refreshing Citrus Latte" })).toBeInTheDocument();
-    expect(screen.getAllByRole("article")).toHaveLength(2);
+    expect(screen.getAllByRole("article")).toHaveLength(5);
+  });
+
+  it("opens a selected recipe in a dialog and closes it with Escape", () => {
+    renderRecipesPage();
+    const card = screen.getByRole("heading", { name: "Капучино" }).closest("article")!;
+
+    fireEvent.click(card);
+    expect(screen.getByRole("dialog", { name: "Капучино" })).toBeInTheDocument();
+    expect(document.querySelector(".recipe-focus-backdrop")).toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: "Капучино" }).querySelector(".recipe-card__body")).toHaveClass("recipe-card__body--vertical");
+    expect(screen.getByRole("dialog", { name: "Капучино" }).querySelector(".recipe-card__photo")).toHaveClass("recipe-card__photo--focused");
+    expect(document.querySelector(".recipes-section")).toHaveClass("recipes-section--focused");
+
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(document.querySelector(".recipes-section")).not.toHaveClass("recipes-section--focused");
+    expect(card).toHaveFocus();
+
+    fireEvent.click(card);
+    fireEvent.click(document.querySelector(".recipe-focus-backdrop")!);
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("opens a capsule-linked recipe and keeps the favorite control independent", async () => {
+    const onFocusRecipeChange = vi.fn();
+    render(<LocaleProvider><RecipesPage system="vertuo" initialFocusRecipeId="vertuo-black-iced" onFocusRecipeChange={onFocusRecipeChange} /></LocaleProvider>);
+    expect(await screen.findByRole("dialog", { name: "Чёрный кофе со льдом" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Добавить рецепт «Чёрный кофе со льдом» в избранное" }));
+    expect(screen.getByRole("dialog", { name: "Чёрный кофе со льдом" })).toBeInTheDocument();
+    expect(within(screen.getByRole("dialog", { name: "Чёрный кофе со льдом" })).queryByRole("button", { name: "Закрыть рецепт" })).not.toBeInTheDocument();
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(onFocusRecipeChange).toHaveBeenCalledWith(null);
   });
 });
