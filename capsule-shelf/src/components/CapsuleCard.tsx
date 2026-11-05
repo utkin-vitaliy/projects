@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { CapsuleNotes } from "./CapsuleNotes";
-import { createEmptyInventoryEntry, type Capsule, type CapsuleNote, type InventoryEntry } from "../domain/capsules";
+import { createEmptyInventoryEntry, type Capsule, type CapsuleCupSize, type CapsuleNote, type InventoryEntry } from "../domain/capsules";
 import { getRecipesForCapsule } from "../data/recipes";
-import { useLocale } from "../i18n/locale";
+import { useLocale, type MessageKey } from "../i18n/locale";
 import { localizeRecipe } from "../i18n/catalogContent";
 
 type Props = {
@@ -20,13 +20,24 @@ function hasNotes(note: CapsuleNote): boolean {
   return note.rating !== null || Boolean(note.tastingNotes || note.recipes || note.suitableFor || note.unsuitableFor);
 }
 
+const cupSizeMessage: Record<CapsuleCupSize, MessageKey> = {
+  ristretto: "cupSizeRistretto",
+  espresso: "cupSizeEspresso",
+  doubleEspresso: "cupSizeDoubleEspresso",
+  granLungo: "cupSizeGranLungo",
+  coffee: "cupSizeCoffee",
+  alto: "cupSizeAlto",
+};
+
 export function CapsuleCard({ capsule, entry = createEmptyInventoryEntry(), lowStock, onQuantitySet, onFavoriteToggle, onThresholdChange, onNoteSave, onRecipeSelect }: Props) {
   const { locale, t } = useLocale();
   const [notesOpen, setNotesOpen] = useState(false);
   const [recipesOpen, setRecipesOpen] = useState(false);
   const [imageFailed, setImageFailed] = useState(false);
   const [quantityDraft, setQuantityDraft] = useState(String(entry.quantity));
-  const matchingRecipes = getRecipesForCapsule(capsule.id).map((recipe) => localizeRecipe(recipe, locale));
+  const matchingRecipes = capsule.system === "vertuo"
+    ? []
+    : getRecipesForCapsule(capsule.id).map((recipe) => localizeRecipe(recipe, locale));
   useEffect(() => setQuantityDraft(String(entry.quantity)), [entry.quantity]);
   const status = lowStock ? (entry.quantity === 0 ? t("finished") : t("restock")) : entry.favorite ? t("inStock") : "";
   function commitQuantity() {
@@ -74,12 +85,13 @@ export function CapsuleCard({ capsule, entry = createEmptyInventoryEntry(), lowS
       <div className="capsule-card__content">
         <div className="capsule-title-row">
           <div>
-            <p className="capsule-family">{t("capsuleFamily")}</p>
+            <p className="capsule-family">{capsule.system === "vertuo" ? t("capsuleFamilyVertuo") : t("capsuleFamily")}</p>
             <h2>{capsule.name}</h2>
           </div>
           {typeof capsule.intensity === "number" && <span className="intensity-badge" aria-label={t("intensity", { value: capsule.intensity })}>{capsule.intensity}<small>/13</small></span>}
         </div>
         <p className="capsule-flavor">{capsule.flavor}</p>
+        {capsule.cupSize && <p className="capsule-cup-size">{t(cupSizeMessage[capsule.cupSize.type])} · {capsule.cupSize.millilitres} ml</p>}
 
         {matchingRecipes.length > 0 && (
           <div className="capsule-recipes">

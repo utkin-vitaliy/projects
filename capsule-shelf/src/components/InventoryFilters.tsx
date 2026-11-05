@@ -1,6 +1,6 @@
 import type { InventoryFilter } from "../features/inventory/useInventory";
 import type { CategoryFilter } from "../features/inventory/useInventory";
-import { capsules } from "../data/capsules";
+import type { Capsule } from "../domain/capsules";
 import { useLocale } from "../i18n/locale";
 
 type Props = {
@@ -10,18 +10,19 @@ type Props = {
   onCategoryChange: (category: CategoryFilter) => void;
   search: string;
   onSearchChange: (value: string) => void;
+  catalog: Capsule[];
 };
 
 const categoryKeys = ["limited", "italian", "decaffeinated", "world", "origins", "flavoured", "heritage"] as const;
 
-export function InventoryFilters({ value, onChange, category, onCategoryChange, search, onSearchChange }: Props) {
+export function InventoryFilters({ value, onChange, category, onCategoryChange, search, onSearchChange, catalog }: Props) {
   const { t } = useLocale();
   const filters = [
     { id: "all" as const, label: t("allVarieties") },
     { id: "favorites" as const, label: t("favorites") },
     { id: "low" as const, label: t("restock") },
   ];
-  const populatedCategories = new Set(capsules.map(({ category: itemCategory }) => itemCategory));
+  const populatedCategories = new Set(catalog.map(({ category: itemCategory }) => itemCategory));
   const categories = categoryKeys.filter((itemCategory) => populatedCategories.has(itemCategory));
   return (
     <div className="filter-controls">

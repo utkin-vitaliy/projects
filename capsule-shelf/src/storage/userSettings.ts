@@ -4,12 +4,14 @@ import { parseInventoryBackup } from "./inventoryStorage";
 
 export const USER_SETTINGS_FORMAT = "capsule-shelf-user-settings";
 export const USER_SETTINGS_VERSION = 1;
+export type CoffeeSystem = "original" | "vertuo";
 
 export type UserSettings = {
   format: typeof USER_SETTINGS_FORMAT;
   version: typeof USER_SETTINGS_VERSION;
   updatedAt: string;
   locale: Locale;
+  system: CoffeeSystem;
   inventory: InventoryState;
   favoriteRecipes: string[];
 };
@@ -20,6 +22,10 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function isLocale(value: unknown): value is Locale {
   return value === "en" || value === "ru" || value === "fr";
+}
+
+function isCoffeeSystem(value: unknown): value is CoffeeSystem {
+  return value === "original" || value === "vertuo";
 }
 
 export function serializeUserSettings(settings: UserSettings): string {
@@ -51,6 +57,7 @@ export function parseUserSettings(
       version: USER_SETTINGS_VERSION,
       updatedAt: now,
       locale: fallbackLocale,
+      system: "original",
       inventory,
       favoriteRecipes: [],
     };
@@ -77,6 +84,7 @@ export function parseUserSettings(
     version: USER_SETTINGS_VERSION,
     updatedAt,
     locale: isLocale(parsed.locale) ? parsed.locale : "en",
+    system: isCoffeeSystem(parsed.system) ? parsed.system : "original",
     inventory,
     favoriteRecipes,
   };

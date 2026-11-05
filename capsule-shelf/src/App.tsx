@@ -3,13 +3,14 @@ import { CapsuleGrid } from "./components/CapsuleGrid";
 import { InventoryFilters } from "./components/InventoryFilters";
 import { InventorySummary } from "./components/InventorySummary";
 import { RecipesPage } from "./components/RecipesPage";
-import { capsules as fullCatalog } from "./data/capsules";
+import { capsules as originalCatalog } from "./data/capsules";
+import { vertuoCapsules, vertuoCatalogUrl } from "./data/vertuoCapsules";
 import { useInventory } from "./features/inventory/useInventory";
 import { serializeInventory } from "./storage/inventoryStorage";
 import { localizeCapsule } from "./i18n/catalogContent";
 import { LocaleProvider, useLocale, type Locale, type MessageKey } from "./i18n/locale";
 import { recipes } from "./data/recipes";
-import { parseUserSettings, serializeUserSettings, type UserSettings } from "./storage/userSettings";
+import { parseUserSettings, serializeUserSettings, type CoffeeSystem, type UserSettings } from "./storage/userSettings";
 import { settingsStorageKey, type SettingsNamespace } from "./storage/settingsStorage";
 import { getGoogleAccount, readDriveSettings, requestGoogleAccessToken, writeDriveSettings, type DriveSettingsFile, type GoogleAccount } from "./storage/googleDrive";
 import { GoogleDriveControl, type GoogleDriveControlState } from "./components/GoogleDriveControl";
@@ -17,6 +18,7 @@ import { clearRememberedGoogleAccount, readRememberedGoogleAccount, rememberGoog
 
 type ConnectedGoogleAccount = GoogleAccount & { accessToken: string; fileId: string };
 const USER_SETTINGS_STORAGE_KEY = "capsule-shelf:user-settings:v1";
+const allCapsules = [...originalCatalog, ...vertuoCapsules];
 
 const feedbackFormUrls: Record<Locale, string> = {
   en: "https://github.com/utkin-vitaliy/projects/issues/new?template=feedback-en.yml",
@@ -53,9 +55,12 @@ function CapsuleShelfApp({ account, rememberedAccount, namespace, onAccountChang
   const [pendingRecipeId, setPendingRecipeId] = useState<string | null>(null);
   const [capsuleSearch, setCapsuleSearch] = useState("");
   const [favoriteRecipeIds, setFavoriteRecipeIds] = useState<string[]>([]);
+  const [coffeeSystem, setCoffeeSystem] = useState<CoffeeSystem>("original");
+  const [loadedSettingsKey, setLoadedSettingsKey] = useState("");
   const [syncState, setSyncState] = useState<"idle" | "connecting" | "saving" | "saved" | "error">("idle");
   const [syncError, setSyncError] = useState("");
   const [pendingConnection, setPendingConnection] = useState<{ account: GoogleAccount; accessToken: string; driveFile: DriveSettingsFile; localSettings: UserSettings; cloudSettings: UserSettings } | null>(null);
+  const selectedCatalog = coffeeSystem === "original" ? originalCatalog : vertuoCapsules;
   const lastSyncedJson = useRef("");
   const driveWriteQueue = useRef<Promise<void>>(Promise.resolve());
   const {
@@ -75,18 +80,33 @@ function CapsuleShelfApp({ account, rememberedAccount, namespace, onAccountChang
     toggleFavorite,
     updateThreshold,
     saveNote,
-  } = useInventory(namespace);
+  } = useInventory(namespace, allCapsules, selectedCatalog);
 
   const recipeFavoritesStorageKey = settingsStorageKey("capsule-shelf:recipe-favorites:v1", namespace);
+  const completeSettingsStorageKey = settingsStorageKey(USER_SETTINGS_STORAGE_KEY, namespace);
   const completeSettings = useMemo<UserSettings>(() => ({
     format: "capsule-shelf-user-settings",
     version: 1,
     updatedAt: new Date().toISOString(),
     locale,
+    system: coffeeSystem,
     inventory: exportInventory(),
     favoriteRecipes: favoriteRecipeIds,
-  }), [locale, inventory, favoriteRecipeIds]);
+  }), [locale, coffeeSystem, inventory, favoriteRecipeIds]);
   const settingsJson = useMemo(() => serializeUserSettings(completeSettings), [completeSettings]);
+
+  useEffect(() => {
+    if (!readyForNamespace) return;
+    let nextSystem: CoffeeSystem = "original";
+    try {
+      const raw = window.localStorage.getItem(completeSettingsStorageKey);
+      if (raw) nextSystem = parseUserSettings(raw, allCapsules, recipes.map(({ id }) => id), locale).system;
+    } catch {
+      // Missing or older settings safely select Original.
+    }
+    setCoffeeSystem(nextSystem);
+    setLoadedSettingsKey(completeSettingsStorageKey);
+  }, [readyForNamespace, completeSettingsStorageKey]);
 
   useEffect(() => {
     try {
@@ -98,16 +118,16 @@ function CapsuleShelfApp({ account, rememberedAccount, namespace, onAccountChang
   }, [recipeFavoritesStorageKey]);
 
   useEffect(() => {
-    if (!readyForNamespace) return;
+    if (!readyForNamespace || loadedSettingsKey !== completeSettingsStorageKey) return;
     try {
       window.localStorage.setItem(recipeFavoritesStorageKey, JSON.stringify(favoriteRecipeIds));
       window.localStorage.setItem(settingsStorageKey(USER_SETTINGS_STORAGE_KEY, namespace), settingsJson);
     } catch { /* Keep the in-memory copy available if browser storage is blocked. */ }
-  }, [favoriteRecipeIds, readyForNamespace, recipeFavoritesStorageKey, settingsJson, namespace]);
+  }, [favoriteRecipeIds, readyForNamespace, recipeFavoritesStorageKey, settingsJson, namespace, loadedSettingsKey, completeSettingsStorageKey]);
 
   useEffect(() => {
-    if (!account || !readyForNamespace) return;
-    const payload = parseUserSettings(settingsJson, fullCatalog, recipes.map(({ id }) => id), locale);
+    if (!account || !readyForNamespace || loadedSettingsKey !== completeSettingsStorageKey) return;
+    const payload = parseUserSettings(settingsJson, allCapsules, recipes.map(({ id }) => id), locale);
     const comparable = comparableSettings(payload);
     if (comparable === lastSyncedJson.current) return;
     setSyncState("saving");
@@ -128,8 +148,8 @@ function CapsuleShelfApp({ account, rememberedAccount, namespace, onAccountChang
         });
     }, 900);
     return () => window.clearTimeout(timeout);
-  }, [account, readyForNamespace, settingsJson, locale]);
-  const localizedCatalog = useMemo(() => fullCatalog.map((capsule) => localizeCapsule(capsule, locale)), [locale]);
+  }, [account, readyForNamespace, settingsJson, locale, coffeeSystem, loadedSettingsKey, completeSettingsStorageKey]);
+  const localizedCatalog = useMemo(() => selectedCatalog.map((capsule) => localizeCapsule(capsule, locale)), [locale, selectedCatalog]);
   const localizedCapsules = useMemo(() => {
     const query = normalizeSearch(capsuleSearch);
     return capsules
@@ -140,6 +160,12 @@ function CapsuleShelfApp({ account, rememberedAccount, namespace, onAccountChang
           || normalizeSearch(translatedCapsule.flavor).includes(query);
       }));
   }, [capsules, locale, capsuleSearch]);
+
+  useEffect(() => {
+    setFilter("all");
+    setCategoryFilter("all");
+    setCapsuleSearch("");
+  }, [coffeeSystem, setFilter, setCategoryFilter]);
 
   useEffect(() => {
     if (window.location.hash !== "#capsules" && window.location.hash !== "#recipes") {
@@ -211,19 +237,20 @@ function CapsuleShelfApp({ account, rememberedAccount, namespace, onAccountChang
       const accountNamespace: SettingsNamespace = { provider: "google", subject: googleAccount.sub };
       const localRaw = window.localStorage.getItem(settingsStorageKey(USER_SETTINGS_STORAGE_KEY, accountNamespace));
       const localSettings = localRaw
-        ? parseUserSettings(localRaw, fullCatalog, recipes.map(({ id }) => id), locale)
-        : parseUserSettings(settingsJson, fullCatalog, recipes.map(({ id }) => id), locale);
+        ? parseUserSettings(localRaw, allCapsules, recipes.map(({ id }) => id), locale)
+        : parseUserSettings(settingsJson, allCapsules, recipes.map(({ id }) => id), locale);
       if (!driveFile) {
         const saved = await writeDriveSettings(accessToken, serializeUserSettings(localSettings));
         persistSettingsForNamespace(localSettings, accountNamespace);
         setFavoriteRecipeIds(localSettings.favoriteRecipes);
         setLocale(localSettings.locale);
+        setCoffeeSystem(localSettings.system);
         lastSyncedJson.current = comparableSettings(localSettings);
         onAccountChange({ ...googleAccount, accessToken, fileId: saved.fileId });
         setSyncState("saved");
         return;
       }
-      const cloudSettings = parseUserSettings(driveFile.raw, fullCatalog, recipes.map(({ id }) => id), locale);
+      const cloudSettings = parseUserSettings(driveFile.raw, allCapsules, recipes.map(({ id }) => id), locale);
       if (comparableSettings(localSettings) !== comparableSettings(cloudSettings)) {
         setPendingConnection({ account: googleAccount, accessToken, driveFile, localSettings, cloudSettings });
         setSyncState("idle");
@@ -232,6 +259,7 @@ function CapsuleShelfApp({ account, rememberedAccount, namespace, onAccountChang
       persistSettingsForNamespace(cloudSettings, accountNamespace);
       setFavoriteRecipeIds(cloudSettings.favoriteRecipes);
       setLocale(cloudSettings.locale);
+      setCoffeeSystem(cloudSettings.system);
       lastSyncedJson.current = comparableSettings(cloudSettings);
       onAccountChange({ ...googleAccount, accessToken, fileId: driveFile.fileId });
       setSyncState("saved");
@@ -248,6 +276,7 @@ function CapsuleShelfApp({ account, rememberedAccount, namespace, onAccountChang
     persistSettingsForNamespace(selected, accountNamespace);
     setFavoriteRecipeIds(selected.favoriteRecipes);
     setLocale(selected.locale);
+    setCoffeeSystem(selected.system);
     lastSyncedJson.current = comparableSettings(selected);
     onAccountChange({ ...pendingConnection.account, accessToken: pendingConnection.accessToken, fileId: pendingConnection.driveFile.fileId });
     if (!useCloud) {
@@ -279,7 +308,17 @@ function CapsuleShelfApp({ account, rememberedAccount, namespace, onAccountChang
           <h1>{t("title")}</h1>
           <p className="page-intro">{t("subtitle")}</p>
         </div>
-        <div className="line-chip"><span className="line-chip__dot" /> Nespresso Original</div>
+        <div aria-label={t("systemSelector")} className="system-switch" role="group">
+          {([ ["original", "originalSystem"], ["vertuo", "vertuoSystem"] ] as const).map(([system, label]) => (
+            <button
+              aria-pressed={coffeeSystem === system}
+              className={`system-switch__button${coffeeSystem === system ? " is-active" : ""}`}
+              key={system}
+              onClick={() => setCoffeeSystem(system)}
+              type="button"
+            >{t(label)}</button>
+          ))}
+        </div>
         <div className="header-tools">
         <GoogleDriveControl
           disabled={!ready || syncState === "connecting" || syncState === "saving"}
@@ -327,6 +366,8 @@ function CapsuleShelfApp({ account, rememberedAccount, namespace, onAccountChang
 
       {!ready ? (
         <p className="inventory-loading" role="status">{t("loading")}</p>
+      ) : coffeeSystem === "vertuo" && activeView === "recipes" ? (
+        <section className="system-coming-soon" aria-live="polite"><p>{t("vertuoRecipesComingSoon")}</p></section>
       ) : activeView === "recipes" ? (
         <RecipesPage favoriteIds={favoriteRecipeIds} onFavoriteIdsChange={setFavoriteRecipeIds} />
       ) : (
@@ -336,17 +377,17 @@ function CapsuleShelfApp({ account, rememberedAccount, namespace, onAccountChang
             inventory={inventory}
             lowStockIds={lowStockIds}
             totalCapsules={totalCapsules}
-            varietyCount={fullCatalog.length}
+            varietyCount={selectedCatalog.length}
           />
 
           <section className="catalog-section" aria-labelledby="catalog-title">
         <div className="catalog-heading-row">
           <div>
-            <h2 id="catalog-title">{t("catalogTitle")} <span>{fullCatalog.length}</span></h2>
+            <h2 id="catalog-title">{t("catalogTitle")} <span>{selectedCatalog.length}</span></h2>
           </div>
           <p className="catalog-hint">{t("catalogHint")}</p>
         </div>
-        <InventoryFilters category={categoryFilter} onCategoryChange={setCategoryFilter} onChange={setFilter} onSearchChange={setCapsuleSearch} search={capsuleSearch} value={filter} />
+        <InventoryFilters catalog={selectedCatalog} category={categoryFilter} onCategoryChange={setCategoryFilter} onChange={setFilter} onSearchChange={setCapsuleSearch} search={capsuleSearch} value={filter} />
         <CapsuleGrid
           catalog={localizedCapsules}
           inventory={inventory}
@@ -364,7 +405,7 @@ function CapsuleShelfApp({ account, rememberedAccount, namespace, onAccountChang
 
       <footer className="page-footer">
         <div className="page-footer__storage">
-          <a className="page-footer__catalog" href="https://www.nespresso.com/ca/en/order/capsules/original" rel="noreferrer" target="_blank">{t("catalogLink")}</a>
+          <a className="page-footer__catalog" href={coffeeSystem === "vertuo" ? vertuoCatalogUrl : "https://www.nespresso.com/ca/en/order/capsules/original"} rel="noreferrer" target="_blank">{t("catalogLink")}</a>
           <a className="page-footer__privacy" href={`${import.meta.env.BASE_URL}privacy.html`}>{t("privacyPolicyLink")}</a>
         </div>
         <div className="page-footer__feedback">
@@ -407,6 +448,7 @@ function persistSettingsForNamespace(settings: UserSettings, namespace: Settings
 function comparableSettings(settings: UserSettings): string {
   return JSON.stringify({
     locale: settings.locale,
+    system: settings.system,
     inventory: Object.fromEntries(Object.entries(settings.inventory).sort(([a], [b]) => a.localeCompare(b))),
     favoriteRecipes: [...settings.favoriteRecipes].sort(),
   });

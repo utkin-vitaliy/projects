@@ -83,6 +83,45 @@ describe("Capsule Shelf dashboard", () => {
     expect(connect.closest(".page-footer")).toBeNull();
   });
 
+  it("shows Vertuo products and restores their independent stock after reload", async () => {
+    const { unmount } = render(<App />);
+    await waitForReady();
+
+    fireEvent.click(screen.getByRole("button", { name: "Vertuo" }));
+    expect(screen.getByRole("heading", { name: "Melozio" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Рецепты для Melozio/ })).not.toBeInTheDocument();
+    expect(screen.getAllByText(/230 ml/).length).toBeGreaterThan(0);
+    const vertuoCount = screen.getByRole("spinbutton", { name: "Количество капсул Melozio" });
+    fireEvent.change(vertuoCount, { target: { value: "12" } });
+    fireEvent.blur(vertuoCount);
+    await waitFor(() => {
+      const stored = JSON.parse(localStorage.getItem("capsule-shelf:user-settings:v1") ?? "{}");
+      expect(stored.system).toBe("vertuo");
+      expect(stored.inventory["vertuo-melozio"].quantity).toBe(12);
+    });
+    await waitFor(() => {
+      const storedInventory = JSON.parse(localStorage.getItem("capsule-shelf:inventory:v2") ?? "{}");
+      expect(storedInventory.inventory["vertuo-melozio"].quantity).toBe(12);
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Original" }));
+    expect(screen.getByRole("heading", { name: "Arpeggio" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Melozio" })).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Количество капсул Arpeggio")).toHaveValue(0);
+    fireEvent.click(screen.getByRole("button", { name: "Vertuo" }));
+    expect(screen.getByLabelText("Количество капсул Melozio")).toHaveValue(12);
+
+    unmount();
+    render(<App />);
+    await waitForReady();
+    expect(screen.getByRole("button", { name: "Vertuo" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByLabelText("Количество капсул Melozio")).toHaveValue(12);
+    expect(screen.getByRole("button", { name: "Рецепты" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Рецепты" }));
+    expect(screen.getByText("Рецепты Vertuo скоро появятся.")).toBeInTheDocument();
+  });
+
   it("remembers a linked Google account and loads its inventory after reload", async () => {
     localStorage.setItem("capsule-shelf:google-account:v1", JSON.stringify({ sub: "google-user-123", email: "user@example.com" }));
     localStorage.setItem("capsule-shelf:locale:v1:google:google-user-123", "ru");

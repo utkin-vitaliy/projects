@@ -27,11 +27,25 @@ describe("user settings storage", () => {
       version: 1 as const,
       updatedAt: "2026-11-04T12:00:00.000Z",
       locale: "fr" as const,
+      system: "vertuo" as const,
       inventory,
       favoriteRecipes: ["cappuccino", "nespresso-martini-original"],
     };
 
     expect(parseUserSettings(serializeUserSettings(settings), capsules, recipes.map(({ id }) => id))).toMatchObject(settings);
+  });
+
+  it("defaults older settings without a system selection to Original", () => {
+    const raw = JSON.stringify({
+      format: "capsule-shelf-user-settings",
+      version: 1,
+      updatedAt: "2026-11-04T12:00:00.000Z",
+      locale: "en",
+      inventory,
+      favoriteRecipes: [],
+    });
+
+    expect(parseUserSettings(raw, capsules, recipes.map(({ id }) => id)).system).toBe("original");
   });
 
   it("imports existing inventory-only backups without dropping unknown varieties", () => {

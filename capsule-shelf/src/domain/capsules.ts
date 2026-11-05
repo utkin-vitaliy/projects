@@ -1,5 +1,6 @@
 export type CapsuleRating = "like" | "neutral" | "dislike" | null;
 export type CapsuleCategory = "limited" | "italian" | "decaffeinated" | "world" | "origins" | "flavoured" | "heritage";
+export type CapsuleCupSize = "ristretto" | "espresso" | "doubleEspresso" | "granLungo" | "coffee" | "alto";
 
 export type CapsuleNote = {
   rating: CapsuleRating;
@@ -11,9 +12,11 @@ export type CapsuleNote = {
 
 export type Capsule = {
   id: string;
+  system?: "original" | "vertuo";
   name: string;
   flavor: string;
   intensity?: number;
+  cupSize?: { type: CapsuleCupSize; millilitres: number };
   category: CapsuleCategory;
   imageUrl: string;
   imageFit?: "cover" | "contain";
