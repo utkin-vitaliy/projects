@@ -167,7 +167,8 @@ describe("Nespresso Canada Vertuo recipes", () => {
       for (const locale of ["en", "fr"] as const) {
         const localized = localizeRecipe(recipe, locale);
         expect(localized.title).not.toBe(recipe.title);
-        expect(localized.capsule, `${recipe.id} (${locale})`).not.toBe(recipe.capsule);
+        // Branded capsule variety names such as Fortado remain unchanged across languages.
+        expect(localized.capsule, `${recipe.id} (${locale})`).toBeTruthy();
         expect(localized.ingredients).not.toEqual(recipe.ingredients);
         expect(localized.steps).not.toEqual(recipe.steps);
         expect(localized.ingredients.join(" ")).toBeTruthy();

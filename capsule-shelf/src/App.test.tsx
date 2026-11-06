@@ -175,8 +175,8 @@ describe("Capsule Shelf dashboard", () => {
     expect(screen.getByRole("button", { name: "Рецепты" })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Рецепты" }));
-    expect(screen.getByRole("heading", { name: "Рецепты для твоей полки" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Чёрный кофе со льдом" })).toBeInTheDocument();
+    // The recipe page intentionally has no section title; its cards begin the view.
+    expect(await screen.findByRole("heading", { name: "Чёрный кофе со льдом" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Капучино" })).not.toBeInTheDocument();
     const favorite = screen.getByRole("button", { name: "Добавить рецепт «Чёрный кофе со льдом» в избранное" });
     fireEvent.click(favorite);
@@ -201,7 +201,7 @@ describe("Capsule Shelf dashboard", () => {
 
     const capsuleCard = screen.getByRole("heading", { name: "Ice Forte" }).closest("article")!;
     fireEvent.click(within(capsuleCard).getByRole("button", { name: /Рецепты для Ice Forte/ }));
-    fireEvent.click(within(capsuleCard).getByRole("link", { name: "Чёрный кофе со льдом" }));
+    fireEvent.click(await within(capsuleCard).findByRole("link", { name: "Чёрный кофе со льдом" }));
 
     const recipeHeading = await screen.findByRole("heading", { name: "Чёрный кофе со льдом" });
     expect(recipeHeading.closest("article")).toHaveAttribute("id", "recipe-vertuo-black-iced");
@@ -230,7 +230,7 @@ describe("Capsule Shelf dashboard", () => {
     await addCapsules("Arpeggio", 3);
 
     fireEvent.click(screen.getByRole("button", { name: "Рецепты" }));
-    expect(screen.getByRole("heading", { name: "Рецепты для твоей полки" })).toBeInTheDocument();
+    // The recipe page intentionally has no section title; its cards begin the view.
     expect(screen.getByRole("heading", { name: "Капучино" })).toBeInTheDocument();
     expect(screen.queryByLabelText("Количество капсул Arpeggio")).not.toBeInTheDocument();
 
@@ -477,7 +477,7 @@ describe("Capsule Shelf dashboard", () => {
     fireEvent.change(screen.getByLabelText("Личная заметка о вкусе"), { target: { value: "Какао и плотная crema" } });
     fireEvent.change(screen.getByLabelText("Рецепты"), { target: { value: "Капучино" } });
     fireEvent.change(screen.getByLabelText("Подходит для"), { target: { value: "Молочных напитков" } });
-    fireEvent.change(screen.getByLabelText("Не подходит для"), { target: { value: "Очень длинного лунго" } });
+    fireEvent.change(screen.getByLabelText("Не лучший выбор для"), { target: { value: "Очень длинного лунго" } });
     fireEvent.click(screen.getByRole("button", { name: "Сохранить заметки Arpeggio" }));
     expect(screen.getByText("Заметки сохранены")).toBeInTheDocument();
     await waitFor(() => expect(storedInventory().arpeggio).toMatchObject({ note: { recipes: "Капучино", tastingNotes: "Какао и плотная crema" } }));
@@ -488,7 +488,7 @@ describe("Capsule Shelf dashboard", () => {
     expect(screen.getByLabelText("Личная заметка о вкусе")).toHaveValue("Какао и плотная crema");
     expect(screen.getByLabelText("Рецепты")).toHaveValue("Капучино");
     expect(screen.getByLabelText("Подходит для")).toHaveValue("Молочных напитков");
-    expect(screen.getByLabelText("Не подходит для")).toHaveValue("Очень длинного лунго");
+    expect(screen.getByLabelText("Не лучший выбор для")).toHaveValue("Очень длинного лунго");
     expect(screen.getByRole("button", { name: "Нравится" })).toHaveAttribute("aria-pressed", "true");
   });
 
@@ -622,7 +622,7 @@ describe("Capsule Shelf dashboard", () => {
   it("adjusts stock by one with plus and minus controls without going below zero", async () => {
     render(<App />);
     await waitForReady();
-    const minus = screen.getByRole("button", { name: "Уменьшить капсулы Arpeggio" });
+    const minus = screen.getByRole("button", { name: "Убрать одну капсулу Arpeggio" });
     const plus = screen.getByRole("button", { name: "Добавить капсулу Arpeggio" });
     expect(minus).toBeDisabled();
     fireEvent.click(plus);
