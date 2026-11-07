@@ -11,7 +11,7 @@ describe("Nespresso Canada Original catalog snapshot", () => {
     const ids = capsules.map(({ id }) => id);
     expect(new Set(ids).size).toBe(ids.length);
     expect(ids).toEqual(expect.arrayContaining(originalIds));
-    expect(capsules.length).toBe(40);
+    expect(capsules.length).toBe(42);
   });
 
   it("assigns every product a valid category and official Canada product link", () => {

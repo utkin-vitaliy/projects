@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://utkin-vitaliy.github.io/projects/capsule-shelf/sitemap.xml

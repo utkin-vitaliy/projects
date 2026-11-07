@@ -42,6 +42,9 @@ export const capsules: Capsule[] = [
   capsule("shanghai-lungo", "Shanghai Lungo", "Деликатный лунго с фруктовыми нотами", "world", "shanghai-lungo-coffee-capsule", image("52362566795294", "shangai-lungo-2x.png")),
   capsule("buenos-aires-lungo", "Buenos Aires Lungo", "Сладкий и сбалансированный лунго", "world", "buenos-aires-lungo-coffee-capsule", image("52476193636382", "buenos-aires-lungo-2x.png")),
 
+  capsule("caffe-florian", "Caffè Florian", "Древесные и пряные ноты", "limited", "caffe-florian", "https://www.nespresso.bg/media/opti_image/webp/catalog/product/cache/c7dbbcb30beea09e6105b2ac47745dc8/f/l/florian-2.webp", 9),
+  capsule("espresso-of-wonders", "Espresso of Wonders", "Злаки, спелые фрукты и карамель с древесным оттенком", "limited", "espresso-wonders-original-coffee-capsules", "https://www.nespresso.com/jo/en/media/catalog/product/o/l/ol-festive-black.png", 7),
+
   capsule("kahawa-ya-congo", "Kahawa ya Congo", "Фруктовый профиль с яркой кислинкой", "origins", "kahawa-congo-original-pods", image("16653939277854", "kahawa-ya-congo-2x.png")),
   capsule("india", "India", "Пряный кофе с древесными нотами", "origins", "india-original-coffee-capsule", image("16653744439326", "india-2x.png")),
   capsule("indonesia-fairtrade", "Indonesia - Fairtrade", "Злаковые и древесные оттенки", "origins", "indonesia-original-coffee-capsule", image("16653745881118", "indonesia-2x.png")),
