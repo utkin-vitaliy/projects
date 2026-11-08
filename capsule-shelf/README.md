@@ -1,67 +1,72 @@
 # Capsule Shelf
 
-Capsule Shelf is a small, static web app for tracking a personal Nespresso Original capsule collection. Keep an eye on stock, mark favorite coffees, set a low-stock threshold for each variety, and save tasting notes and recipe ideas.
+Capsule Shelf is a static web app for tracking a personal Nespresso Original and Vertuo capsule collection. Manage stock, favorites, restock thresholds, tasting notes, and coffee recipes in English, French, or Russian.
 
 **Live app:** [utkin-vitaliy.github.io/projects/capsule-shelf](https://utkin-vitaliy.github.io/projects/capsule-shelf/)
 
 ## Features
 
-- Browse a manually maintained catalog of Nespresso Original varieties sold in Canada.
-- Track capsule quantities, favorites, and per-variety restock thresholds.
-- Search capsule names and tasting profiles in English, Russian, or French.
-- Add personal ratings, tasting notes, recipe ideas, and notes about which drinks a variety suits.
-- Browse 67 Original-compatible recipes, search across translated names and capsule names, filter by hot or cold drinks, and save favorite recipes.
-- Switch between English, Russian, and French. The app uses the browser's preferred language on the first visit.
-- Export all settings as one JSON backup and import them on another browser or device.
-- Optionally sync settings between devices using a private JSON file in the connected user's Google Drive app data.
+- Browse separate Original and Vertuo capsule catalogs, with product links and locally bundled photos.
+- Track quantities, favorite varieties, and a low-stock threshold for each capsule.
+- Search capsule names and tasting profiles in English, French, or Russian.
+- Save capsule ratings, tasting notes, recipe ideas, and notes about suitable or unsuitable drinks.
+- Browse recipes for the selected coffee system, search translated recipe and capsule names, filter recipes, and save recipe favorites.
+- Edit any recipe in the current language. Changes are saved automatically; reset an edited recipe to its catalog version at any time.
+- Switch between English, French, and Russian. The browser language is used on the first visit when supported.
+- Export settings to a JSON file and import them on another browser or device.
+- Optionally sync settings with one private JSON file in the connected Google account's Drive `appDataFolder`.
 
 ## Run locally
 
-Requirements: Node.js 22 or a compatible current LTS release, and npm.
+Requirements: Node.js 22 and npm.
 
 ```bash
 npm ci
 npm run dev
 ```
 
-Vite prints a local URL, usually `http://localhost:5173/`. To create and preview a production build:
+Vite serves the app at [http://localhost:5177/](http://localhost:5177/). The development server uses port 5177 and exits if that port is busy rather than silently switching ports.
+
+Create a production build and preview it locally with:
 
 ```bash
 npm run build
 npm run preview
 ```
 
-Run the automated tests with:
+Run the automated test suite with:
 
 ```bash
 npm test -- --run
 ```
 
-## Your settings and privacy
+## Settings, backups, and privacy
 
-Capsule quantities, capsule favorites, restock thresholds, capsule notes, recipe favorites, and language preference are stored in the browser. The app remains static and has no application server or database. If you connect Google Drive, the app requests a short-lived Google access token in the current page and reads or writes one `capsule-shelf-settings.json` file in Google's hidden `appDataFolder`. The token is kept in memory and is not saved. Local settings remain available if Drive is disconnected or unavailable. When copies differ, the app asks which copy to use and preserves the unselected copy.
+Capsule quantities, favorites, thresholds, notes, recipe favorites and edits, selected coffee system, filters, and language are stored in the current browser. The app is static and does not use an application server or database.
 
-Use **Download settings** to save a JSON backup. It includes inventory, notes, favorites, and language. Use **Upload settings** to restore that backup elsewhere. Importing replaces settings in the current browser after confirmation. Keep backup files private: they may contain personal notes and inventory details.
+Use **Export** in the footer to download a JSON backup. Use **Import** to restore it in the current browser; importing replaces that browser's settings after confirmation. Backups can include personal notes and inventory information, so keep them private.
+
+Google Drive sync is optional. When connected, the app saves settings in the browser immediately and sends changes to a single `capsule-shelf-settings.json` file in Google Drive's hidden `appDataFolder` after a short pause. The Google access token stays in memory and is not saved. After reloading the page, click the Drive sync control to resume syncing. If the browser and Drive copies differ, Capsule Shelf asks which copy to keep and updates the other one.
 
 ### Configure Google Drive sync
 
 1. In Google Cloud Console, create a project, enable the Google Drive API, and create an OAuth client ID for a Web application.
-2. Add the app origins to the OAuth client's authorized JavaScript origins: `http://localhost:5173`, `http://localhost:5175`, `http://localhost:5177`, and `https://utkin-vitaliy.github.io` for GitHub Pages. Local development uses port `5177`; Vite is configured to fail if that port is occupied instead of silently switching to an unauthorized one. Do not create or expose a client secret for this browser-only app.
-3. In the GitHub repository settings, add the Actions variable `VITE_GOOGLE_CLIENT_ID` with the OAuth client ID. The Pages workflow injects it at build time.
-4. For local use, copy `.env.example` to `.env.local`, add the client ID, and restart Vite. Do not commit `.env.local`.
+2. Add these authorized JavaScript origins to the OAuth client: `http://localhost:5177` and `https://utkin-vitaliy.github.io`. Origins do not include the `/projects/capsule-shelf/` path. Do not create or expose an OAuth client secret for this browser-only app.
+3. In the GitHub repository settings, add an Actions variable named `VITE_GOOGLE_CLIENT_ID` with the OAuth client ID. The Pages workflow injects it at build time.
+4. For local development, copy `.env.example` to `.env.local`, set `VITE_GOOGLE_CLIENT_ID`, and restart Vite. Keep `.env.local` out of Git.
 
-Apple/iCloud sync is not included in this version.
+Apple/iCloud sync is not included.
 
 ## Catalog and images
 
-The catalog is a manually maintained snapshot of 40 Nespresso Original varieties from the [Nespresso Canada Original catalog](https://www.nespresso.com/ca/en/order/capsules/original). Product availability can change; the app does not automatically sync with Nespresso.
+The catalogs are manually maintained from the [Nespresso Canada Original catalog](https://www.nespresso.com/ca/en/order/capsules/original) and [Vertuo catalog](https://www.nespresso.com/ca/en/order/capsules/vertuo). Product availability can change; Capsule Shelf does not automatically sync catalog updates from Nespresso.
 
-Capsule and recipe card photographs are bundled locally under [`public/images`](public/images/README.md), so the deployed site does not depend on Nespresso's image servers at runtime. Eleven additional recipe-book photographs are included under [`public/recipe-book`](public/recipe-book/README.md). Their original sources and attribution notes are documented alongside the assets. Product names, images, and trademarks belong to their respective owners.
+Capsule and recipe photographs are bundled locally under [`public/images`](public/images/README.md), so the deployed app does not depend on Nespresso image servers at runtime. Additional recipe-book photographs are documented under [`public/recipe-book`](public/recipe-book/README.md). Product names, images, and trademarks belong to their respective owners.
 
 Capsule Shelf is an independent personal project and is not affiliated with, endorsed by, or sponsored by Nestlé Nespresso S.A.
 
 ## GitHub Pages deployment
 
-In the `utkin-vitaliy/projects` repository, the app lives in `capsule-shelf/`. The [Pages workflow](https://github.com/utkin-vitaliy/projects/blob/main/.github/workflows/pages.yml) runs tests, builds the app from that directory, and publishes the static output under `/projects/capsule-shelf/`. A push to `main` or a manual run from GitHub Actions starts deployment. The same workflow generates the static-project index at `/projects/`.
+The app source lives in `capsule-shelf/` in the [`utkin-vitaliy/projects`](https://github.com/utkin-vitaliy/projects) repository. The [Pages workflow](https://github.com/utkin-vitaliy/projects/blob/main/.github/workflows/pages.yml) runs the tests, builds the app, and publishes it under `/projects/capsule-shelf/`. A push to `main` or a manual workflow run deploys the site. The same workflow creates the project index at `/projects/`.
 
-The app uses the repository Pages base path during the workflow build. For a local production build, Vite uses its default root path.
+The workflow sets Vite's Pages base path during deployment. A normal local build uses the root path instead.
