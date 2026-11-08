@@ -11,6 +11,8 @@ export const DEFAULT_INVENTORY_FILTERS: InventoryFilterPreferences = { original:
 export type RecipeFilter = "all" | "favorites" | "hot" | "cold";
 export type RecipeFilterPreferences = Record<CoffeeSystem, RecipeFilter>;
 export const DEFAULT_RECIPE_FILTERS: RecipeFilterPreferences = { original: "all", vertuo: "all" };
+export type RecipeTextOverride = { title: string; ingredients: string[]; steps: string[] };
+export type RecipeEdits = Record<string, Partial<Record<Locale, RecipeTextOverride>>>;
 
 export type UserSettings = {
   format: typeof USER_SETTINGS_FORMAT;
@@ -22,6 +24,7 @@ export type UserSettings = {
   recipeFilters: RecipeFilterPreferences;
   inventory: InventoryState;
   favoriteRecipes: string[];
+  recipeEdits?: RecipeEdits;
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -55,6 +58,35 @@ function parseRecipeFilters(value: unknown): RecipeFilterPreferences {
     original: isRecipeFilter(value.original) ? value.original : "all",
     vertuo: isRecipeFilter(value.vertuo) ? value.vertuo : "all",
   };
+}
+
+function parseRecipeEdits(value: unknown, allowedRecipeIds: Set<string>): RecipeEdits {
+  if (!isRecord(value)) return {};
+  const result: RecipeEdits = {};
+  for (const [recipeId, localeValues] of Object.entries(value)) {
+    if (!allowedRecipeIds.has(recipeId) || !isRecord(localeValues)) continue;
+    const parsedLocales: Partial<Record<Locale, RecipeTextOverride>> = {};
+    for (const locale of ["en", "ru", "fr"] as const) {
+      const edit = localeValues[locale];
+      if (!isRecord(edit)) continue;
+      const title = typeof edit.title === "string" ? edit.title.trim().slice(0, 120) : "";
+      const ingredients = parseRecipeLines(edit.ingredients);
+      const steps = parseRecipeLines(edit.steps);
+      if (!title || !ingredients.length || !steps.length) continue;
+      parsedLocales[locale] = { title, ingredients, steps };
+    }
+    if (Object.keys(parsedLocales).length) result[recipeId] = parsedLocales;
+  }
+  return result;
+}
+
+function parseRecipeLines(value: unknown): string[] {
+  if (!Array.isArray(value) || value.length > 30) return [];
+  return value
+    .filter((line): line is string => typeof line === "string")
+    .map((line) => line.trim().slice(0, 240))
+    .filter(Boolean)
+    .slice(0, 30);
 }
 
 export function serializeUserSettings(settings: UserSettings): string {
@@ -91,6 +123,7 @@ export function parseUserSettings(
       recipeFilters: { ...DEFAULT_RECIPE_FILTERS },
       inventory,
       favoriteRecipes: [],
+      recipeEdits: {},
     };
   }
 
@@ -106,6 +139,7 @@ export function parseUserSettings(
   const favoriteRecipes = Array.isArray(parsed.favoriteRecipes)
     ? [...new Set(parsed.favoriteRecipes.filter((id): id is string => typeof id === "string" && allowedRecipeIds.has(id)))]
     : [];
+  const recipeEdits = parseRecipeEdits(parsed.recipeEdits, allowedRecipeIds);
   const updatedAt = typeof parsed.updatedAt === "string" && Number.isFinite(Date.parse(parsed.updatedAt))
     ? new Date(parsed.updatedAt).toISOString()
     : now;
@@ -120,5 +154,6 @@ export function parseUserSettings(
     recipeFilters: parseRecipeFilters(parsed.recipeFilters),
     inventory,
     favoriteRecipes,
+    recipeEdits,
   };
 }

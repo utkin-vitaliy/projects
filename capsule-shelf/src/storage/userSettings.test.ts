@@ -37,6 +37,43 @@ describe("user settings storage", () => {
     expect(parseUserSettings(serializeUserSettings(settings), capsules, recipes.map(({ id }) => id))).toMatchObject(settings);
   });
 
+  it("round trips recipe edits by recipe and language", () => {
+    const raw = JSON.stringify({
+      format: "capsule-shelf-user-settings",
+      version: 1,
+      inventory,
+      recipeEdits: {
+        cappuccino: {
+          ru: { title: "Мой капучино", ingredients: ["Молоко", "Кофе"], steps: ["Смешать"] },
+          de: { title: "Ignore", ingredients: ["Ignore"], steps: ["Ignore"] },
+        },
+        "unknown-recipe": { en: { title: "Ignore", ingredients: ["Ignore"], steps: ["Ignore"] } },
+      },
+    });
+
+    expect(parseUserSettings(raw, capsules, recipes.map(({ id }) => id)).recipeEdits).toEqual({
+      cappuccino: { ru: { title: "Мой капучино", ingredients: ["Молоко", "Кофе"], steps: ["Смешать"] } },
+    });
+  });
+
+  it("trims recipe edits and drops invalid drafts without losing valid edits", () => {
+    const raw = JSON.stringify({
+      format: "capsule-shelf-user-settings",
+      version: 1,
+      inventory,
+      recipeEdits: {
+        cappuccino: {
+          en: { title: "  My cappuccino  ", ingredients: [" Milk ", "", "Coffee"], steps: [" Mix "] },
+          ru: { title: "  ", ingredients: ["Кофе"], steps: ["Смешать"] },
+        },
+      },
+    });
+
+    expect(parseUserSettings(raw, capsules, recipes.map(({ id }) => id)).recipeEdits).toEqual({
+      cappuccino: { en: { title: "My cappuccino", ingredients: ["Milk", "Coffee"], steps: ["Mix"] } },
+    });
+  });
+
   it("defaults older settings without a system selection to Original", () => {
     const raw = JSON.stringify({
       format: "capsule-shelf-user-settings",

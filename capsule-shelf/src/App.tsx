@@ -9,7 +9,7 @@ import { serializeInventory } from "./storage/inventoryStorage";
 import { localizeCapsule } from "./i18n/capsuleContent";
 import { LocaleProvider, useLocale, type Locale, type MessageKey } from "./i18n/locale";
 import { recipeIds } from "./data/recipeIndex";
-import { DEFAULT_INVENTORY_FILTERS, DEFAULT_RECIPE_FILTERS, parseUserSettings, serializeUserSettings, type CoffeeSystem, type InventoryFilter, type InventoryFilterPreferences, type RecipeFilter, type RecipeFilterPreferences, type UserSettings } from "./storage/userSettings";
+import { DEFAULT_INVENTORY_FILTERS, DEFAULT_RECIPE_FILTERS, parseUserSettings, serializeUserSettings, type CoffeeSystem, type InventoryFilter, type InventoryFilterPreferences, type RecipeEdits, type RecipeFilter, type RecipeFilterPreferences, type RecipeTextOverride, type UserSettings } from "./storage/userSettings";
 import { settingsStorageKey, type SettingsNamespace } from "./storage/settingsStorage";
 import { getGoogleAccount, readDriveSettings, requestGoogleAccessToken, writeDriveSettings, type DriveSettingsFile, type GoogleAccount } from "./storage/googleDrive";
 import { GoogleDriveControl, type GoogleDriveControlState } from "./components/GoogleDriveControl";
@@ -57,6 +57,7 @@ function CapsuleShelfApp({ account, rememberedAccount, namespace, onAccountChang
   const [pendingCapsuleFocusId, setPendingCapsuleFocusId] = useState<string | null>(null);
   const [capsuleSearch, setCapsuleSearch] = useState("");
   const [favoriteRecipeIds, setFavoriteRecipeIds] = useState<string[]>([]);
+  const [recipeEdits, setRecipeEdits] = useState<RecipeEdits>({});
   const [coffeeSystem, setCoffeeSystem] = useState<CoffeeSystem>("original");
   const [filterPreferences, setFilterPreferences] = useState<InventoryFilterPreferences>({ ...DEFAULT_INVENTORY_FILTERS });
   const [recipeFilterPreferences, setRecipeFilterPreferences] = useState<RecipeFilterPreferences>({ ...DEFAULT_RECIPE_FILTERS });
@@ -104,7 +105,8 @@ function CapsuleShelfApp({ account, rememberedAccount, namespace, onAccountChang
     recipeFilters: recipeFilterPreferences,
     inventory: exportInventory(),
     favoriteRecipes: favoriteRecipeIds,
-  }), [locale, coffeeSystem, filterPreferences, recipeFilterPreferences, inventory, favoriteRecipeIds]);
+    recipeEdits,
+  }), [locale, coffeeSystem, filterPreferences, recipeFilterPreferences, inventory, favoriteRecipeIds, recipeEdits]);
   const settingsJson = useMemo(() => serializeUserSettings(completeSettings), [completeSettings]);
 
   useEffect(() => {
@@ -113,6 +115,7 @@ function CapsuleShelfApp({ account, rememberedAccount, namespace, onAccountChang
     let nextFilters: InventoryFilterPreferences = { ...DEFAULT_INVENTORY_FILTERS };
     let nextRecipeFilters: RecipeFilterPreferences = { ...DEFAULT_RECIPE_FILTERS };
     let nextFavoriteRecipes: string[] = [];
+    let nextRecipeEdits: RecipeEdits = {};
     try {
       const raw = window.localStorage.getItem(completeSettingsStorageKey);
       if (raw) {
@@ -121,6 +124,7 @@ function CapsuleShelfApp({ account, rememberedAccount, namespace, onAccountChang
         nextFilters = settings.filters;
         nextRecipeFilters = settings.recipeFilters;
         nextFavoriteRecipes = settings.favoriteRecipes;
+        nextRecipeEdits = settings.recipeEdits ?? {};
       }
     } catch {
       // Missing or older settings safely select Original.
@@ -135,6 +139,7 @@ function CapsuleShelfApp({ account, rememberedAccount, namespace, onAccountChang
     setFilterPreferences(nextFilters);
     setRecipeFilterPreferences(nextRecipeFilters);
     setFavoriteRecipeIds(nextFavoriteRecipes);
+    setRecipeEdits(nextRecipeEdits);
     setFilter(nextFilters[nextSystem]);
     setLoadedSettingsKey(completeSettingsStorageKey);
   }, [readyForNamespace, completeSettingsStorageKey, recipeFavoritesStorageKey, setFilter]);
@@ -196,6 +201,26 @@ function CapsuleShelfApp({ account, rememberedAccount, namespace, onAccountChang
 
   function selectRecipeFilter(nextFilter: RecipeFilter) {
     setRecipeFilterPreferences((current) => ({ ...current, [coffeeSystem]: nextFilter }));
+  }
+
+  function saveRecipeEdit(recipeId: string, editLocale: Locale, edit: RecipeTextOverride) {
+    setRecipeEdits((current) => ({
+      ...current,
+      [recipeId]: { ...current[recipeId], [editLocale]: edit },
+    }));
+  }
+
+  function resetRecipeEdit(recipeId: string, editLocale: Locale) {
+    setRecipeEdits((current) => {
+      const locales = { ...current[recipeId] };
+      delete locales[editLocale];
+      if (!Object.keys(locales).length) {
+        const next = { ...current };
+        delete next[recipeId];
+        return next;
+      }
+      return { ...current, [recipeId]: locales };
+    });
   }
 
   useEffect(() => {
@@ -318,6 +343,7 @@ function CapsuleShelfApp({ account, rememberedAccount, namespace, onAccountChang
       persistSettingsForNamespace(imported, namespace);
       importInventory(serializeInventory(imported.inventory));
       setFavoriteRecipeIds(imported.favoriteRecipes);
+      setRecipeEdits(imported.recipeEdits ?? {});
       setRecipeFilterPreferences(imported.recipeFilters);
       setLocale(imported.locale);
       setFilterPreferences(imported.filters);
@@ -346,6 +372,7 @@ function CapsuleShelfApp({ account, rememberedAccount, namespace, onAccountChang
         const saved = await writeDriveSettings(accessToken, serializeUserSettings(localSettings));
         persistSettingsForNamespace(localSettings, accountNamespace);
         setFavoriteRecipeIds(localSettings.favoriteRecipes);
+        setRecipeEdits(localSettings.recipeEdits ?? {});
         setRecipeFilterPreferences(localSettings.recipeFilters);
         setLocale(localSettings.locale);
         setFilterPreferences(localSettings.filters);
@@ -364,6 +391,7 @@ function CapsuleShelfApp({ account, rememberedAccount, namespace, onAccountChang
       }
       persistSettingsForNamespace(cloudSettings, accountNamespace);
       setFavoriteRecipeIds(cloudSettings.favoriteRecipes);
+      setRecipeEdits(cloudSettings.recipeEdits ?? {});
       setRecipeFilterPreferences(cloudSettings.recipeFilters);
       setLocale(cloudSettings.locale);
       setFilterPreferences(cloudSettings.filters);
@@ -387,6 +415,7 @@ function CapsuleShelfApp({ account, rememberedAccount, namespace, onAccountChang
     // leave the currently mounted inventory hook showing the previous browser data.
     importInventory(serializeInventory(selected.inventory), accountNamespace);
     setFavoriteRecipeIds(selected.favoriteRecipes);
+    setRecipeEdits(selected.recipeEdits ?? {});
     setRecipeFilterPreferences(selected.recipeFilters);
     setLocale(selected.locale);
     setFilterPreferences(selected.filters);
@@ -492,7 +521,7 @@ function CapsuleShelfApp({ account, rememberedAccount, namespace, onAccountChang
       {!settingsReady ? (
         <p className="inventory-loading" role="status">{t("loading")}</p>
       ) : activeView === "recipes" ? (
-        <Suspense fallback={<p className="inventory-loading" role="status">{t("loading")}</p>}><RecipesPage system={coffeeSystem} activeFilter={recipeFilterPreferences[coffeeSystem]} onFilterChange={selectRecipeFilter} favoriteIds={favoriteRecipeIds} onFavoriteIdsChange={setFavoriteRecipeIds} initialFocusRecipeId={pendingRecipeId} onFocusRecipeChange={setPendingRecipeId} /></Suspense>
+        <Suspense fallback={<p className="inventory-loading" role="status">{t("loading")}</p>}><RecipesPage system={coffeeSystem} activeFilter={recipeFilterPreferences[coffeeSystem]} onFilterChange={selectRecipeFilter} favoriteIds={favoriteRecipeIds} onFavoriteIdsChange={setFavoriteRecipeIds} recipeEdits={recipeEdits} onRecipeEdit={saveRecipeEdit} onRecipeReset={resetRecipeEdit} initialFocusRecipeId={pendingRecipeId} onFocusRecipeChange={setPendingRecipeId} /></Suspense>
       ) : (
         <div id="capsules" className="capsules-view">
           <InventorySummary
@@ -605,6 +634,7 @@ function comparableSettings(settings: UserSettings): string {
     recipeFilters: settings.recipeFilters,
     inventory: Object.fromEntries(Object.entries(settings.inventory).sort(([a], [b]) => a.localeCompare(b))),
     favoriteRecipes: [...settings.favoriteRecipes].sort(),
+    recipeEdits: settings.recipeEdits ?? {},
   });
 }
 

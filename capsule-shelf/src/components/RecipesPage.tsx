@@ -1,8 +1,9 @@
-import { Fragment, useEffect, useRef, useState, type CSSProperties, type MouseEvent } from "react";
+import { Fragment, useEffect, useRef, useState, type CSSProperties, type FormEvent, type MouseEvent } from "react";
 import { allRecipes } from "../data/recipeCatalog";
-import type { CoffeeSystem, RecipeFilter } from "../storage/userSettings";
-import { useLocale } from "../i18n/locale";
+import type { CoffeeSystem, RecipeEdits, RecipeFilter, RecipeTextOverride } from "../storage/userSettings";
+import { useLocale, type Locale } from "../i18n/locale";
 import { localizeRecipe } from "../i18n/catalogContent";
+import { moveRecipeLine } from "../domain/recipeEditor";
 
 const RECIPE_FAVORITES_KEY = "capsule-shelf:recipe-favorites:v1";
 
@@ -14,17 +15,27 @@ function loadFavoriteIds(): string[] {
     return [];
   }
 }
-export function RecipesPage({ system, activeFilter, onFilterChange, favoriteIds: controlledFavoriteIds, onFavoriteIdsChange, initialFocusRecipeId, onFocusRecipeChange }: { system: CoffeeSystem; activeFilter?: RecipeFilter; onFilterChange?: (filter: RecipeFilter) => void; favoriteIds?: string[]; onFavoriteIdsChange?: (ids: string[]) => void; initialFocusRecipeId?: string | null; onFocusRecipeChange?: (id: string | null) => void }) {
+export function RecipesPage({ system, activeFilter, onFilterChange, favoriteIds: controlledFavoriteIds, onFavoriteIdsChange, recipeEdits: controlledRecipeEdits, onRecipeEdit, onRecipeReset, initialFocusRecipeId, onFocusRecipeChange }: { system: CoffeeSystem; activeFilter?: RecipeFilter; onFilterChange?: (filter: RecipeFilter) => void; favoriteIds?: string[]; onFavoriteIdsChange?: (ids: string[]) => void; recipeEdits?: RecipeEdits; onRecipeEdit?: (id: string, locale: Locale, edit: RecipeTextOverride) => void; onRecipeReset?: (id: string, locale: Locale) => void; initialFocusRecipeId?: string | null; onFocusRecipeChange?: (id: string | null) => void }) {
   const { locale, t } = useLocale();
   const [localFilter, setLocalFilter] = useState<RecipeFilter>("all");
   const filter = activeFilter ?? localFilter;
   const [search, setSearch] = useState("");
   const [localFavoriteIds, setLocalFavoriteIds] = useState<string[]>(loadFavoriteIds);
+  const [localRecipeEdits, setLocalRecipeEdits] = useState<RecipeEdits>({});
   const [focusedRecipeId, setFocusedRecipeId] = useState<string | null>(null);
+  const [editingRecipeId, setEditingRecipeId] = useState<string | null>(null);
+  const [editingLocale, setEditingLocale] = useState<Locale | null>(null);
+  const [draft, setDraft] = useState<RecipeTextOverride | null>(null);
+  const [editStatus, setEditStatus] = useState<"idle" | "saving" | "saved" | "invalid">("idle");
+  const editCallbackRef = useRef(onRecipeEdit);
+  const editingOriginal = useRef<RecipeTextOverride | null>(null);
+  const editingHadOverride = useRef(false);
   const [focusMotion, setFocusMotion] = useState<{ x: number; y: number; scale: number; height: number } | null>(null);
   const previousScrollY = useRef(0);
   const returnFocusTarget = useRef<HTMLElement | null>(null);
   const favoriteIds = controlledFavoriteIds ?? localFavoriteIds;
+  const recipeEdits = controlledRecipeEdits ?? localRecipeEdits;
+  editCallbackRef.current = onRecipeEdit;
   const normalizedSearch = normalizeSearch(search);
   const line = system === "vertuo" ? "Vertuo" : "Original";
   const systemRecipes = allRecipes.filter((recipe) => recipe.line === line);
@@ -34,7 +45,8 @@ export function RecipesPage({ system, activeFilter, onFilterChange, favoriteIds:
       || (filter === "favorites" ? favoriteIds.includes(recipe.id) : recipe.temperature === filter))
     .filter((recipe) => (["en", "ru", "fr"] as const).some((searchLocale) => {
       const translatedRecipe = localizeRecipe(recipe, searchLocale);
-      return normalizeSearch(translatedRecipe.title).includes(normalizedSearch)
+      const title = recipeEdits[recipe.id]?.[searchLocale]?.title ?? translatedRecipe.title;
+      return normalizeSearch(title).includes(normalizedSearch)
         || normalizeSearch(translatedRecipe.capsule).includes(normalizedSearch);
     }));
 
@@ -43,10 +55,106 @@ export function RecipesPage({ system, activeFilter, onFilterChange, favoriteIds:
     else setLocalFilter(nextFilter);
   }
 
+  function commitRecipeEdit(recipeId: string, editLocale: Locale, edit: RecipeTextOverride) {
+    if (onRecipeEdit) onRecipeEdit(recipeId, editLocale, edit);
+    else setLocalRecipeEdits((current) => ({ ...current, [recipeId]: { ...current[recipeId], [editLocale]: edit } }));
+  }
+
+  function beginRecipeEdit(recipeId: string, recipe: RecipeTextOverride) {
+    editingOriginal.current = normalizeRecipeDraft(recipe);
+    editingHadOverride.current = Boolean(recipeEdits[recipeId]?.[locale]);
+    setEditingRecipeId(recipeId);
+    setEditingLocale(locale);
+    setDraft({ title: recipe.title, ingredients: [...recipe.ingredients], steps: [...recipe.steps] });
+    setEditStatus("saved");
+  }
+
+  function finishRecipeEdit(event?: FormEvent) {
+    event?.preventDefault();
+    if (editingRecipeId && editingLocale && draft && isValidRecipeDraft(draft)) {
+      if (!sameRecipeDraft(draft, editingOriginal.current)) commitRecipeEdit(editingRecipeId, editingLocale, normalizeRecipeDraft(draft));
+      setEditingRecipeId(null);
+      setEditingLocale(null);
+      setDraft(null);
+      setEditStatus("idle");
+    }
+  }
+
+  function cancelRecipeEdit() {
+    if (!editingRecipeId || !editingLocale || !draft) return;
+    const changed = !sameRecipeDraft(draft, editingOriginal.current);
+    if (changed && !window.confirm(t("discardRecipeEditConfirm"))) return;
+    if (changed) {
+      if (editingHadOverride.current) commitRecipeEdit(editingRecipeId, editingLocale, editingOriginal.current!);
+      else if (onRecipeReset) onRecipeReset(editingRecipeId, editingLocale);
+      else setLocalRecipeEdits((current) => {
+        const locales = { ...current[editingRecipeId] };
+        delete locales[editingLocale];
+        const next = { ...current };
+        if (Object.keys(locales).length) next[editingRecipeId] = locales;
+        else delete next[editingRecipeId];
+        return next;
+      });
+    }
+    setEditingRecipeId(null);
+    setEditingLocale(null);
+    setDraft(null);
+    setEditStatus("idle");
+  }
+
+  function resetRecipeEdit(recipeId: string, editLocale: Locale) {
+    if (!window.confirm(t("resetRecipeConfirm"))) return;
+    if (onRecipeReset) onRecipeReset(recipeId, editLocale);
+    else setLocalRecipeEdits((current) => {
+      const locales = { ...current[recipeId] };
+      delete locales[editLocale];
+      const next = { ...current };
+      if (Object.keys(locales).length) next[recipeId] = locales;
+      else delete next[recipeId];
+      return next;
+    });
+    setEditingRecipeId(null);
+    setEditingLocale(null);
+    setDraft(null);
+    setEditStatus("idle");
+  }
+
   useEffect(() => {
     if (controlledFavoriteIds !== undefined) return;
     try { window.localStorage.setItem(RECIPE_FAVORITES_KEY, JSON.stringify(favoriteIds)); } catch { /* Keep in-memory favorites usable. */ }
   }, [favoriteIds, controlledFavoriteIds]);
+
+  useEffect(() => {
+    if (controlledRecipeEdits === undefined || !onRecipeReset) return;
+    for (const [recipeId, locales] of Object.entries(controlledRecipeEdits)) {
+      const source = allRecipes.find(({ id }) => id === recipeId);
+      if (!source) continue;
+      for (const localeKey of ["en", "ru", "fr"] as const) {
+        const edit = locales?.[localeKey];
+        if (edit && sameRecipeDraft(edit, localizeRecipe(source, localeKey))) onRecipeReset(recipeId, localeKey);
+      }
+    }
+  }, [controlledRecipeEdits, onRecipeReset]);
+
+  useEffect(() => {
+    if (!editingRecipeId || !editingLocale || !draft) return;
+    if (!isValidRecipeDraft(draft)) {
+      setEditStatus("invalid");
+      return;
+    }
+    if (sameRecipeDraft(draft, editingOriginal.current)) {
+      setEditStatus("saved");
+      return;
+    }
+    setEditStatus("saving");
+    const timeout = window.setTimeout(() => {
+      const normalized = normalizeRecipeDraft(draft);
+      if (editCallbackRef.current) editCallbackRef.current(editingRecipeId, editingLocale, normalized);
+      else setLocalRecipeEdits((current) => ({ ...current, [editingRecipeId]: { ...current[editingRecipeId], [editingLocale]: normalized } }));
+      setEditStatus("saved");
+    }, 800);
+    return () => window.clearTimeout(timeout);
+  }, [editingRecipeId, editingLocale, draft]);
 
   function openFocusedRecipe(recipeId: string, card: HTMLElement) {
     const rect = card.getBoundingClientRect();
@@ -63,6 +171,13 @@ export function RecipesPage({ system, activeFilter, onFilterChange, favoriteIds:
   }
 
   function closeFocusedRecipe() {
+    if (editingRecipeId && draft && !isValidRecipeDraft(draft) && !window.confirm(t("discardInvalidRecipeEdit"))) return;
+    if (editingRecipeId && editingLocale && draft && isValidRecipeDraft(draft) && !sameRecipeDraft(draft, editingOriginal.current)) {
+      commitRecipeEdit(editingRecipeId, editingLocale, normalizeRecipeDraft(draft));
+    }
+    setEditingRecipeId(null);
+    setEditingLocale(null);
+    setDraft(null);
     setFocusedRecipeId(null);
     setFocusMotion(null);
     onFocusRecipeChange?.(null);
@@ -167,8 +282,12 @@ export function RecipesPage({ system, activeFilter, onFilterChange, favoriteIds:
       <div className="recipe-grid">
         {visibleRecipes.length === 0 && <div className="empty-filter" role="status"><span aria-hidden="true">⌕</span><p>{filter === "favorites" && !normalizedSearch ? t("noFavoriteRecipes") : t("noSearchResults")}</p></div>}
         {visibleRecipes.map((item) => {
-          const recipe = localizeRecipe(item, locale);
+          const localized = localizeRecipe(item, locale);
+          const savedEdit = recipeEdits[item.id]?.[locale];
+          const currentEdit = savedEdit && !sameRecipeDraft(savedEdit, localized) ? savedEdit : undefined;
+          const recipe = currentEdit ? { ...localized, ...currentEdit } : localized;
           const isFavorite = favoriteIds.includes(recipe.id);
+          const isEditing = editingRecipeId === recipe.id && editingLocale === locale && draft !== null;
           const useZoomedOutPhoto = recipe.id.startsWith("vertuo-us-") || recipe.id === "vertuo-almond-coffee" || recipe.id === "vertuo-gourmandise-coffee";
           return (
           <Fragment key={recipe.id}>
@@ -201,7 +320,7 @@ export function RecipesPage({ system, activeFilter, onFilterChange, favoriteIds:
               <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20.8 8.7c0 5.1-8.8 10.2-8.8 10.2S3.2 13.8 3.2 8.7A4.7 4.7 0 0 1 12 6.3a4.7 4.7 0 0 1 8.8 2.4Z" /></svg>
             </button>
             <div
-              className={`recipe-card__photo${recipe.sourcePage ? " recipe-card__photo--book" : ""}${useZoomedOutPhoto ? " recipe-card__photo--zoomed-out" : ""}${focusedRecipeId === recipe.id ? " recipe-card__photo--focused" : ""}`}
+              className={`recipe-card__photo${recipe.sourcePage ? " recipe-card__photo--book" : ""}${useZoomedOutPhoto ? " recipe-card__photo--zoomed-out" : ""}${focusedRecipeId === recipe.id ? " recipe-card__photo--focused" : ""}${isEditing ? " recipe-card__photo--editing" : ""}`}
               style={useZoomedOutPhoto ? { "--recipe-photo": `url("${recipe.imageUrl}")` } as CSSProperties : undefined}
             >
               <RecipeImage src={recipe.imageUrl} alt={recipe.imageAlt} unavailableLabel={t("recipeImageUnavailable")} />
@@ -211,8 +330,51 @@ export function RecipesPage({ system, activeFilter, onFilterChange, favoriteIds:
               <span>{recipe.time}</span>
               <span>{recipe.difficulty}</span>
             </div>
+            {isEditing && draft ? (
+              <form className="recipe-editor" onSubmit={finishRecipeEdit}>
+                <label>{t("recipeTitleLabel")}<input aria-label={t("recipeTitleLabel")} maxLength={120} onChange={(event) => setDraft({ ...draft, title: event.target.value })} value={draft.title} /></label>
+                <RecipeLineEditor
+                  addLabel={t("addIngredient")}
+                  fieldLabel={t("ingredients")}
+                  items={draft.ingredients}
+                  onAdd={() => setDraft({ ...draft, ingredients: [...draft.ingredients, ""] })}
+                  onChange={(index, value) => setDraft({ ...draft, ingredients: draft.ingredients.map((line, lineIndex) => lineIndex === index ? value : line) })}
+                  onMove={(index, offset) => setDraft({ ...draft, ingredients: moveRecipeLine(draft.ingredients, index, offset) })}
+                  onRemove={(index) => setDraft({ ...draft, ingredients: draft.ingredients.filter((_, lineIndex) => lineIndex !== index) })}
+                  positionLabel={(position) => t("recipeLinePosition", { position })}
+                  removeLabel={(position) => t("removeRecipeLine", { position })}
+                  moveUpLabel={(position) => t("moveRecipeLineUp", { position })}
+                  moveDownLabel={(position) => t("moveRecipeLineDown", { position })}
+                  placeholder={t("ingredientPlaceholder")}
+                />
+                <RecipeLineEditor
+                  addLabel={t("addStep")}
+                  fieldLabel={t("preparation")}
+                  items={draft.steps}
+                  onAdd={() => setDraft({ ...draft, steps: [...draft.steps, ""] })}
+                  onChange={(index, value) => setDraft({ ...draft, steps: draft.steps.map((line, lineIndex) => lineIndex === index ? value : line) })}
+                  onMove={(index, offset) => setDraft({ ...draft, steps: moveRecipeLine(draft.steps, index, offset) })}
+                  onRemove={(index) => setDraft({ ...draft, steps: draft.steps.filter((_, lineIndex) => lineIndex !== index) })}
+                  positionLabel={(position) => t("recipeLinePosition", { position })}
+                  removeLabel={(position) => t("removeRecipeLine", { position })}
+                  moveUpLabel={(position) => t("moveRecipeLineUp", { position })}
+                  moveDownLabel={(position) => t("moveRecipeLineDown", { position })}
+                  placeholder={t("stepPlaceholder")}
+                />
+                <p className="recipe-editor__hint">{t("recipeEditLanguageHint")} {t("recipeEditAutoSave")}</p>
+                <div aria-live="polite" className="recipe-editor__footer">
+                  <span className={`recipe-editor__status recipe-editor__status--${editStatus}`}>{t(editStatus === "saving" ? "recipeEditSaving" : editStatus === "invalid" ? "recipeEditInvalid" : "recipeEditSaved")}</span>
+                  <div>
+                    {currentEdit && <button className="recipe-editor__reset" onClick={() => resetRecipeEdit(recipe.id, locale)} type="button">{t("resetRecipe")}</button>}
+                    <button className="recipe-editor__cancel" onClick={cancelRecipeEdit} type="button">{t("cancelEditing")}</button>
+                    <button className="recipe-editor__done" disabled={!isValidRecipeDraft(draft)} type="submit">{t("saveRecipeChanges")}</button>
+                  </div>
+                </div>
+              </form>
+            ) : <>
             <h3>{recipe.title}</h3>
             <p className="recipe-card__capsule">{t("capsuleLabel")} <strong>{recipe.capsule}</strong></p>
+            {currentEdit && <p className="recipe-card__edited-note">{t("recipeEditedForLanguage", { language: t(locale === "en" ? "englishName" : locale === "ru" ? "russianName" : "frenchName") })}</p>}
             {recipe.adaptationNote && <p className="recipe-card__adaptation">{recipe.adaptationNote}</p>}
 
             <div className={`recipe-card__body${focusedRecipeId === recipe.id ? " recipe-card__body--vertical" : ""}`}>
@@ -222,7 +384,14 @@ export function RecipesPage({ system, activeFilter, onFilterChange, favoriteIds:
                   {recipe.ingredients.map((ingredient) => <li key={ingredient}>{ingredient}</li>)}
                 </ul>
               </div>
-              <div>
+              <div className="recipe-card__method">
+                <button aria-label={t("editRecipe", { name: recipe.title })} className="recipe-edit-button" onClick={(event) => {
+                  if (focusedRecipeId !== recipe.id) {
+                    const card = event.currentTarget.closest("article");
+                    if (card instanceof HTMLElement) openFocusedRecipe(recipe.id, card);
+                  }
+                  beginRecipeEdit(recipe.id, { title: recipe.title, ingredients: recipe.ingredients, steps: recipe.steps });
+                }} title={t("editRecipeAction")} type="button"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.359a.5.5 0 0 0 .623.622l4.36-1.32a2 2 0 0 0 .829-.5z" /><path d="m15 5 4 4" /></svg></button>
                 <h4>{t("preparation")}</h4>
                 <ol aria-label={t("preparation")}>
                   {recipe.steps.map((step) => <li key={step}>{step}</li>)}
@@ -233,12 +402,49 @@ export function RecipesPage({ system, activeFilter, onFilterChange, favoriteIds:
             <a className="recipe-card__source" href={recipe.sourceUrl} rel="noreferrer" target="_blank">
               {recipe.sourceLabel} <span aria-hidden="true">↗</span>
             </a>
+            </>}
           </article>
           </Fragment>
           );
         })}
       </div>
     </section>
+  );
+}
+
+function RecipeLineEditor({ fieldLabel, addLabel, items, placeholder, positionLabel, removeLabel, moveUpLabel, moveDownLabel, onChange, onAdd, onRemove, onMove }: {
+  fieldLabel: string;
+  addLabel: string;
+  items: string[];
+  placeholder: string;
+  positionLabel: (position: number) => string;
+  removeLabel: (position: number) => string;
+  moveUpLabel: (position: number) => string;
+  moveDownLabel: (position: number) => string;
+  onChange: (index: number, value: string) => void;
+  onAdd: () => void;
+  onRemove: (index: number) => void;
+  onMove: (index: number, offset: -1 | 1) => void;
+}) {
+  return (
+    <fieldset className="recipe-editor__group">
+      <legend>{fieldLabel}</legend>
+      <div className="recipe-editor__list">
+        {items.map((item, index) => {
+          const position = index + 1;
+          return <div className="recipe-editor__line" key={`${fieldLabel}-${position}`}>
+            <label className="visually-hidden" htmlFor={`recipe-line-${fieldLabel}-${position}`}>{positionLabel(position)}</label>
+            <textarea id={`recipe-line-${fieldLabel}-${position}`} aria-label={positionLabel(position)} maxLength={240} onChange={(event) => onChange(index, event.target.value)} placeholder={placeholder} rows={2} value={item} />
+            <div className="recipe-editor__line-actions">
+              <button aria-label={moveUpLabel(position)} disabled={index === 0} onClick={() => onMove(index, -1)} type="button">↑</button>
+              <button aria-label={moveDownLabel(position)} disabled={index === items.length - 1} onClick={() => onMove(index, 1)} type="button">↓</button>
+              <button aria-label={removeLabel(position)} onClick={() => onRemove(index)} type="button">×</button>
+            </div>
+          </div>;
+        })}
+      </div>
+      <button className="recipe-editor__add" disabled={items.length >= 30} onClick={onAdd} type="button">+ {addLabel}</button>
+    </fieldset>
   );
 }
 
@@ -253,4 +459,26 @@ function RecipeImage({ src, alt, unavailableLabel }: { src: string; alt: string;
 
 function normalizeSearch(value: string) {
   return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLocaleLowerCase();
+}
+
+function normalizeRecipeDraft(draft: RecipeTextOverride): RecipeTextOverride {
+  return {
+    title: draft.title.trim(),
+    ingredients: draft.ingredients.map((line) => line.trim()).filter(Boolean).slice(0, 30).map((line) => line.slice(0, 240)),
+    steps: draft.steps.map((line) => line.trim()).filter(Boolean).slice(0, 30).map((line) => line.slice(0, 240)),
+  };
+}
+
+function isValidRecipeDraft(draft: RecipeTextOverride): boolean {
+  return draft.title.trim().length > 0
+    && draft.title.trim().length <= 120
+    && draft.ingredients.length <= 30
+    && draft.steps.length <= 30
+    && draft.ingredients.some((line) => line.trim().length > 0)
+    && draft.steps.some((line) => line.trim().length > 0)
+    && [...draft.ingredients, ...draft.steps].every((line) => line.length <= 240);
+}
+
+function sameRecipeDraft(left: RecipeTextOverride, right: RecipeTextOverride | null): boolean {
+  return right !== null && JSON.stringify(normalizeRecipeDraft(left)) === JSON.stringify(normalizeRecipeDraft(right));
 }
