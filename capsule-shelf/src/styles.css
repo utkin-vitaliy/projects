@@ -236,12 +236,12 @@ h1 { margin: 0; color: var(--ink); font-size: clamp(28px, 3.5vw, 40px); font-wei
 .sync-control:focus-visible { outline: 3px solid rgb(111 137 112 / 43%); outline-offset: 3px; }
 .sync-control:disabled { cursor: default; }
 .sync-control__arrows { width: 22px; height: 22px; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2; }
+.sync-control__cloud { width: 22px; height: 22px; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2; }
 .sync-control[data-state="connecting"], .sync-control[data-state="saving"] { color: #526958; border-color: #c8d4c5; background: #f4f7f1; }
 .sync-control[data-state="connecting"] .sync-control__arrows, .sync-control[data-state="saving"] .sync-control__arrows { animation: sync-rotate 1s linear infinite; }
-.sync-control__connected-mark { width: 12px; height: 12px; border-radius: 50%; background: #5c8063; box-shadow: 0 0 0 5px #e4eee2; }
-.sync-control[data-state="remembered"] .sync-control__connected-mark { background: #759078; box-shadow: 0 0 0 5px #e8eee5; }
+.sync-control[data-state="connected"] { color: #3f6d49; border-color: #bed2bf; background: #f2f7ef; }
+.sync-control[data-state="remembered"] { color: #737970; border-color: #d4d5ce; background: #f7f7f3; }
 .sync-control[data-state="error"] { color: #995345; border-color: #e0c9c2; background: #faf0ed; }
-.sync-control__error-mark { font-size: 16px; font-weight: 700; line-height: 1; }
 .sync-control__tooltip { position: absolute; z-index: 60; top: calc(100% + 8px); right: 0; width: max-content; max-width: min(270px, calc(100vw - 32px)); padding: 7px 10px; border: 1px solid #e2ded4; border-radius: 8px; color: #4e574e; background: #fffefa; box-shadow: 0 7px 18px rgb(32 41 34 / 11%); font-size: 11px; line-height: 1.4; opacity: 0; pointer-events: none; transform: translateY(-3px); transition: opacity .15s ease, transform .15s ease; }
 .sync-control-wrap:hover .sync-control__tooltip, .sync-control-wrap:focus-within .sync-control__tooltip { opacity: 1; transform: translateY(0); }
 .sync-control-popover { position: absolute; z-index: 55; top: calc(100% + 8px); right: 0; display: grid; width: min(250px, calc(100vw - 32px)); gap: 10px; padding: 14px; border: 1px solid #e5e0d6; border-radius: 12px; color: var(--ink); background: #fffefa; box-shadow: 0 12px 28px rgb(32 41 34 / 14%); animation: fade-in .15s ease both; }
@@ -380,5 +380,4 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
-  .sync-control[data-state="connecting"] .sync-control__arrows, .sync-control[data-state="saving"] .sync-control__arrows { animation: sync-rotate 1.8s linear infinite !important; }
 }

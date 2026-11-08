@@ -80,10 +80,10 @@ describe("Capsule Shelf dashboard", () => {
 
     const actionGroup = document.querySelector(".page-footer__actions");
     expect(actionGroup).not.toBeNull();
-    const settingsDropdown = within(actionGroup as HTMLElement).getByRole("button", { name: "Настройки" });
+    const settingsDropdown = within(actionGroup as HTMLElement).getByRole("button", { name: "Данные" });
     fireEvent.click(settingsDropdown);
-    expect(within(actionGroup as HTMLElement).getByRole("button", { name: "Скачать настройки" })).toBeInTheDocument();
-    expect(within(actionGroup as HTMLElement).getByRole("button", { name: "Загрузить настройки" })).toBeInTheDocument();
+    expect(within(actionGroup as HTMLElement).getByRole("button", { name: "Экспорт данных" })).toBeInTheDocument();
+    expect(within(actionGroup as HTMLElement).getByRole("button", { name: "Импорт данных" })).toBeInTheDocument();
     expect(within(actionGroup as HTMLElement).getByRole("link", { name: "Оставить отзыв ↗" })).toBeInTheDocument();
     expect(actionGroup?.querySelector('input[type="file"]')).not.toBeNull();
   });
@@ -92,9 +92,9 @@ describe("Capsule Shelf dashboard", () => {
     render(<App />);
     await waitForReady();
 
-    const trigger = screen.getByRole("button", { name: "Настройки" });
+    const trigger = screen.getByRole("button", { name: "Данные" });
     fireEvent.click(trigger);
-    expect(screen.getByRole("button", { name: "Скачать настройки" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Экспорт данных" })).toBeInTheDocument();
     fireEvent.keyDown(trigger, { key: "Escape" });
 
     expect(document.querySelector(".settings-dropdown")?.hasAttribute("open")).toBe(false);
@@ -116,8 +116,8 @@ describe("Capsule Shelf dashboard", () => {
       inventory: { "vertuo-melozio": { quantity: 17, favorite: true, threshold: 5, note: { tastingNotes: "Honey" } } },
       favoriteRecipes: ["vertuo-black-iced"],
     }) });
-    fireEvent.click(screen.getByRole("button", { name: "Настройки" }));
-    fireEvent.click(screen.getByRole("button", { name: "Загрузить настройки" }));
+    fireEvent.click(screen.getByRole("button", { name: "Данные" }));
+    fireEvent.click(screen.getByRole("button", { name: "Импорт данных" }));
     fireEvent.change(document.querySelector('input[type="file"]')!, { target: { files: [backup] } });
 
     await waitFor(() => expect(confirm).toHaveBeenCalledOnce());

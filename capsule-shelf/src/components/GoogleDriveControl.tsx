@@ -82,10 +82,10 @@ export function GoogleDriveControl({ state, email, labels, onConnect, onDisconne
         title={activeLabel}
         type="button"
       >
-        {state === "remembered" || state === "connected" ? (
-          <span aria-hidden="true" className="sync-control__connected-mark" />
+        {state === "connected" ? (
+          <CloudCheckIcon />
         ) : state === "error" ? (
-          <span aria-hidden="true" className="sync-control__error-mark">!</span>
+          <CloudAlertIcon />
         ) : (
           <SyncIcon />
         )}
@@ -122,6 +122,25 @@ function SyncIcon() {
       <path d="M21 3v5h-5" />
       <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
       <path d="M8 16H3v5" />
+    </svg>
+  );
+}
+
+function CloudCheckIcon() {
+  return (
+    <svg aria-hidden="true" className="sync-control__cloud" fill="none" viewBox="0 0 24 24">
+      <path d="M7.5 18.5h9a4.5 4.5 0 0 0 .85-8.92A5.75 5.75 0 0 0 6.4 11.1 3.7 3.7 0 0 0 7.5 18.5Z" />
+      <path d="m9.5 14.1 1.7 1.7 3.6-3.8" />
+    </svg>
+  );
+}
+
+function CloudAlertIcon() {
+  return (
+    <svg aria-hidden="true" className="sync-control__cloud" fill="none" viewBox="0 0 24 24">
+      <path d="M7.5 18.5h9a4.5 4.5 0 0 0 .85-8.92A5.75 5.75 0 0 0 6.4 11.1 3.7 3.7 0 0 0 7.5 18.5Z" />
+      <path d="M12 10.5v3.3" />
+      <path d="M12 16.5h.01" />
     </svg>
   );
 }
