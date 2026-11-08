@@ -54,6 +54,7 @@ function CapsuleShelfApp({ account, rememberedAccount, namespace, onAccountChang
   const [activeView, setActiveView] = useState<"inventory" | "recipes">(initialHash === "#recipes" ? "recipes" : "inventory");
   const shouldScrollToView = useRef(initialHash === "#recipes" || initialHash === "#capsules");
   const [pendingRecipeId, setPendingRecipeId] = useState<string | null>(null);
+  const [pendingCapsuleFocusId, setPendingCapsuleFocusId] = useState<string | null>(null);
   const [capsuleSearch, setCapsuleSearch] = useState("");
   const [favoriteRecipeIds, setFavoriteRecipeIds] = useState<string[]>([]);
   const [coffeeSystem, setCoffeeSystem] = useState<CoffeeSystem>("original");
@@ -226,6 +227,15 @@ function CapsuleShelfApp({ account, rememberedAccount, namespace, onAccountChang
   }, [activeView, pendingRecipeId]);
 
   useEffect(() => {
+    if (!pendingCapsuleFocusId || !settingsReady || activeView !== "inventory" || filter !== "favorites") return;
+    const frame = window.requestAnimationFrame(() => {
+      document.getElementById(`capsule-${pendingCapsuleFocusId}`)?.scrollIntoView?.({ behavior: "smooth", block: "center" });
+      setPendingCapsuleFocusId(null);
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [activeView, filter, pendingCapsuleFocusId, settingsReady]);
+
+  useEffect(() => {
     document.documentElement.lang = locale;
   }, [locale]);
 
@@ -242,6 +252,14 @@ function CapsuleShelfApp({ account, rememberedAccount, namespace, onAccountChang
   function openRecipe(recipeId: string) {
     setPendingRecipeId(recipeId);
     navigateToView("recipes");
+  }
+
+  function openFavoriteCapsule(capsuleId: string) {
+    setCapsuleSearch("");
+    setCategoryFilter("all");
+    selectInventoryFilter("favorites");
+    setPendingCapsuleFocusId(capsuleId);
+    navigateToView("inventory");
   }
 
   function navigateToView(view: "inventory" | "recipes") {
@@ -483,6 +501,7 @@ function CapsuleShelfApp({ account, rememberedAccount, namespace, onAccountChang
             lowStockIds={lowStockIds}
             totalCapsules={totalCapsules}
             varietyCount={selectedCatalog.length}
+            onSelectCapsule={openFavoriteCapsule}
           />
 
           <section className="catalog-section" aria-labelledby="catalog-title">

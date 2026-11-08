@@ -7,9 +7,10 @@ type Props = {
   lowStockIds: string[];
   catalog: Capsule[];
   inventory: InventoryState;
+  onSelectCapsule: (capsuleId: string) => void;
 };
 
-export function InventorySummary({ totalCapsules, varietyCount, lowStockIds, catalog, inventory }: Props) {
+export function InventorySummary({ totalCapsules, varietyCount, lowStockIds, catalog, inventory, onSelectCapsule }: Props) {
   const { t } = useLocale();
   return (
     <section className="summary-panel" aria-label={t("summary")}>
@@ -37,7 +38,10 @@ export function InventorySummary({ totalCapsules, varietyCount, lowStockIds, cat
               {lowStockIds.map((id) => {
                 const capsule = catalog.find((item) => item.id === id);
                 if (!capsule) return null;
-                return <li key={id}>{t("leftCount", { name: capsule.name, count: inventory[id]?.quantity ?? 0 })}</li>;
+                return <li key={id}>
+                  <a className="summary-alert__capsule-link" href="#capsules" onClick={(event) => { event.preventDefault(); onSelectCapsule(id); }}>{capsule.name}</a>
+                  {t("capsulesLeft", { count: inventory[id]?.quantity ?? 0 })}
+                </li>;
               })}
             </ul>
           </div>

@@ -49,7 +49,7 @@ export function CapsuleCard({ capsule, entry = createEmptyInventoryEntry(), lowS
   }
 
   return (
-    <article className={`capsule-card${lowStock ? " capsule-card--low" : ""}`}>
+    <article className={`capsule-card${lowStock ? " capsule-card--low" : ""}`} id={`capsule-${capsule.id}`}>
       <div className="capsule-photo">
         {!imageFailed ? (
           <img
