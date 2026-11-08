@@ -127,11 +127,12 @@ export function useInventory(namespace: SettingsNamespace = null, storageCatalog
     return { ...unlistedInventory.current, ...inventory };
   }
 
-  function importInventory(raw: string): boolean {
+  function importInventory(raw: string, targetNamespace: SettingsNamespace = namespace): boolean {
     let imported: InventoryState;
     try {
       imported = parseInventoryBackup(storageCatalog, raw);
-      window.localStorage.setItem(inventoryStorageKey, serializeInventory(imported));
+      const targetStorageKey = settingsStorageKey(LOCAL_STORAGE_KEY, targetNamespace);
+      window.localStorage.setItem(targetStorageKey, serializeInventory(imported));
     } catch (error) {
       setStorageNotice(error instanceof Error ? error.message : "Не удалось загрузить файл настроек.");
       return false;
