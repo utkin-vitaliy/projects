@@ -282,9 +282,9 @@ describe("Capsule Shelf dashboard", () => {
     await waitForReady();
     await addCapsules("Arpeggio", 5);
     fireEvent.click(screen.getByRole("button", { name: "Добавить Arpeggio в избранное" }));
-    expect(screen.getByText("Arpeggio — осталось 5")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Arpeggio" })).toBeInTheDocument();
     await addCapsules("Arpeggio", 1);
-    expect(screen.queryByText("Arpeggio — осталось 5")).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Arpeggio" })).not.toBeInTheDocument();
     expect(screen.getByLabelText("Сорта, которым пора пополнить запас")).toHaveTextContent("0");
   });
 
@@ -293,10 +293,22 @@ describe("Capsule Shelf dashboard", () => {
     await waitForReady();
     await addCapsules("Arpeggio", 5);
     fireEvent.click(screen.getByRole("button", { name: "Добавить Arpeggio в избранное" }));
-    expect(screen.getByText("Arpeggio — осталось 5")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Arpeggio" })).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText("Порог запаса Arpeggio"), { target: { value: "3" } });
-    expect(screen.queryByText("Arpeggio — осталось 5")).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Arpeggio" })).not.toBeInTheDocument();
     await waitFor(() => expect(storedInventory().arpeggio).toMatchObject({ threshold: 3 }));
+  });
+
+  it("opens a favorite capsule from the low-stock notice", async () => {
+    render(<App />);
+    await waitForReady();
+    await addCapsules("Arpeggio", 5);
+    fireEvent.click(screen.getByRole("button", { name: "Добавить Arpeggio в избранное" }));
+
+    fireEvent.click(screen.getByRole("link", { name: "Arpeggio" }));
+
+    expect(screen.getByRole("button", { name: "Избранное" })).toHaveAttribute("aria-pressed", "true");
+    expect(document.getElementById("capsule-arpeggio")).toBeInTheDocument();
   });
 
   it("filters the catalog to favorites and low stock", async () => {
