@@ -44,13 +44,13 @@ jobs:
           cp -R dist/. pages-artifact/capsule-shelf/
           cat > pages-artifact/index.html <<'EOF'
           <!doctype html>
-          <html lang="ru">
+          <html lang="en">
             <head>
               <meta charset="UTF-8">
               <meta name="viewport" content="width=device-width, initial-scale=1">
               <meta name="theme-color" content="#f5f2ec">
-              <meta name="description" content="Каталог статических проектов Vitaliy.">
-              <title>Проекты — Vitaliy</title>
+              <meta name="description" content="A collection of static web projects by Vitaliy.">
+              <title>Projects — Vitaliy</title>
               <style>
                 :root { color-scheme: light; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #292820; background: #f5f2ec; font-synthesis: none; }
                 * { box-sizing: border-box; }
@@ -76,19 +76,19 @@ jobs:
             </head>
             <body>
               <main>
-                <p class="eyebrow">Личная коллекция</p>
-                <h1>Проекты,<br>которые упрощают жизнь.</h1>
-                <p class="intro">Небольшие веб-инструменты и идеи — собранные в одном месте.</p>
-                <section class="projects" aria-label="Список проектов">
+                <p class="eyebrow">A personal collection</p>
+                <h1>Projects that<br>make life simpler.</h1>
+                <p class="intro">Small web tools and ideas, all gathered in one place.</p>
+                <section class="projects" aria-label="Project list">
                   <a class="project" href="/projects/capsule-shelf/">
                     <span class="icon" aria-hidden="true">☕</span>
-                    <p class="meta">Nespresso Original · учёт запасов</p>
-                    <h2>Моя кофейная полка</h2>
-                    <p class="description">Капсулы, любимые вкусы, заметки и рецепты — всё под рукой.</p>
-                    <span class="open">Открыть проект <span class="arrow" aria-hidden="true">↗</span></span>
+                    <p class="meta">Nespresso Original · capsule tracker</p>
+                    <h2>Capsule Shelf</h2>
+                    <p class="description">Track capsule quantities, favorite coffees, tasting notes, and recipes in one place.</p>
+                    <span class="open">Open project <span class="arrow" aria-hidden="true">↗</span></span>
                   </a>
                 </section>
-                <footer>Новые статические проекты будут появляться здесь.</footer>
+                <footer>More static projects will appear here.</footer>
               </main>
             </body>
           </html>
