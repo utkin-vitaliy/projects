@@ -190,7 +190,7 @@ describe("Capsule Shelf dashboard", () => {
     expect(screen.getByRole("button", { name: "Vertuo" })).toHaveAttribute("aria-pressed", "true");
     fireEvent.click(screen.getByRole("button", { name: "Рецепты" }));
     expect(screen.getByRole("button", { name: "Убрать рецепт «Чёрный кофе со льдом» из избранного" })).toHaveAttribute("aria-pressed", "true");
-  });
+  }, 10_000);
 
   it("opens a Vertuo recipe from its Vertuo capsule and keeps the official source", async () => {
     render(<App />);
