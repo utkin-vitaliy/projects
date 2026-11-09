@@ -14,14 +14,6 @@ A static Canadian work-calendar reference with separate regional employment, fed
 - **Project folder:** [`canada-days/`](canada-days/)
 - **Project documentation:** [`canada-days/README.md`](canada-days/README.md)
 
-### Walkie
-
-A browser-only two-person WebRTC walkie-talkie proof of concept. Pairing happens face to face with short-lived QR frames; it has no account, server-side signaling, recording, or conversation history.
-
-- **Open the app:** [Walkie](https://utkin-vitaliy.github.io/projects/walkie-talkie/)
-- **Project folder:** [`walkie-talkie/`](walkie-talkie/)
-- **Project documentation:** [`walkie-talkie/README.md`](walkie-talkie/README.md)
-
 ### Capsule Shelf
 
 A personal Nespresso Original and Vertuo capsule inventory and recipe collection. Track quantities, favorites, restock thresholds, tasting notes, and recipes in English, French, or Russian. Personal settings stay in the user's browser and can be backed up to or restored from a JSON file, or synced through the user's Google Drive.
@@ -32,7 +24,7 @@ A personal Nespresso Original and Vertuo capsule inventory and recipe collection
 
 ## Publishing
 
-GitHub Pages serves the repository's static project index at `/projects/` and projects in their own subfolders, such as `/projects/capsule-shelf/`, `/projects/canada-days/`, and `/projects/walkie-talkie/`. The [GitHub Actions Pages workflow](.github/workflows/pages.yml) runs project checks, builds Capsule Shelf, publishes all projects, and prepares the root index. Push to `main` or run the workflow manually from the repository's Actions tab to publish.
+GitHub Pages serves the repository's static project index at `/projects/` and projects in their own subfolders, such as `/projects/capsule-shelf/` and `/projects/canada-days/`. The [GitHub Actions Pages workflow](.github/workflows/pages.yml) runs project checks, builds Capsule Shelf, publishes all projects, and prepares the root index. Push to `main` or run the workflow manually from the repository's Actions tab to publish.
 
 ## Adding a project
 

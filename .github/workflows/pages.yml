@@ -36,8 +36,6 @@ jobs:
         run: npm test -- --run
       - name: Run Offday data tests
         run: node --test ../canada-days/calendar-data.test.js
-      - name: Run Walkie protocol tests
-        run: node --test ../walkie-talkie/protocol.test.js
       - name: Build static site
         env:
           VITE_GOOGLE_CLIENT_ID: ${{ vars.VITE_GOOGLE_CLIENT_ID }}
@@ -48,8 +46,6 @@ jobs:
           cp -R dist/. pages-artifact/capsule-shelf/
           mkdir -p pages-artifact/canada-days
           cp -R ../canada-days/. pages-artifact/canada-days/
-          mkdir -p pages-artifact/walkie-talkie
-          rsync -a --exclude='*.test.js' --exclude='package.json' --exclude='README.md' ../walkie-talkie/ pages-artifact/walkie-talkie/
           cat > pages-artifact/index.html <<'EOF'
           <!doctype html>
           <html lang="en">
@@ -103,13 +99,6 @@ jobs:
                     <p class="description">Explore upcoming work-calendar dates across Canada, with separate employment standards and public-service references.</p>
                     <span class="open">Open project <span class="arrow" aria-hidden="true">↗</span></span>
                   </a>
-                  <a class="project" href="/projects/walkie-talkie/">
-                    <span class="icon" aria-hidden="true"><img src="/projects/walkie-talkie/app-icon.svg" alt=""></span>
-                    <p class="meta">WebRTC · direct voice POC</p>
-                    <h2>Walkie</h2>
-                    <p class="description">Pair two browsers face to face and hold to talk over a direct audio connection.</p>
-                    <span class="open">Open project <span class="arrow" aria-hidden="true">↗</span></span>
-                  </a>
                 </section>
                 <footer>More static projects will appear here.</footer>
               </main>
@@ -124,7 +113,6 @@ jobs:
             <url><loc>https://utkin-vitaliy.github.io/projects/</loc></url>
             <url><loc>https://utkin-vitaliy.github.io/projects/capsule-shelf/</loc></url>
             <url><loc>https://utkin-vitaliy.github.io/projects/canada-days/</loc></url>
-            <url><loc>https://utkin-vitaliy.github.io/projects/walkie-talkie/</loc></url>
           </urlset>
           EOF
       - name: Configure GitHub Pages
