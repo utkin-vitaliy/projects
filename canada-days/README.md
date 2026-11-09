@@ -1,6 +1,6 @@
-# Offday — Canada holiday calendar
+# Offday — Canadian work calendar
 
-Offday is a static, mobile-friendly calendar that helps people find the next listed holiday for their work region and employment category. It includes English, French, and Russian, a one-time approximate region suggestion, and official source links.
+Offday is a static, mobile-friendly reference to upcoming dates in Canadian work calendars. It separates regional and federal employment standards from public-service schedules and office-closure sources. It includes English, French, and Russian, a one-time approximate work-region suggestion, and links to official sources.
 
 ## Run locally
 
@@ -12,6 +12,16 @@ python3 -m http.server 5176
 
 Open <http://localhost:5176/>. The project uses native browser modules and does not need a build step or runtime server beyond static file hosting.
 
+## Publish
+
+The GitHub Pages workflow at the repository root copies this directory into the Pages artifact at `/projects/canada-days/`. Push changes to `main` to run the deployment workflow. Keep links to scripts, styles, icons, and the manifest relative to this directory so they continue to work below the `/projects/canada-days/` path. The workflow creates a sitemap for the project index and both apps at `/projects/sitemap.xml`; submit that sitemap in Google Search Console if you use it. A sitemap helps crawlers discover URLs but does not guarantee indexing.
+
+The page includes a canonical URL, a concise search description, social preview metadata, and structured WebApplication information. Language controls change text on the same URL, so the page does not advertise separate localized URLs with `hreflang` links.
+
+## Mobile icons and feedback
+
+The app uses `calendar-mark.svg` as its browser favicon and `app-icon.svg` as the source artwork for the Apple touch icon and Android home-screen icons. `manifest.webmanifest` declares Android install metadata and icon sizes. The localized **Leave feedback** link in the footer opens a prefilled GitHub issue form in a new tab; submissions are public.
+
 Run the data checks with Node.js 22 or newer:
 
 ```sh
@@ -22,22 +32,22 @@ npm test
 
 The selected province or territory and calendar type are independent settings. Offday has four separate calendars:
 
-1. **Regional employment standards** — public, statutory, or general holidays under the selected region’s employment standards.
+1. **Regional employment standards** — dates listed under the selected province or territory’s employment standards.
 2. **Federal employment standards** — general holidays for federally regulated workplaces under the Canada Labour Code.
-3. **Regional public service** — the central government service calendar, policy, or published office-closure schedule for the selected region.
+3. **Regional public service** — dates based on the selected region’s cited government policy, published schedule, or office-closure information.
 4. **Federal public service** — designated federal public-service holidays.
 
-All 13 provinces and territories are included. Static dates cover November–December 2026 and 2027. The year range is updated manually after checking official sources.
+All 10 provinces and 3 territories are included. Static data covers November and December 2026 and all of 2027. The year range is updated manually after checking official sources.
 
 ## How to read the dates
 
-The calendar is a planning reference, not a promise from an employer. A listed holiday does not establish an individual employee’s eligibility, paid leave, shift schedule, observed date, or employer closure. Those can depend on the applicable law, work schedule, employee group, department, collective agreement, and employer policy.
+The calendar is a planning reference, not a personal work schedule or a promise from an employer. A listed date does not establish an individual employee’s eligibility, paid leave, shift schedule, observed date, or workplace closure. Those can depend on applicable law, work location, schedule, employee group, department, collective agreement, and employer policy.
 
-The federal public service may also designate a provincial or civic holiday based on the employee’s work locality and collective agreement. Offday does not guess that date from the province alone, so it is excluded until the work locality and applicable agreement are known. In Québec employment standards, the employer chooses Good Friday or Easter Monday; neither appears as a confirmed date in the list.
+The federal public service may also designate a provincial or civic holiday based on the employee’s work locality and collective agreement. Offday does not infer that date from the province alone, so it is excluded until the work locality and applicable agreement are known. In Québec employment standards, the employer chooses Good Friday or Easter Monday; neither appears as a confirmed date in the list.
 
-Regional public-service calendars refer to the central provincial or territorial government source listed below. They do not claim to cover every municipality, school, hospital, agency, public corporation, or bargaining group. Only fixed dates published by the cited government source are listed. Local/civic dates without a universally confirmed date, floating days, and partial-day closures are excluded. Published observed dates remain labeled. The app does not guess substitute days from a generic weekend rule.
+Regional public-service calendars follow the specific provincial or territorial policy, published schedule, or office-closure source listed below. They are not a universal entitlement calendar for every public servant and do not cover every municipality, school, hospital, agency, public corporation, or bargaining group. Dates are listed only when supported by the cited source; some are rule-derived or published as observed dates. Local or civic dates without a defensible region-level date, floating days, and partial-day closures are excluded. The app does not guess substitute days from a generic weekend rule.
 
-Québec employment standards require an employer-selected day: Good Friday or Easter Monday. Because the province-level selector cannot determine that workplace choice, neither date is presented as a confirmed next day off. Québec public service follows its separate published government calendar.
+Québec employment standards require an employer-selected day: Good Friday or Easter Monday. Because the province-level selector cannot determine that workplace choice, neither date is presented as a confirmed date for an individual employee. Québec public service follows its separate published government calendar.
 
 The region selector is the work region. Geolocation is only a one-time suggestion: confirm the region manually. Coarse local bounds can overlap, and coordinates are not saved or sent to a geocoding service.
 

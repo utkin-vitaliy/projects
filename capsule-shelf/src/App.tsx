@@ -484,9 +484,9 @@ function CapsuleShelfApp({ account, rememberedAccount, namespace, onAccountChang
         />
         <div aria-label={t("language")} className="language-switch" role="group">
           {([
-            ["ru", "RU", "russianName"],
-            ["fr", "FR", "frenchName"],
             ["en", "EN", "englishName"],
+            ["fr", "FR", "frenchName"],
+            ["ru", "RU", "russianName"],
           ] as const).map(([code, shortLabel, nameKey]) => (
             <button
               aria-label={t(nameKey)}

@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#f6f5f0"/>
+  <path d="M0 0h1200v17H0z" fill="#d9d8cc"/>
+  <circle cx="1080" cy="110" r="230" fill="#eeece4"/>
+  <circle cx="1080" cy="110" r="160" fill="#f1efe8"/>
+  <g transform="translate(780 115) scale(12.1)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="4" y="5.5" width="16" height="15" rx="2.5" stroke="#536257" stroke-width="1.1"/>
+    <path d="M8 3.5v4M16 3.5v4M4.5 10h15" stroke="#536257" stroke-width="1.1"/>
+    <circle cx="8" cy="14" r="1.35" fill="#a34232" stroke="none"/>
+    <circle cx="12" cy="14" r="1.05" fill="#c9cbbf" stroke="none"/>
+    <circle cx="16" cy="14" r="1.05" fill="#c9cbbf" stroke="none"/>
+    <circle cx="8" cy="17.5" r="1.05" fill="#c9cbbf" stroke="none"/>
+    <circle cx="12" cy="17.5" r="1.05" fill="#c9cbbf" stroke="none"/>
+  </g>
+  <text x="92" y="118" fill="#777466" font-family="Arial, sans-serif" font-size="20" font-weight="700" letter-spacing="4">CANADA · WORK CALENDARS</text>
+  <text x="86" y="276" fill="#292820" font-family="Georgia, serif" font-size="118" font-weight="400" letter-spacing="-5">offday<tspan fill="#a34232">.</tspan></text>
+  <text x="94" y="348" fill="#52564d" font-family="Arial, sans-serif" font-size="32">Upcoming dates, clearly organized.</text>
+  <text x="94" y="398" fill="#777466" font-family="Arial, sans-serif" font-size="24">Regional and federal calendars · 13 regions</text>
+  <path d="M94 488h1012" stroke="#dedbd1" stroke-width="2"/>
+  <text x="94" y="536" fill="#777466" font-family="Arial, sans-serif" font-size="22">Employment standards  ·  Public service  ·  EN / FR / RU</text>
+</svg>

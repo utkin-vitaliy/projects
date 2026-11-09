@@ -86,7 +86,7 @@ jobs:
                 <p class="intro">Small web tools and ideas, all gathered in one place.</p>
                 <section class="projects" aria-label="Project list">
                   <a class="project" href="/projects/capsule-shelf/">
-                    <span class="icon" aria-hidden="true">☕</span>
+                    <span class="icon" aria-hidden="true"><img src="/projects/capsule-shelf/favicon.svg" alt=""></span>
                     <p class="meta">Nespresso Original · capsule tracker</p>
                     <h2>Capsule Shelf</h2>
                     <p class="description">Track capsule quantities, favorite coffees, tasting notes, and recipes in one place.</p>
@@ -96,7 +96,7 @@ jobs:
                     <span class="icon" aria-hidden="true"><img src="/projects/canada-days/calendar-mark.svg" alt=""></span>
                     <p class="meta">Canada · holiday calendar</p>
                     <h2>Offday</h2>
-                    <p class="description">Find the next listed day off across Canada, with separate calendars for employment standards and public services.</p>
+                    <p class="description">Explore upcoming work-calendar dates across Canada, with separate employment standards and public-service references.</p>
                     <span class="open">Open project <span class="arrow" aria-hidden="true">↗</span></span>
                   </a>
                 </section>
@@ -104,6 +104,16 @@ jobs:
               </main>
             </body>
           </html>
+          EOF
+      - name: Create sitemap
+        run: |
+          cat > pages-artifact/sitemap.xml <<'EOF'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+            <url><loc>https://utkin-vitaliy.github.io/projects/</loc></url>
+            <url><loc>https://utkin-vitaliy.github.io/projects/capsule-shelf/</loc></url>
+            <url><loc>https://utkin-vitaliy.github.io/projects/canada-days/</loc></url>
+          </urlset>
           EOF
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v6

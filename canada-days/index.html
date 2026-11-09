@@ -4,9 +4,43 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#f6f5f0" />
-    <meta name="description" content="Find the next public holiday for your selected Canadian work calendar." />
-    <title>Offday — Canada holiday calendar</title>
+    <meta name="description" content="Explore upcoming dates in Canadian regional and federal work calendars, including employment standards and public-service schedules for all 13 provinces and territories." />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Offday" />
+    <title>Offday — Canadian Work Calendar Dates</title>
+    <link rel="canonical" href="https://utkin-vitaliy.github.io/projects/canada-days/" />
+    <meta name="robots" content="index, follow" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Offday" />
+    <meta property="og:url" content="https://utkin-vitaliy.github.io/projects/canada-days/" />
+    <meta property="og:title" content="Offday — Canadian Work Calendar Dates" />
+    <meta property="og:description" content="Explore upcoming dates in Canadian regional and federal work calendars, including employment standards and public-service schedules for all 13 provinces and territories." />
+    <meta property="og:image" content="https://utkin-vitaliy.github.io/projects/canada-days/og-image.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Offday, a Canadian work-calendar date guide with a red calendar marker." />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Offday — Canadian Work Calendar Dates" />
+    <meta name="twitter:description" content="Explore upcoming dates in Canadian regional and federal work calendars, including employment standards and public-service schedules for all 13 provinces and territories." />
+    <meta name="twitter:image" content="https://utkin-vitaliy.github.io/projects/canada-days/og-image.png" />
+    <meta name="twitter:image:alt" content="Offday, a Canadian work-calendar date guide with a red calendar marker." />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Offday",
+        "url": "https://utkin-vitaliy.github.io/projects/canada-days/",
+        "description": "Explore upcoming dates in Canadian regional and federal work calendars, including employment standards and public-service schedules for all 13 provinces and territories.",
+        "applicationCategory": "UtilitiesApplication",
+        "operatingSystem": "Any",
+        "inLanguage": ["en-CA", "fr-CA", "ru-RU"]
+      }
+    </script>
     <link rel="icon" type="image/svg+xml" href="calendar-mark.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
+    <link rel="manifest" href="manifest.webmanifest" />
     <link rel="preconnect" href="https://images.unsplash.com" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -19,7 +53,7 @@
       <header class="topbar">
         <a class="brand" href="#top" aria-label="Offday home">
           <span class="brand-mark" aria-hidden="true"><img src="calendar-mark.svg" alt="" /></span>
-          <span class="brand-word"><span class="brand-name">offday<span class="brand-dot">.</span></span><small class="brand-tagline" data-i18n="tagline">Find your next day off.</small></span>
+          <span class="brand-word"><span class="brand-name">offday<span class="brand-dot">.</span></span><small class="brand-tagline" data-i18n="tagline">See the next date in your work calendar.</small></span>
         </a>
         <div class="topbar-right">
           <div class="date-range"><span class="status-dot"></span><span data-i18n="range">2026—2027 calendar</span></div>
@@ -33,6 +67,9 @@
       </header>
 
       <main id="top">
+        <noscript>
+          <p class="noscript-note">Offday is a Canadian work-calendar reference with regional and federal employment and public-service dates for all provinces and territories. JavaScript is required to display the date lists.</p>
+        </noscript>
         <section class="controls" aria-label="Calendar settings" data-i18n-aria="settingsLabel">
           <label class="control-field">
             <span data-i18n="regionLabel">Work region</span>
@@ -63,7 +100,7 @@
 
         <section class="calendar-section" aria-labelledby="calendar-heading">
           <div class="section-heading">
-            <h2 id="calendar-heading" data-i18n="calendarHeading">Different work, different holidays.</h2>
+            <h1 id="calendar-heading" data-i18n="calendarHeading">Different calendars for different work.</h1>
           </div>
           <div class="calendar-tabs" id="calendar-tabs" role="tablist" aria-label="Holiday calendar" data-i18n-aria="calendarLabel">
             <button id="tab-regionalEmployment" class="calendar-tab is-active" type="button" role="tab" aria-selected="true" aria-controls="calendar-panel" data-calendar="regionalEmployment" data-tab-label="tabRegionalEmployment">
@@ -73,10 +110,10 @@
               <span class="tab-title"><span class="tab-title-full" data-i18n="tabFederalEmployment">Federal employment</span><span class="tab-title-mobile" data-i18n="tabFederalEmploymentMobile">Federal</span></span><span class="tab-subtitle" data-i18n="tabFederalEmploymentSub">Canada Labour Code</span><span class="tab-count">—</span>
             </button>
             <button id="tab-regionalPublicService" class="calendar-tab" type="button" role="tab" aria-selected="false" aria-controls="calendar-panel" data-calendar="regionalPublicService" data-tab-label="tabRegionalPublicService">
-              <span class="tab-title"><span class="tab-title-full" data-i18n="tabRegionalPublicService">Regional public service</span><span class="tab-title-mobile" data-i18n="tabRegionalPublicServiceMobile">Region PS</span></span><span class="tab-subtitle" data-i18n="tabRegionalPublicServiceSub">Government employees</span><span class="tab-count">—</span>
+              <span class="tab-title"><span class="tab-title-full" data-i18n="tabRegionalPublicService">Regional public service</span><span class="tab-title-mobile" data-i18n="tabRegionalPublicServiceMobile">Regional service</span></span><span class="tab-subtitle" data-i18n="tabRegionalPublicServiceSub">Government employees</span><span class="tab-count">—</span>
             </button>
             <button id="tab-federalPublicService" class="calendar-tab" type="button" role="tab" aria-selected="false" aria-controls="calendar-panel" data-calendar="federalPublicService" data-tab-label="tabFederalPublicService">
-              <span class="tab-title"><span class="tab-title-full" data-i18n="tabFederalPublicService">Federal public service</span><span class="tab-title-mobile" data-i18n="tabFederalPublicServiceMobile">Federal PS</span></span><span class="tab-subtitle" data-i18n="tabFederalPublicServiceSub">Government of Canada</span><span class="tab-count">—</span>
+              <span class="tab-title"><span class="tab-title-full" data-i18n="tabFederalPublicService">Federal public service</span><span class="tab-title-mobile" data-i18n="tabFederalPublicServiceMobile">Federal service</span></span><span class="tab-subtitle" data-i18n="tabFederalPublicServiceSub">Government of Canada</span><span class="tab-count">—</span>
             </button>
           </div>
           <p class="calendar-context" id="calendar-context"></p>
@@ -99,8 +136,8 @@
         <aside class="note-card">
           <span class="note-icon" aria-hidden="true">i</span>
           <div>
-            <h2 data-i18n="noteTitle">A helpful guide, not a promise from your employer.</h2>
-            <p data-i18n="noteBody">These are dates listed in the selected calendar. Whether you have the day off, receive holiday pay, or observe another date can depend on eligibility, your schedule, employer policy and collective agreements.</p>
+            <h2 data-i18n="noteTitle">A planning reference, not a personal work schedule.</h2>
+            <p data-i18n="noteBody">These dates come from the selected source. Whether a date applies to you, your pay, or your workplace schedule can depend on eligibility, work location, employer policy and collective agreements.</p>
           </div>
         </aside>
       </main>
@@ -109,7 +146,9 @@
         <div class="footer-copy"><span class="brand footer-brand"><span class="brand-mark" aria-hidden="true"><img src="calendar-mark.svg" alt="" /></span><span class="brand-word"><span class="brand-name">offday<span class="brand-dot">.</span></span></span></span><span data-i18n="footerCopy">A small project to make planning a little easier.</span></div>
         <div class="footer-links">
           <a id="calendar-source" href="#" target="_blank" rel="noopener noreferrer" data-i18n="sourceLink">Official calendar source ↗</a>
+          <a class="footer-feedback" id="feedback-link" href="https://github.com/utkin-vitaliy/projects/issues/new" target="_blank" rel="noopener noreferrer" data-i18n="feedbackLink">Leave feedback ↗</a>
         </div>
+        <p class="footer-feedback-note" data-i18n="feedbackPrivacy">Opens GitHub; your post will be public.</p>
         <p class="last-checked"><span class="status-dot"></span><span data-i18n="verified">Dates checked against official sources · November 2026</span></p>
       </footer>
     </div>
