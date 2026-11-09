@@ -56,10 +56,11 @@ describe("RecipesPage", () => {
 
   it("uses the book photo background only for cards sourced from the recipe book", () => {
     renderRecipesPage();
+    const cards = screen.getAllByRole("article");
+    expect(cards).toHaveLength(recipes.length);
 
-    for (const recipe of recipes) {
-      const card = screen.getByRole("heading", { name: recipe.title }).closest("article");
-      const photo = within(card!).getByRole("img", { name: recipe.imageAlt }).parentElement;
+    for (const [index, recipe] of recipes.entries()) {
+      const photo = within(cards[index]).getByRole("img", { name: recipe.imageAlt }).parentElement;
       if (recipe.sourcePage) {
         expect(photo).toHaveClass("recipe-card__photo--book");
       } else {

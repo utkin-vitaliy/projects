@@ -358,7 +358,7 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
   .recipe-filters { flex-wrap: wrap; justify-content: flex-start; }
   .recipe-filter { padding: 8px 10px; }
   .recipe-grid { grid-template-columns: 1fr; gap: 11px; }
-  .recipe-card--focused { top: 0; left: 0; width: 100vw; height: 100vh; height: 100dvh; max-height: 100dvh; padding: 15px 15px calc(14px + env(safe-area-inset-bottom)); border: 0; border-radius: 0; animation: recipe-card-focus-mobile .28s ease both; transform: none; }
+  .recipe-card--focused { top: 5dvh; right: 12px; bottom: auto; left: 12px; width: auto; height: auto; max-height: 90dvh; padding: 15px; border-radius: 13px; animation: recipe-card-focus-mobile .28s ease both; transform: none; }
   .recipe-card--focused .recipe-card__photo--focused { height: clamp(190px, 28vh, 240px); }
   .recipe-card--focused .recipe-card__photo--editing { height: 104px; }
   .recipe-card { gap: 10px; padding: 15px 15px 13px; }
@@ -408,7 +408,6 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
   .notes-toggle { gap: 4px; font-size: 11px; }
   .notes-toggle .disclosure-chevron { width: 17px; height: 17px; }
   .notes-editor { grid-column: 1 / -1; padding-top: 13px; }
-  .recipe-card--focused { width: calc(100vw - 24px); max-height: 90dvh; padding: 15px; }
   .recipe-card--focused .recipe-card__photo { margin: -15px -15px 1px; }
   .recipe-card--focused .recipe-card__body { grid-template-columns: 1fr; }
   .page-footer { grid-template-columns: 1fr; align-items: start; gap: 13px; }
