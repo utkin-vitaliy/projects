@@ -200,12 +200,12 @@ h1, h2, .holiday-name { font-family: "Playfair Display", Georgia, serif; font-we
   .calendar-section { margin-bottom: 16px; }
   .section-heading { margin-bottom: 9px; }
   .calendar-tabs { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
-  .calendar-tab { min-height: 43px; grid-template-rows: 1fr; gap: 3px; padding: 6px 5px; border-radius: 10px; }
+  .calendar-tab { min-height: 54px; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto; align-content: center; justify-items: center; gap: 4px; padding: 6px 3px; border-radius: 10px; text-align: center; }
   .calendar-tab.is-active::before { top: 9px; bottom: 9px; width: 2px; }
-  .tab-title { grid-row: 1; font-size: 9px; line-height: 1.1; white-space: nowrap; }
+  .tab-title { grid-column: 1; grid-row: 1; max-width: 100%; font-size: 9px; line-height: 1.1; text-align: center; white-space: normal; }
   .tab-title-full, .tab-subtitle { display: none; }
   .tab-title-mobile { display: inline; }
-  .tab-count { grid-row: 1; padding: 2px 4px; font-size: 8px; }
+  .tab-count { grid-column: 1; grid-row: 2; padding: 2px 5px; font-size: 8px; }
   .calendar-context { min-height: 0; margin-top: 8px; font-size: 11px; line-height: 1.4; }
 }
 
