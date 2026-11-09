@@ -1,0 +1,8 @@
+{
+  "name": "offday-canada-calendar",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test"
+  }
+}

@@ -34,6 +34,8 @@ jobs:
         run: npm ci
       - name: Run tests
         run: npm test -- --run
+      - name: Run Offday data tests
+        run: node --test ../canada-days/calendar-data.test.js
       - name: Build static site
         env:
           VITE_GOOGLE_CLIENT_ID: ${{ vars.VITE_GOOGLE_CLIENT_ID }}
@@ -42,6 +44,8 @@ jobs:
         run: |
           mkdir -p pages-artifact/capsule-shelf
           cp -R dist/. pages-artifact/capsule-shelf/
+          mkdir -p pages-artifact/canada-days
+          cp -R ../canada-days/. pages-artifact/canada-days/
           cat > pages-artifact/index.html <<'EOF'
           <!doctype html>
           <html lang="en">
@@ -64,6 +68,7 @@ jobs:
                 .project:hover { transform: translateY(-4px); border-color: #d4cbb9; box-shadow: 0 20px 44px rgb(53 48 34 / 10%); }
                 .project:focus-visible { outline: 3px solid #9b8767; outline-offset: 4px; }
                 .icon { display: grid; width: 48px; height: 48px; place-items: center; border: 1px solid #e1dacb; border-radius: 50%; background: #f7f3ea; font-size: 23px; }
+                .icon img { width: 28px; height: 28px; }
                 .meta { margin: 28px 0 9px; color: #777466; font-size: 11px; font-weight: 650; letter-spacing: .13em; text-transform: uppercase; }
                 h2 { margin: 0; font-family: Georgia, "Times New Roman", serif; font-size: 31px; font-weight: 400; letter-spacing: -.035em; }
                 .description { max-width: 380px; margin: 12px 0 28px; color: #6f6d63; font-size: 15px; line-height: 1.55; }
@@ -85,6 +90,13 @@ jobs:
                     <p class="meta">Nespresso Original · capsule tracker</p>
                     <h2>Capsule Shelf</h2>
                     <p class="description">Track capsule quantities, favorite coffees, tasting notes, and recipes in one place.</p>
+                    <span class="open">Open project <span class="arrow" aria-hidden="true">↗</span></span>
+                  </a>
+                  <a class="project" href="/projects/canada-days/">
+                    <span class="icon" aria-hidden="true"><img src="/projects/canada-days/calendar-mark.svg" alt=""></span>
+                    <p class="meta">Canada · holiday calendar</p>
+                    <h2>Offday</h2>
+                    <p class="description">Find the next listed day off across Canada, with separate calendars for employment standards and public services.</p>
                     <span class="open">Open project <span class="arrow" aria-hidden="true">↗</span></span>
                   </a>
                 </section>

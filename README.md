@@ -6,6 +6,14 @@ A small collection of static web projects by Vitaliy, published with GitHub Page
 
 ## Projects
 
+### Offday
+
+A static Canadian holiday calendar with separate regional employment, federal employment, regional public-service, and federal public-service views. Covers all 13 provinces and territories, with English, French, and Russian interface text.
+
+- **Open the app:** [Offday](https://utkin-vitaliy.github.io/projects/canada-days/)
+- **Project folder:** [`canada-days/`](canada-days/)
+- **Project documentation:** [`canada-days/README.md`](canada-days/README.md)
+
 ### Capsule Shelf
 
 A personal Nespresso Original and Vertuo capsule inventory and recipe collection. Track quantities, favorites, restock thresholds, tasting notes, and recipes in English, French, or Russian. Personal settings stay in the user's browser and can be backed up to or restored from a JSON file, or synced through the user's Google Drive.
@@ -16,7 +24,7 @@ A personal Nespresso Original and Vertuo capsule inventory and recipe collection
 
 ## Publishing
 
-GitHub Pages serves the repository's static project index at `/projects/` and projects in their own subfolders, such as `/projects/capsule-shelf/`. The [GitHub Actions Pages workflow](.github/workflows/pages.yml) builds and tests Capsule Shelf, places its static files in the `capsule-shelf/` Pages path, and prepares the root index. Push to `main` or run the workflow manually from the repository's Actions tab to publish.
+GitHub Pages serves the repository's static project index at `/projects/` and projects in their own subfolders, such as `/projects/capsule-shelf/` and `/projects/canada-days/`. The [GitHub Actions Pages workflow](.github/workflows/pages.yml) tests both apps, builds Capsule Shelf, publishes both projects, and prepares the root index. Push to `main` or run the workflow manually from the repository's Actions tab to publish.
 
 ## Adding a project
 
