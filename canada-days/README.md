@@ -33,11 +33,11 @@ All 13 provinces and territories are included. Static dates cover November–Dec
 
 The calendar is a planning reference, not a promise from an employer. A listed holiday does not establish an individual employee’s eligibility, paid leave, shift schedule, observed date, or employer closure. Those can depend on the applicable law, work schedule, employee group, department, collective agreement, and employer policy.
 
-Federal public-service agreements designate one provincial or civic holiday based on the employee’s work locality. Offday shows a region-level candidate because the selector does not ask for a municipality; confirm the actual date with the employer or collective agreement.
+The federal public service may also designate a provincial or civic holiday based on the employee’s work locality and collective agreement. Offday does not guess that date from the province alone, so it is excluded until the work locality and applicable agreement are known. In Québec employment standards, the employer chooses Good Friday or Easter Monday; neither appears as a confirmed date in the list.
 
-Regional public-service calendars refer to the central provincial or territorial government source listed below. They do not claim to cover every municipality, school, hospital, agency, public corporation, or bargaining group. Where an official schedule marks a local/civic or observed date, the card includes a note. The app does not guess a substitute day from a generic weekend rule.
+Regional public-service calendars refer to the central provincial or territorial government source listed below. They do not claim to cover every municipality, school, hospital, agency, public corporation, or bargaining group. Only fixed dates published by the cited government source are listed. Local/civic dates without a universally confirmed date, floating days, and partial-day closures are excluded. Published observed dates remain labeled. The app does not guess substitute days from a generic weekend rule.
 
-Quebec employment standards allow the employer to select Good Friday or Easter Monday. The employment calendar displays Good Friday with a note explaining that the alternative is employer-selected. Quebec public service has a separate 13-day calendar.
+Québec employment standards require an employer-selected day: Good Friday or Easter Monday. Because the province-level selector cannot determine that workplace choice, neither date is presented as a confirmed next day off. Québec public service follows its separate published government calendar.
 
 The region selector is the work region. Geolocation is only a one-time suggestion: confirm the region manually. Coarse local bounds can overlap, and coordinates are not saved or sent to a geocoding service.
 

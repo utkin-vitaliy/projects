@@ -45,15 +45,31 @@ test("calendar scopes retain jurisdiction-specific distinctions", () => {
   assert.equal(has(calendarData.regionalEmployment.BC, "Boxing Day"), false);
   assert.equal(has(calendarData.regionalPublicService.BC, "Boxing Day"), true);
   assert.equal(has(calendarData.regionalEmployment.SK, "Floating Holiday"), false);
-  assert.equal(has(calendarData.regionalPublicService.SK, "Floating Holiday"), true);
+  assert.equal(has(calendarData.regionalPublicService.SK, "Floating Holiday"), false);
   assert.equal(has(calendarData.federalEmployment, "Easter Monday"), false);
   assert.equal(has(calendarData.federalPublicService, "Easter Monday"), true);
   assert.equal(has(calendarData.regionalEmployment.QC, "Québec National Holiday"), true);
+  assert.equal(has(calendarData.regionalEmployment.QC, "Good Friday"), false);
+  assert.equal(has(calendarData.regionalEmployment.QC, "Easter Monday"), false);
   assert.equal(has(calendarData.regionalEmployment.AB, "Easter Monday"), false);
   assert.equal(has(calendarData.regionalPublicService.AB, "Easter Monday"), true);
+  assert.equal(calendarData.regionalEmployment.ON.some(([date]) => date === "2026-11-11" || date === "2027-11-11"), false);
+  assert.equal(has(calendarData.federalEmployment, "Remembrance Day"), true);
   assert.equal(has(calendarData.regionalPublicService.BC, "Christmas Eve"), false);
-  assert.ok(calendarData.regionalPublicService.NS.some(([, name, , note]) => name === "Christmas Eve" && note === "partialDayNote"));
-  for (const region of regions) {
-    assert.equal(calendarData.federalPublicServiceRegionalHoliday[region][1], "Provincial or civic holiday");
-  }
+  const allDates = [
+    ...Object.values(calendarData.regionalEmployment),
+    ...Object.values(calendarData.regionalPublicService),
+    calendarData.federalEmployment,
+    calendarData.federalPublicService,
+  ].flat();
+  const conditionalNames = new Set(["Local civic holiday", "Provincial or civic holiday", "Floating Holiday", "Natal Day", "Gold Cup Parade Day or civic holiday"]);
+  assert.equal(allDates.some(([, name]) => conditionalNames.has(name)), false);
+  assert.equal(allDates.some(([, name]) => name === "Christmas Eve"), true); // Québec public-service full day
+  assert.equal(allDates.some(([, , , note]) => note === "partialDayNote" || note === "localCivicNote" || note === "qcEasterChoice"), false);
+  assert.equal(calendarData.regionalEmployment.NB.some(([, name]) => name === "Boxing Day"), false);
+  assert.equal(calendarData.regionalPublicService.AB.some(([, name]) => name === "Local civic holiday"), false);
+  assert.equal(calendarData.regionalPublicService.NS.some(([, name]) => name === "Christmas Eve" || name === "Natal Day"), false);
+  assert.equal(calendarData.regionalPublicService.PE.some(([, name]) => name === "Christmas Eve" || name.includes("Gold Cup")), false);
+  assert.equal(calendarData.regionalPublicService.NL.some(([, name]) => name === "Local civic holiday"), false);
+  assert.equal(calendarData.federalPublicService.some(([, name]) => name === "Provincial or civic holiday"), false);
 });
