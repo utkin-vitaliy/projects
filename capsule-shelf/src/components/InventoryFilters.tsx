@@ -3,6 +3,8 @@ import type { CategoryFilter } from "../features/inventory/useInventory";
 import type { Capsule } from "../domain/capsules";
 import { useLocale } from "../i18n/locale";
 
+type CapsuleSort = "catalog" | "intensity-asc" | "intensity-desc";
+
 type Props = {
   value: InventoryFilter;
   onChange: (filter: InventoryFilter) => void;
@@ -12,11 +14,13 @@ type Props = {
   onSearchChange: (value: string) => void;
   catalog: Capsule[];
   favoriteCount: number;
+  sort: CapsuleSort;
+  onSortChange: (sort: CapsuleSort) => void;
 };
 
 const categoryKeys = ["limited", "italian", "decaffeinated", "world", "origins", "flavoured", "heritage"] as const;
 
-export function InventoryFilters({ value, onChange, category, onCategoryChange, search, onSearchChange, catalog, favoriteCount }: Props) {
+export function InventoryFilters({ value, onChange, category, onCategoryChange, search, onSearchChange, catalog, favoriteCount, sort, onSortChange }: Props) {
   const { t } = useLocale();
   const filters = [
     { id: "all" as const, label: t("allVarieties") },
@@ -45,13 +49,23 @@ export function InventoryFilters({ value, onChange, category, onCategoryChange, 
           </button>
         ))}
       </div>
-      <label className="category-filter">
-        <span>{t("category")}</span>
-        <select aria-label={t("categoryAria")} onChange={(event) => onCategoryChange(event.target.value as CategoryFilter)} value={category}>
-          <option value="all">{t("allCategories")}</option>
-          {categories.map((itemCategory) => <option key={itemCategory} value={itemCategory}>{t(itemCategory === "heritage" ? "classic" : itemCategory)}</option>)}
-        </select>
-      </label>
+      <div className="capsule-filter-selects">
+        <label className="category-filter">
+          <span>{t("category")}</span>
+          <select aria-label={t("categoryAria")} onChange={(event) => onCategoryChange(event.target.value as CategoryFilter)} value={category}>
+            <option value="all">{t("allCategories")}</option>
+            {categories.map((itemCategory) => <option key={itemCategory} value={itemCategory}>{t(itemCategory === "heritage" ? "classic" : itemCategory)}</option>)}
+          </select>
+        </label>
+        <label className="sort-filter">
+          <span>{t("sortBy")}</span>
+          <select aria-label={t("sortCapsulesAria")} onChange={(event) => onSortChange(event.target.value as CapsuleSort)} value={sort}>
+            <option value="catalog">{t("sortCatalog")}</option>
+            <option value="intensity-asc">{t("intensityLowToHigh")}</option>
+            <option value="intensity-desc">{t("intensityHighToLow")}</option>
+          </select>
+        </label>
+      </div>
     </div>
   );
 }

@@ -20,6 +20,7 @@ const RecipesPage = lazy(() => import("./components/RecipesPage").then(({ Recipe
 type ConnectedGoogleAccount = GoogleAccount & { accessToken: string; fileId: string };
 const USER_SETTINGS_STORAGE_KEY = "capsule-shelf:user-settings:v1";
 const allCapsules = [...originalCatalog, ...vertuoCapsules];
+type CapsuleSort = "catalog" | "intensity-asc" | "intensity-desc";
 
 const feedbackFormUrls: Record<Locale, string> = {
   en: "https://github.com/utkin-vitaliy/projects/issues/new?template=feedback-en.yml",
@@ -56,6 +57,7 @@ function CapsuleShelfApp({ account, rememberedAccount, namespace, onAccountChang
   const [pendingRecipeId, setPendingRecipeId] = useState<string | null>(null);
   const [pendingCapsuleFocusId, setPendingCapsuleFocusId] = useState<string | null>(null);
   const [capsuleSearch, setCapsuleSearch] = useState("");
+  const [capsuleSort, setCapsuleSort] = useState<CapsuleSort>("catalog");
   const [favoriteRecipeIds, setFavoriteRecipeIds] = useState<string[]>([]);
   const [recipeEdits, setRecipeEdits] = useState<RecipeEdits>({});
   const [coffeeSystem, setCoffeeSystem] = useState<CoffeeSystem>("original");
@@ -179,14 +181,27 @@ function CapsuleShelfApp({ account, rememberedAccount, namespace, onAccountChang
   const localizedCatalog = useMemo(() => selectedCatalog.map((capsule) => localizeCapsule(capsule, locale)), [locale, selectedCatalog]);
   const localizedCapsules = useMemo(() => {
     const query = normalizeSearch(capsuleSearch);
-    return capsules
+    const matchingCapsules = capsules
       .map((capsule) => localizeCapsule(capsule, locale))
       .filter((capsule) => !query || (["en", "ru", "fr"] as const).some((searchLocale) => {
         const translatedCapsule = localizeCapsule(capsule, searchLocale);
         return normalizeSearch(translatedCapsule.name).includes(query)
           || normalizeSearch(translatedCapsule.flavor).includes(query);
       }));
-  }, [capsules, locale, capsuleSearch]);
+    if (capsuleSort === "catalog") return matchingCapsules;
+    const direction = capsuleSort === "intensity-asc" ? 1 : -1;
+    return matchingCapsules
+      .map((capsule, index) => ({ capsule, index }))
+      .sort((left, right) => {
+        const leftIntensity = left.capsule.intensity;
+        const rightIntensity = right.capsule.intensity;
+        if (leftIntensity === undefined && rightIntensity === undefined) return left.index - right.index;
+        if (leftIntensity === undefined) return 1;
+        if (rightIntensity === undefined) return -1;
+        return (leftIntensity - rightIntensity) * direction || left.index - right.index;
+      })
+      .map(({ capsule }) => capsule);
+  }, [capsules, locale, capsuleSearch, capsuleSort]);
 
   useEffect(() => {
     setFilter(filterPreferencesRef.current[coffeeSystem] ?? "all");
@@ -540,7 +555,7 @@ function CapsuleShelfApp({ account, rememberedAccount, namespace, onAccountChang
           </div>
           <p className="catalog-hint">{t("catalogHint")}</p>
         </div>
-        <InventoryFilters catalog={selectedCatalog} category={categoryFilter} favoriteCount={selectedCatalog.filter(({ id }) => inventory[id]?.favorite).length} onCategoryChange={setCategoryFilter} onChange={selectInventoryFilter} onSearchChange={setCapsuleSearch} search={capsuleSearch} value={filter} />
+        <InventoryFilters catalog={selectedCatalog} category={categoryFilter} favoriteCount={selectedCatalog.filter(({ id }) => inventory[id]?.favorite).length} onCategoryChange={setCategoryFilter} onChange={selectInventoryFilter} onSearchChange={setCapsuleSearch} onSortChange={setCapsuleSort} search={capsuleSearch} sort={capsuleSort} value={filter} />
         <CapsuleGrid
           catalog={localizedCapsules}
           inventory={inventory}

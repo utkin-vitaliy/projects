@@ -176,16 +176,17 @@ h1 { margin: 0; color: var(--ink); font-size: clamp(28px, 3.5vw, 40px); font-wei
 .catalog-heading-row h2 { display: flex; align-items: center; gap: 10px; margin: 0; font-family: Georgia, 'Times New Roman', serif; font-size: 27px; font-weight: 500; letter-spacing: -.025em; }
 .catalog-heading-row h2 span { display: inline-grid; min-width: 23px; height: 23px; place-items: center; border: 1px solid #e3e1d9; border-radius: 50%; color: #70786f; font: 600 10px 'DM Sans', sans-serif; }
 .catalog-hint { margin: 0 0 3px; color: #858980; font-size: 12px; }
-.filter-controls { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 17px; }
-.search-field--capsules { margin-right: auto; }
+.filter-controls { display: grid; grid-template-columns: minmax(180px, 1fr) auto; align-items: center; gap: 10px 14px; margin-bottom: 17px; }
+.search-field--capsules { width: 100%; }
 .filter-tabs { display: flex; gap: 6px; width: fit-content; max-width: 100%; padding: 4px; overflow-x: auto; border: 1px solid #e7e5dd; border-radius: 999px; background: #eeede7; }
 .filter-tab { display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 8px 14px; border: 0; border-radius: 999px; color: #747a71; background: transparent; font-size: 11px; cursor: pointer; white-space: nowrap; transition: color .18s ease, background .18s ease, box-shadow .18s ease; }
 .filter-tab__count { display: inline-grid; min-width: 18px; height: 18px; padding: 0 4px; place-items: center; border-radius: 999px; color: #66705f; background: #dedfd6; font-size: 10px; font-weight: 650; line-height: 1; }
 .filter-tab:hover { color: var(--ink); }
 .filter-tab.is-active { color: #f9f8f3; background: var(--olive); box-shadow: 0 2px 7px rgb(32 41 34 / 15%); }
 .filter-tab.is-active .filter-tab__count { color: var(--olive); background: #f4f3ed; }
-.category-filter { display: inline-flex; align-items: center; gap: 8px; color: #747a71; font-size: 12px; white-space: nowrap; }
-.category-filter select { min-width: 165px; padding: 9px 28px 9px 11px; border: 1px solid #e2e0d7; border-radius: 8px; color: #405343; background: #fffefa; font: inherit; cursor: pointer; }
+.capsule-filter-selects { display: flex; grid-column: 1 / -1; align-items: center; justify-content: flex-end; gap: 14px; }
+.category-filter, .sort-filter { display: inline-flex; align-items: center; gap: 8px; color: #747a71; font-size: 12px; white-space: nowrap; }
+.category-filter select, .sort-filter select { min-width: 165px; padding: 9px 28px 9px 11px; border: 1px solid #e2e0d7; border-radius: 8px; color: #405343; background: #fffefa; font: inherit; cursor: pointer; }
 .capsule-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 17px; align-items: start; }
 .capsule-card { min-width: 0; overflow: hidden; border: 1px solid #e6e4dc; border-radius: 12px; background: var(--paper); box-shadow: 0 3px 13px rgb(36 43 35 / 3%); transition: transform .22s ease, border-color .22s ease, box-shadow .22s ease; animation: rise-in .55s ease both; }
 .capsule-card:hover { transform: translateY(-3px); border-color: #d8d8cd; box-shadow: 0 11px 25px rgb(36 43 35 / 8%); }
@@ -379,12 +380,12 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
   .catalog-heading-row { align-items: flex-start; flex-direction: column; gap: 7px; margin-bottom: 13px; }
   .catalog-heading-row h2 { font-size: 24px; }
   .catalog-hint { font-size: 12px; }
-  .filter-controls { align-items: stretch; flex-direction: column; }
-  .search-field--capsules { width: auto; margin-right: 0; }
+  .filter-controls { grid-template-columns: minmax(0, 1fr); align-items: stretch; }
   .filter-tabs { width: 100%; }
   .filter-tab { flex: 1; padding-right: 9px; padding-left: 9px; font-size: 12px; }
-  .category-filter { justify-content: space-between; }
-  .category-filter select { flex: 1; }
+  .capsule-filter-selects { grid-column: auto; align-items: stretch; flex-direction: column; gap: 8px; }
+  .category-filter, .sort-filter { justify-content: space-between; }
+  .category-filter select, .sort-filter select { flex: 1; }
   .capsule-grid { grid-template-columns: 1fr; gap: 12px; }
   .capsule-card { display: grid; grid-template-columns: minmax(112px, 36%) 1fr; }
   .capsule-photo { height: 100%; min-height: 194px; }
