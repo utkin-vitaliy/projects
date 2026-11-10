@@ -552,10 +552,10 @@ function CapsuleShelfApp({ account, rememberedAccount, namespace, onAccountChang
         <div className="catalog-heading-row">
           <div>
             <h2 id="catalog-title">{t("catalogTitle")} <span>{selectedCatalog.length}</span></h2>
+            <p className="catalog-hint">{t("catalogHint")}</p>
           </div>
-          <p className="catalog-hint">{t("catalogHint")}</p>
         </div>
-        <InventoryFilters catalog={selectedCatalog} category={categoryFilter} favoriteCount={selectedCatalog.filter(({ id }) => inventory[id]?.favorite).length} onCategoryChange={setCategoryFilter} onChange={selectInventoryFilter} onSearchChange={setCapsuleSearch} onSortChange={setCapsuleSort} search={capsuleSearch} sort={capsuleSort} value={filter} />
+        <InventoryFilters catalog={selectedCatalog} category={categoryFilter} favoriteCount={selectedCatalog.filter(({ id }) => inventory[id]?.favorite).length} lowStockCount={lowStockIds.length} onCategoryChange={setCategoryFilter} onChange={selectInventoryFilter} onSearchChange={setCapsuleSearch} onSortChange={setCapsuleSort} search={capsuleSearch} sort={capsuleSort} value={filter} />
         <CapsuleGrid
           catalog={localizedCapsules}
           inventory={inventory}

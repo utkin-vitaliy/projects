@@ -14,13 +14,14 @@ type Props = {
   onSearchChange: (value: string) => void;
   catalog: Capsule[];
   favoriteCount: number;
+  lowStockCount: number;
   sort: CapsuleSort;
   onSortChange: (sort: CapsuleSort) => void;
 };
 
 const categoryKeys = ["limited", "italian", "decaffeinated", "world", "origins", "flavoured", "heritage"] as const;
 
-export function InventoryFilters({ value, onChange, category, onCategoryChange, search, onSearchChange, catalog, favoriteCount, sort, onSortChange }: Props) {
+export function InventoryFilters({ value, onChange, category, onCategoryChange, search, onSearchChange, catalog, favoriteCount, lowStockCount, sort, onSortChange }: Props) {
   const { t } = useLocale();
   const filters = [
     { id: "all" as const, label: t("allVarieties") },
@@ -31,10 +32,6 @@ export function InventoryFilters({ value, onChange, category, onCategoryChange, 
   const categories = categoryKeys.filter((itemCategory) => populatedCategories.has(itemCategory));
   return (
     <div className="filter-controls">
-      <label className="search-field search-field--capsules">
-        <svg aria-hidden="true" viewBox="0 0 20 20"><circle cx="8.8" cy="8.8" r="5.8"/><path d="m13.2 13.2 4 4"/></svg>
-        <input aria-label={t("searchCapsules")} onChange={(event) => onSearchChange(event.target.value)} placeholder={t("searchCapsules")} type="search" value={search} />
-      </label>
       <div className="filter-tabs" role="group" aria-label={t("filterAria")}>
         {filters.map((filter) => (
           <button
@@ -45,10 +42,16 @@ export function InventoryFilters({ value, onChange, category, onCategoryChange, 
             type="button"
           >
             {filter.label}
+            {filter.id === "all" && <span aria-hidden="true" className="filter-tab__count">{catalog.length}</span>}
             {filter.id === "favorites" && <span aria-hidden="true" className="filter-tab__count">{favoriteCount}</span>}
+            {filter.id === "low" && <span aria-hidden="true" className="filter-tab__count">{lowStockCount}</span>}
           </button>
         ))}
       </div>
+      <label className="search-field search-field--capsules">
+        <svg aria-hidden="true" viewBox="0 0 20 20"><circle cx="8.8" cy="8.8" r="5.8"/><path d="m13.2 13.2 4 4"/></svg>
+        <input aria-label={t("searchCapsules")} onChange={(event) => onSearchChange(event.target.value)} placeholder={t("searchCapsules")} type="search" value={search} />
+      </label>
       <div className="capsule-filter-selects">
         <label className="category-filter">
           <span>{t("category")}</span>
