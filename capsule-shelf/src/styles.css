@@ -359,7 +359,8 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
   .recipe-filters { flex-wrap: wrap; justify-content: flex-start; }
   .recipe-filter { padding: 8px 10px; }
   .recipe-grid { grid-template-columns: 1fr; gap: 11px; }
-  .recipe-card--focused { top: 5dvh; right: 12px; bottom: auto; left: 12px; width: auto; height: auto; max-height: 90dvh; padding: 15px; border-radius: 13px; animation: recipe-card-focus-mobile .28s ease both; transform: none; }
+  .recipe-focus-backdrop { animation: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
+  .recipe-card--focused { top: 5dvh; right: 12px; bottom: auto; left: 12px; width: auto; height: auto; max-height: 90dvh; padding: 15px; border-radius: 13px; animation: none; transform: none; }
   .recipe-card--focused .recipe-card__photo--focused { height: clamp(190px, 28vh, 240px); }
   .recipe-card--focused .recipe-card__photo--editing { height: 104px; }
   .recipe-card { gap: 10px; padding: 15px 15px 13px; }

@@ -227,7 +227,11 @@ export function RecipesPage({ system, activeFilter, onFilterChange, favoriteIds:
     const frame = window.requestAnimationFrame(() => {
       const target = document.getElementById(`recipe-${initialFocusRecipeId}`);
       if (!(target instanceof HTMLElement)) return;
-      target.scrollIntoView?.({ behavior: "smooth", block: "center" });
+      // On phones, the focused card is positioned as an overlay. Scrolling the
+      // page underneath it at the same time can fight with the fixed layout.
+      if (window.innerWidth > 720) {
+        target.scrollIntoView?.({ behavior: "smooth", block: "center" });
+      }
       openFocusedRecipe(initialFocusRecipeId, target);
       onFocusRecipeChange?.(null);
     });
