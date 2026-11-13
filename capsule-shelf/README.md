@@ -42,7 +42,7 @@ npm test -- --run
 
 ## Settings, backups, and privacy
 
-Capsule quantities, favorites, thresholds, notes, recipe favorites and edits, selected coffee system, filters, and language are stored in the current browser. The app is static and does not use an application server or database.
+Capsule quantities, favorites, thresholds, notes, recipe favorites and edits, selected coffee system, filters, and language are stored in the current browser. The app is static and does not use an application server or database. The published site uses Google Analytics 4 for page views and general site interactions; advertising signals and ad personalization are disabled. See the [privacy notice](https://utkin-vitaliy.github.io/projects/capsule-shelf/privacy.html) for details.
 
 Use **Export** in the footer to download a JSON backup. Use **Import** to restore it in the current browser; importing replaces that browser's settings after confirmation. Backups can include personal notes and inventory information, so keep them private.
 

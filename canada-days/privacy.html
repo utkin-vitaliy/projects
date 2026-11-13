@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f6f5f0" />
+    <meta name="description" content="Privacy information for Offday, a static Canadian work-calendar reference." />
+    <title>Privacy — Offday</title>
+    <link rel="icon" type="image/svg+xml" href="calendar-mark.svg" />
+    <link rel="stylesheet" href="styles.css" />
+    <style>
+      .privacy-page { width: min(100% - 40px, 760px); margin: 0 auto; padding: 56px 0 80px; }
+      .privacy-page h1, .privacy-page h2 { font-family: 'Playfair Display', Georgia, serif; font-weight: 500; }
+      .privacy-page h1 { margin: 0; font-size: clamp(38px, 8vw, 58px); letter-spacing: -.04em; }
+      .privacy-page h2 { margin: 30px 0 8px; font-size: 25px; }
+      .privacy-page p { color: #686b62; font-size: 15px; line-height: 1.7; }
+      .privacy-page a { color: #536652; }
+      .privacy-languages { display: flex; gap: 8px; margin: 24px 0; }
+      .privacy-languages button { min-width: 42px; min-height: 36px; border: 1px solid #deddd5; border-radius: 999px; color: #596456; background: #fffefa; cursor: pointer; }
+      .privacy-languages button[aria-pressed="true"] { color: #fffefa; border-color: #536652; background: #536652; }
+      .privacy-updated { color: #858980 !important; font-size: 12px !important; }
+      @media (max-width: 600px) { .privacy-page { padding-top: 38px; } }
+    </style>
+  </head>
+  <body>
+    <main class="privacy-page">
+      <p class="eyebrow">Offday</p>
+      <h1 id="privacy-title">Privacy</h1>
+      <p class="privacy-updated" id="privacy-updated">Last updated: November 13, 2026</p>
+      <div class="privacy-languages" role="group" aria-label="Language">
+        <button type="button" data-language="en" aria-pressed="true">EN</button>
+        <button type="button" data-language="fr" aria-pressed="false">FR</button>
+        <button type="button" data-language="ru" aria-pressed="false">RU</button>
+      </div>
+      <p id="privacy-intro">Offday is a static calendar reference. It does not have an application server or user accounts.</p>
+      <h2 id="privacy-analytics-title">Google Analytics</h2>
+      <p id="privacy-analytics-body">Offday uses Google Analytics 4 to measure page views and general site interactions, such as scrolling and outbound link clicks. Google may receive technical information about your browser and device and use cookies for measurement. Advertising signals and ad personalization are disabled. Analytics does not receive your selected work region or precise location.</p>
+      <h2 id="privacy-location-title">Location and preferences</h2>
+      <p id="privacy-location-body">If you ask the app to suggest a work region, your browser provides a location estimate for that suggestion. The app compares it with local region bounds; coordinates are not saved or sent to Google Analytics. Your chosen language, calendar and region are saved only in your browser.</p>
+      <h2 id="privacy-choices-title">Your choices</h2>
+      <p id="privacy-choices-body">You can control or clear cookies in your browser and opt out of Google Analytics using the Google Analytics opt-out browser add-on. Offday does not use analytics on localhost.</p>
+      <p><a id="privacy-back" href="./">Return to Offday</a></p>
+    </main>
+    <script>
+      const privacyCopy = {
+        en: {
+          title: "Privacy", updated: "Last updated: November 13, 2026", intro: "Offday is a static calendar reference. It does not have an application server or user accounts.", analyticsTitle: "Google Analytics", analyticsBody: "Offday uses Google Analytics 4 to measure page views and general site interactions, such as scrolling and outbound link clicks. Google may receive technical information about your browser and device, use cookies for measurement, and infer a general location from your network address. Advertising signals and ad personalization are disabled. Analytics does not receive your selected work region or precise coordinates.", locationTitle: "Location and preferences", locationBody: "If you ask the app to suggest a work region, your browser provides a location estimate for that suggestion. The app compares it with local region bounds; coordinates are not saved or sent to Google Analytics. Your chosen language, calendar and region are saved only in your browser.", choicesTitle: "Your choices", choicesBody: 'You can control or clear cookies in your browser and opt out of Google Analytics using the <a href="https://tools.google.com/dlpage/gaoptout">Google Analytics opt-out browser add-on</a>. Offday does not use analytics on localhost.', back: "Return to Offday", lang: "Language"
+        },
+        fr: {
+          title: "Confidentialité", updated: "Dernière mise à jour : 13 novembre 2026", intro: "Offday est un calendrier statique. Il n’a ni serveur applicatif ni comptes utilisateur.", analyticsTitle: "Google Analytics", analyticsBody: "Offday utilise Google Analytics 4 pour mesurer les pages vues et les interactions générales, comme le défilement et les clics sur les liens externes. Google peut recevoir des renseignements techniques sur votre navigateur et votre appareil, utiliser des témoins de mesure et déduire une région approximative à partir de votre adresse réseau. Les signaux publicitaires et la personnalisation des annonces sont désactivés. Analytics ne reçoit ni la région de travail choisie ni vos coordonnées précises.", locationTitle: "Position et préférences", locationBody: "Si vous demandez une suggestion de région de travail, votre navigateur fournit une estimation de position à cette fin. L’application la compare aux limites régionales stockées localement; les coordonnées ne sont ni enregistrées ni envoyées à Google Analytics. La langue, le calendrier et la région choisis restent dans votre navigateur.", choicesTitle: "Vos choix", choicesBody: 'Vous pouvez gérer ou supprimer les témoins dans votre navigateur et désactiver Google Analytics avec le <a href="https://tools.google.com/dlpage/gaoptout">module complémentaire de désactivation de Google Analytics</a>. Offday n’utilise pas Analytics sur localhost.', back: "Retour à Offday", lang: "Langue"
+        },
+        ru: {
+          title: "Конфиденциальность", updated: "Обновлено: 13 ноября 2026 года", intro: "Offday — статический календарь. У приложения нет сервера и учетных записей пользователей.", analyticsTitle: "Google Analytics", analyticsBody: "Offday использует Google Analytics 4 для подсчета просмотров страниц и общих действий на сайте, например прокрутки и переходов по внешним ссылкам. Google может получать технические сведения о браузере и устройстве, использовать файлы cookie и определять примерный регион по сетевому адресу. Рекламные сигналы и персонализация рекламы отключены. Аналитика не получает выбранный регион работы или точные координаты.", locationTitle: "Местоположение и настройки", locationBody: "Если вы попросите приложение предложить регион работы, браузер передаст ему примерное местоположение для этой подсказки. Приложение сравнивает его с локальными границами регионов; координаты не сохраняются и не отправляются в Google Analytics. Выбранные язык, календарь и регион хранятся только в браузере.", choicesTitle: "Ваш выбор", choicesBody: 'Вы можете управлять cookie или удалять их в настройках браузера, а также отключить Google Analytics с помощью <a href="https://tools.google.com/dlpage/gaoptout">расширения для отказа от Google Analytics</a>. На localhost Offday не запускает аналитику.', back: "Вернуться в Offday", lang: "Язык"
+        }
+      };
+      const language = ["en", "fr", "ru"].includes(new URLSearchParams(location.search).get("lang")) ? new URLSearchParams(location.search).get("lang") : ((navigator.language || "en").slice(0, 2));
+      const selected = privacyCopy[language] || privacyCopy.en;
+      document.documentElement.lang = privacyCopy[language] ? language : "en";
+      document.title = `${selected.title} — Offday`;
+      for (const [key, value] of Object.entries(selected)) {
+        const element = document.getElementById(`privacy-${key.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`)}`);
+        if (element) element.innerHTML = value;
+      }
+      document.querySelectorAll("[data-language]").forEach((button) => {
+        button.setAttribute("aria-pressed", String(button.dataset.language === (privacyCopy[language] ? language : "en")));
+        button.addEventListener("click", () => { location.search = `?lang=${button.dataset.language}`; });
+      });
+      document.querySelector(".privacy-languages").setAttribute("aria-label", selected.lang);
+    </script>
+    <script src="analytics.js"></script>
+  </body>
+</html>

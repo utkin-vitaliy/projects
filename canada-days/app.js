@@ -125,7 +125,7 @@ const copy = {
     upcomingEyebrow: "On the horizon", upcomingTitle: "Coming up next", showAll: "See all dates", showLess: "Show fewer dates",
     next: "Next listed date", today: "Listed for today", days: "in {count} days", tomorrow: "tomorrow", yesterday: "yesterday", todayShort: "Today",
     noteTitle: "A planning reference, not a personal work schedule.", noteBody: "These dates come from the selected source. Whether a date applies to you, your pay, or your workplace schedule can depend on eligibility, work location, employer policy and collective agreements.",
-    footerCopy: "A small project to make planning a little easier.", sourceLink: "Official source for this calendar ↗", feedbackLink: "Leave feedback ↗", feedbackPrivacy: "Opens GitHub; your post will be public.", verified: "Dates checked against official sources · November 2026",
+    footerCopy: "A small project to make planning a little easier.", sourceLink: "Official source for this calendar ↗", privacyLink: "Privacy", feedbackLink: "Leave feedback ↗", feedbackPrivacy: "Opens GitHub; your post will be public.", verified: "Dates checked against official sources · November 2026",
     photoBy: "Photo by", unsplash: "on Unsplash", imageFallback: "Holiday photo",
     localCivicNote: "This local or civic date can vary by work location and employer. Confirm it with your department or collective agreement.", observedNote: "This is the observed date published by the selected source; your schedule or agreement may differ.", qcEasterChoice: "Québec employment standards let the employer choose Good Friday or Easter Monday; the other date is not automatically a paid holiday.", partialDayNote: "The source lists a half-day closure, not a full-day closure.",
     empty: "There are no upcoming dates in this calendar.", noOffice: "Office closures are not included in this calendar.",
@@ -141,7 +141,7 @@ const copy = {
     upcomingEyebrow: "À l’horizon", upcomingTitle: "À venir", showAll: "Voir toutes les dates", showLess: "Voir moins de dates",
     next: "Prochaine date inscrite", today: "Inscrite pour aujourd’hui", days: "dans {count} jours", tomorrow: "demain", yesterday: "hier", todayShort: "Aujourd’hui",
     noteTitle: "Un repère de planification, pas un horaire de travail personnel.", noteBody: "Ces dates proviennent de la source sélectionnée. Leur application, la rémunération ou l’horaire de votre lieu de travail peuvent dépendre de l’admissibilité, du lieu de travail, des politiques de l’employeur et des conventions collectives.",
-    footerCopy: "Un petit projet pour faciliter la planification.", sourceLink: "Source officielle de ce calendrier ↗", feedbackLink: "Partager vos commentaires ↗", feedbackPrivacy: "Ouvre GitHub; votre publication sera publique.", verified: "Dates vérifiées auprès de sources officielles · novembre 2026",
+    footerCopy: "Un petit projet pour faciliter la planification.", sourceLink: "Source officielle de ce calendrier ↗", privacyLink: "Confidentialité", feedbackLink: "Partager vos commentaires ↗", feedbackPrivacy: "Ouvre GitHub; votre publication sera publique.", verified: "Dates vérifiées auprès de sources officielles · novembre 2026",
     photoBy: "Photo de", unsplash: "sur Unsplash", imageFallback: "Photo du jour férié", localCivicNote: "Cette date locale ou civique peut varier selon le lieu de travail et l’employeur. Confirmez-la auprès de votre ministère ou de votre convention collective.", observedNote: "Il s’agit de la date observée publiée par la source sélectionnée; votre horaire ou convention peut différer.", qcEasterChoice: "Les normes d’emploi du Québec permettent à l’employeur de choisir entre le Vendredi saint et le lundi de Pâques; l’autre date n’est pas automatiquement un jour férié payé.", partialDayNote: "Il s’agit d’une fermeture pour une demi-journée, et non pour la journée entière.", empty: "Aucune date à venir dans ce calendrier.", noOffice: "Les fermetures de bureaux ne sont pas incluses dans ce calendrier.",
   },
   ru: {
@@ -155,7 +155,7 @@ const copy = {
     upcomingEyebrow: "Впереди", upcomingTitle: "Ближайшие даты", showAll: "Показать все даты", showLess: "Свернуть список",
     next: "Ближайшая дата по календарю", today: "Указана на сегодня", days: "через {count} дн.", tomorrow: "завтра", yesterday: "вчера", todayShort: "Сегодня",
     noteTitle: "Справочник для планирования, а не личный график работы.", noteBody: "Даты взяты из выбранного источника. Применимость даты, оплата и график на вашем рабочем месте могут зависеть от права на праздник, места работы, политики работодателя и коллективного договора.",
-    footerCopy: "Небольшой проект, чтобы упростить планирование.", sourceLink: "Официальный источник этого календаря ↗", feedbackLink: "Оставить отзыв ↗", feedbackPrivacy: "Откроется GitHub; сообщение будет публичным.", verified: "Даты сверены с официальными источниками · ноябрь 2026",
+    footerCopy: "Небольшой проект, чтобы упростить планирование.", sourceLink: "Официальный источник этого календаря ↗", privacyLink: "Конфиденциальность", feedbackLink: "Оставить отзыв ↗", feedbackPrivacy: "Откроется GitHub; сообщение будет публичным.", verified: "Даты сверены с официальными источниками · ноябрь 2026",
     photoBy: "Фото", unsplash: "на Unsplash", imageFallback: "Фото праздника", localCivicNote: "Местная или городская дата может различаться в зависимости от места работы и работодателя. Уточните её в ведомстве или коллективном договоре.", observedNote: "Это дата переноса, опубликованная выбранным источником; график или договор могут отличаться.", qcEasterChoice: "Нормы труда Квебека позволяют работодателю выбрать Страстную пятницу или Пасхальный понедельник; вторая дата не становится оплачиваемым праздником автоматически.", partialDayNote: "Источник указывает закрытие на полдня, а не на весь день.", empty: "В этом календаре нет предстоящих дат.", noOffice: "Закрытия отдельных учреждений не включены в этот календарь.",
   },
 };
@@ -234,6 +234,7 @@ function sourceFor(calendar = state.calendar, province = state.province) {
 function applyLanguage() {
   document.documentElement.lang = state.language;
   $("#feedback-link").href = feedbackHref();
+  $("#privacy-link").href = `privacy.html?lang=${state.language}`;
   document.querySelectorAll("[data-i18n]").forEach((node) => { const value = t(node.dataset.i18n); if (value) node.textContent = value; });
   document.querySelectorAll("[data-i18n-aria]").forEach((node) => node.setAttribute("aria-label", t(node.dataset.i18nAria)));
   $("#region-select").setAttribute("aria-label", t("regionSelectLabel"));

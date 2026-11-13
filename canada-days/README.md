@@ -22,6 +22,8 @@ The page includes a canonical URL, a concise search description, social preview 
 
 The app uses `calendar-mark.svg` as its browser favicon and `app-icon.svg` as the source artwork for the Apple touch icon and Android home-screen icons. `manifest.webmanifest` declares Android install metadata and icon sizes. The localized **Leave feedback** link in the footer opens a prefilled GitHub issue form in a new tab; submissions are public.
 
+The published site uses Google Analytics 4 to measure page views and general site interactions. Advertising signals and ad personalization are disabled. Analytics is not loaded on localhost. See the [privacy notice](privacy.html) for details.
+
 Run the data checks with Node.js 22 or newer:
 
 ```sh
