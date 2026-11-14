@@ -1,6 +1,6 @@
 import type { InventoryFilter } from "../features/inventory/useInventory";
 import type { CategoryFilter } from "../features/inventory/useInventory";
-import type { Capsule, CapsuleSort, CapsuleSortMetric } from "../domain/capsules";
+import type { Capsule, CapsuleCollection, CapsuleSort, CapsuleSortMetric } from "../domain/capsules";
 import { useLocale, type MessageKey } from "../i18n/locale";
 
 type Props = {
@@ -18,6 +18,23 @@ type Props = {
 };
 
 const categoryKeys = ["limited", "italian", "decaffeinated", "world", "origins", "flavoured", "heritage"] as const;
+const collectionKeys: CapsuleCollection[] = ["ispirazione", "worldExplorations", "classics", "masterOrigin", "revivingOrigins", "limitedEdition", "baristaCreations", "starbucks", "blueBottle", "coffeePlus", "perfectOverIce", "decaffeinatedCoffees", "longCups", "shortCups"];
+const collectionMessages: Record<CapsuleCollection, MessageKey> = {
+  ispirazione: "collectionIspirazione",
+  worldExplorations: "collectionWorldExplorations",
+  classics: "collectionClassics",
+  masterOrigin: "collectionMasterOrigin",
+  revivingOrigins: "collectionRevivingOrigins",
+  limitedEdition: "collectionLimitedEdition",
+  baristaCreations: "collectionBaristaCreations",
+  starbucks: "collectionStarbucks",
+  blueBottle: "collectionBlueBottle",
+  coffeePlus: "collectionCoffeePlus",
+  perfectOverIce: "collectionPerfectOverIce",
+  decaffeinatedCoffees: "collectionDecaffeinatedCoffees",
+  longCups: "collectionLongCups",
+  shortCups: "collectionShortCups",
+};
 const sortableMetrics: [CapsuleSortMetric, MessageKey, MessageKey][] = [
   ["intensity", "intensityLowToHigh", "intensityHighToLow"],
   ["caffeine", "caffeineLowToHigh", "caffeineHighToLow"],
@@ -35,8 +52,11 @@ export function InventoryFilters({ value, onChange, category, onCategoryChange, 
     { id: "favorites" as const, label: t("favorites") },
     { id: "low" as const, label: t("restock") },
   ];
-  const populatedCategories = new Set(catalog.map(({ category: itemCategory }) => itemCategory));
-  const categories = categoryKeys.filter((itemCategory) => populatedCategories.has(itemCategory));
+  const usesCollections = catalog.some(({ collection }) => collection !== undefined);
+  const populatedCategories = new Set(catalog.map(({ category: itemCategory, collection }) => collection ?? itemCategory));
+  const categories = usesCollections
+    ? collectionKeys.filter((itemCollection) => populatedCategories.has(itemCollection))
+    : categoryKeys.filter((itemCategory) => populatedCategories.has(itemCategory));
   return (
     <div className="filter-controls">
       <div className="filter-tabs" role="group" aria-label={t("filterAria")}>
@@ -64,7 +84,12 @@ export function InventoryFilters({ value, onChange, category, onCategoryChange, 
           <span>{t("category")}</span>
           <select aria-label={t("categoryAria")} onChange={(event) => onCategoryChange(event.target.value as CategoryFilter)} value={category}>
             <option value="all">{t("allCategories")}</option>
-            {categories.map((itemCategory) => <option key={itemCategory} value={itemCategory}>{t(itemCategory === "heritage" ? "classic" : itemCategory)}</option>)}
+            {categories.map((itemCategory) => {
+              const label = collectionKeys.includes(itemCategory as CapsuleCollection)
+                ? t(collectionMessages[itemCategory as CapsuleCollection])
+                : t(itemCategory === "heritage" ? "classic" : itemCategory as MessageKey);
+              return <option key={itemCategory} value={itemCategory}>{label}</option>;
+            })}
           </select>
         </label>
         <label className="sort-filter">

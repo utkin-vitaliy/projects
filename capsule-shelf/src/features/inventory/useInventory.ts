@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { capsules } from "../../data/capsules";
-import type { Capsule, CapsuleCategory } from "../../domain/capsules";
+import type { Capsule, CapsuleCategory, CapsuleCollection } from "../../domain/capsules";
 import { getLowStockCapsuleIds } from "../../domain/inventory";
 import { createEmptyInventoryEntry, DEFAULT_LOW_STOCK_THRESHOLD, type CapsuleNote, type InventoryState } from "../../domain/capsules";
 import { loadInventory, parseInventoryBackup, serializeInventory } from "../../storage/inventoryStorage";
@@ -8,7 +8,7 @@ import { settingsStorageKey, type SettingsNamespace } from "../../storage/settin
 
 import type { InventoryFilter } from "../../storage/userSettings";
 export type { InventoryFilter } from "../../storage/userSettings";
-export type CategoryFilter = CapsuleCategory | "all";
+export type CategoryFilter = CapsuleCategory | CapsuleCollection | "all";
 const LEGACY_STORAGE_KEY = "capsule-shelf:inventory:v1";
 const LOCAL_STORAGE_KEY = "capsule-shelf:inventory:v2";
 
@@ -192,7 +192,7 @@ export function useInventory(namespace: SettingsNamespace = null, storageCatalog
   const visibleCapsules = useMemo(() => visibleCatalog
     .filter((capsule) => {
       const entry = inventory[capsule.id] ?? createEmptyInventoryEntry();
-      if (categoryFilter !== "all" && capsule.category !== categoryFilter) return false;
+      if (categoryFilter !== "all" && (capsule.collection ?? capsule.category) !== categoryFilter) return false;
       if (filter === "favorites") return entry.favorite;
       if (filter === "low") return lowStockSet.has(capsule.id);
       return true;

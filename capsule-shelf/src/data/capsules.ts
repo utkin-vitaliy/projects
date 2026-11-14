@@ -7,6 +7,16 @@ const capsule = (id: string, name: string, flavor: string, category: Capsule["ca
   id, name, flavor, category, sourceUrl: `${canadaCatalog}/${slug}`, imageUrl, ...(intensity === undefined ? {} : { intensity }), imageFit: "contain",
 });
 
+const originalCollections: Record<string, NonNullable<Capsule["collection"]>> = {
+  arpeggio: "ispirazione", ristretto: "ispirazione", napoli: "ispirazione", kazaar: "ispirazione", roma: "ispirazione", venezia: "ispirazione", livanto: "ispirazione",
+  capriccio: "classics", volluto: "classics", cosi: "classics", colombia: "masterOrigin",
+  "crystal-spark": "limitedEdition", "hazelnut-brownie": "limitedEdition", "blueberry-cheesecake": "limitedEdition", "pumpkin-spice-cake": "limitedEdition", "yuzu-vanilla-over-ice": "limitedEdition", "maple-pecan": "limitedEdition",
+  "arpeggio-decaffeinato": "ispirazione", "ristretto-decaffeinato": "ispirazione", "vaniglia-decaffeinato": "baristaCreations", "volluto-decaffeinato": "classics", "vienna-lungo-decaffeinato": "worldExplorations",
+  "athens-freddo-intenso": "worldExplorations", "cape-town-lungo": "worldExplorations", "miami-espresso": "worldExplorations", "vienna-lungo": "worldExplorations", "paris-espresso": "worldExplorations", "tokyo-lungo": "worldExplorations", "stockholm-lungo": "worldExplorations", "shanghai-lungo": "worldExplorations", "buenos-aires-lungo": "worldExplorations",
+  "caffe-florian": "limitedEdition", "espresso-of-wonders": "limitedEdition", "kahawa-ya-congo": "revivingOrigins", india: "masterOrigin", "indonesia-fairtrade": "masterOrigin", nicaragua: "masterOrigin",
+  nocciola: "baristaCreations", caramello: "baristaCreations", vaniglia: "baristaCreations", cioccolatino: "baristaCreations", scuro: "baristaCreations",
+};
+
 export const capsules: Capsule[] = [
   capsule("arpeggio", "Arpeggio", "Интенсивный, с нотами какао", "italian", "ispirazione-firenze-coffee-capsule", image("16653366034462", "arpeggio-2x.png"), 9),
   capsule("ristretto", "Ristretto", "Ярко обжаренный, с ягодными нотами", "italian", "ispirazione-ristretto-italiano-coffee-capsule", image("51908682154014", "ispirazione-ristretto-italiano-XL-1-1-.png"), 10),
@@ -56,4 +66,4 @@ export const capsules: Capsule[] = [
   capsule("vaniglia", "Vaniglia", "Аромат ванили", "flavoured", "vaniglia-coffee-capsules", image("17432222531614", "C-1062-Responsive-PLP.png")),
   capsule("cioccolatino", "Cioccolatino", "Аромат тёмного шоколада", "flavoured", "cioccolatino-coffee-capsules", image("17431322361886", "C-1060-Responsive-PLP.png")),
   capsule("scuro", "Scuro", "Интенсивный профиль для молочных рецептов", "flavoured", "scuro-coffee-capsule", image("16654104068126", "scuro-2x.png"), 8),
-].map(applyCapsuleCoffeeProfile);
+].map((item) => applyCapsuleCoffeeProfile({ ...item, collection: originalCollections[item.id] }));

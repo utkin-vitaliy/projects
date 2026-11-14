@@ -1,4 +1,4 @@
-import type { Capsule, CapsuleCategory, CapsuleCupSize } from "../domain/capsules";
+import type { Capsule, CapsuleCategory, CapsuleCollection, CapsuleCupSize } from "../domain/capsules";
 import { applyCapsuleCoffeeProfile } from "./capsuleProfiles";
 
 export const vertuoCatalogUrl = "https://www.nespresso.com/ca/en/order/capsules/vertuo";
@@ -225,11 +225,26 @@ function officialImage(file: string): string {
   return `${imageBase}/${imageAssets[file] ?? ""}?imdensity=1&impolicy=small&imwidth=400`;
 }
 
+function getVertuoCollection(id: string, category: CapsuleCategory, size: CapsuleCupSize): CapsuleCollection {
+  if (id.startsWith("starbucks-")) return "starbucks";
+  if (id === "blue-bottle-bold-blend" || id === "nola-style-coffee-blend") return "blueBottle";
+  if (["ginseng-delight", "active-vitamin-b6", "vivida"].includes(id)) return "coffeePlus";
+  if (category === "limited") return "limitedEdition";
+  if (category === "decaffeinated") return "decaffeinatedCoffees";
+  if (id === "kahawa-ya-congo") return "revivingOrigins";
+  if (category === "origins") return "masterOrigin";
+  if (category === "flavoured" || id === "bianco-forte" || id === "bianco-doppio") return "baristaCreations";
+  if (["ice-forte", "ice-leggero", "cold-brew-style-intense"].includes(id)) return "perfectOverIce";
+  if (size === "espresso" || size === "doubleEspresso" || size === "ristretto") return "shortCups";
+  return "longCups";
+}
+
 export const vertuoCapsules: Capsule[] = varieties.map(([id, name, flavor, size, millilitres, category = "world", intensity, imageName]) => applyCapsuleCoffeeProfile({
   id: `vertuo-${id}`,
   system: "vertuo",
   name,
   flavor,
+  collection: getVertuoCollection(id, category, size),
   category,
   sourceUrl: productUrls[id] ?? vertuoCatalogUrl,
   imageUrl: officialImage(imageName ?? id.replaceAll("-", "_")),

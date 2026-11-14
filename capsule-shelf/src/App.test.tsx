@@ -440,11 +440,11 @@ describe("Capsule Shelf dashboard", () => {
     await waitForReady();
     const category = screen.getByRole("combobox", { name: "Категория сортов" });
     expect(within(category).getAllByRole("option").map((option) => option.textContent)).toEqual([
-      "Все категории", "Лимитированные", "Итальянские", "Без кофеина", "Кофейные культуры мира", "Кофе по происхождению", "Ароматизированные", "Классика",
+      "Все категории", "Italian espressos", "World Explorations", "Classics", "Master Origin", "Reviving Origins", "Limited Edition", "Barista Creations",
     ]);
-    fireEvent.change(category, { target: { value: "origins" } });
+    fireEvent.change(category, { target: { value: "masterOrigin" } });
     const names = screen.getAllByRole("article").map((article) => within(article).getByRole("heading", { level: 2 }).textContent);
-    expect(names).toEqual(["Colombia", "Kahawa ya Congo", "India", "Indonesia - Fairtrade", "Nicaragua"]);
+    expect(names).toEqual(["Colombia", "India", "Indonesia - Fairtrade", "Nicaragua"]);
   });
 
   it("composes category with favorites and shows an empty message when they do not intersect", async () => {
@@ -452,7 +452,7 @@ describe("Capsule Shelf dashboard", () => {
     await waitForReady();
     fireEvent.click(screen.getByRole("button", { name: "Добавить Arpeggio в избранное" }));
     fireEvent.click(screen.getByRole("button", { name: "Избранное" }));
-    fireEvent.change(screen.getByRole("combobox", { name: "Категория сортов" }), { target: { value: "origins" } });
+    fireEvent.change(screen.getByRole("combobox", { name: "Категория сортов" }), { target: { value: "masterOrigin" } });
     expect(screen.getByText("Здесь пока пусто")).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Arpeggio" })).not.toBeInTheDocument();
   });
@@ -464,7 +464,7 @@ describe("Capsule Shelf dashboard", () => {
     await addCapsules("Colombia", 1);
     fireEvent.click(screen.getByRole("button", { name: "Добавить Colombia в избранное" }));
     fireEvent.click(screen.getByRole("button", { name: "Пора пополнить" }));
-    fireEvent.change(screen.getByRole("combobox", { name: "Категория сортов" }), { target: { value: "origins" } });
+    fireEvent.change(screen.getByRole("combobox", { name: "Категория сортов" }), { target: { value: "masterOrigin" } });
     expect(screen.getByRole("heading", { name: "Colombia" })).toBeInTheDocument();
     expect(screen.queryByText("retired-variety")).not.toBeInTheDocument();
     expect(screen.getAllByRole("article")).toHaveLength(1);

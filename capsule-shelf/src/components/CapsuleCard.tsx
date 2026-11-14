@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useState } from "react";
 import { CapsuleNotes } from "./CapsuleNotes";
-import { createEmptyInventoryEntry, type Capsule, type CapsuleCupSize, type CapsuleNote, type InventoryEntry } from "../domain/capsules";
+import { createEmptyInventoryEntry, type Capsule, type CapsuleCollection, type CapsuleCupSize, type CapsuleNote, type InventoryEntry } from "../domain/capsules";
 import { getRecipeIdsForCapsule } from "../data/recipeIndex";
 import { useLocale, type MessageKey } from "../i18n/locale";
 
@@ -28,6 +28,23 @@ const cupSizeMessage: Record<CapsuleCupSize, MessageKey> = {
   granLungo: "cupSizeGranLungo",
   coffee: "cupSizeCoffee",
   alto: "cupSizeAlto",
+};
+
+const collectionMessage: Record<CapsuleCollection, MessageKey> = {
+  ispirazione: "collectionIspirazione",
+  worldExplorations: "collectionWorldExplorations",
+  classics: "collectionClassics",
+  masterOrigin: "collectionMasterOrigin",
+  revivingOrigins: "collectionRevivingOrigins",
+  limitedEdition: "collectionLimitedEdition",
+  baristaCreations: "collectionBaristaCreations",
+  starbucks: "collectionStarbucks",
+  blueBottle: "collectionBlueBottle",
+  coffeePlus: "collectionCoffeePlus",
+  perfectOverIce: "collectionPerfectOverIce",
+  decaffeinatedCoffees: "collectionDecaffeinatedCoffees",
+  longCups: "collectionLongCups",
+  shortCups: "collectionShortCups",
 };
 
 export function CapsuleCard({ capsule, entry = createEmptyInventoryEntry(), lowStock, onQuantitySet, onFavoriteToggle, onThresholdChange, onNoteSave, onRecipeSelect }: Props) {
@@ -84,7 +101,7 @@ export function CapsuleCard({ capsule, entry = createEmptyInventoryEntry(), lowS
       <div className="capsule-card__content">
         <div className="capsule-title-row">
           <div>
-            <p className="capsule-family">{capsule.system === "vertuo" ? t("capsuleFamilyVertuo") : t("capsuleFamily")}</p>
+            <p className="capsule-family">{capsule.collection ? t(collectionMessage[capsule.collection]) : capsule.system === "vertuo" ? t("capsuleFamilyVertuo") : t("capsuleFamily")}</p>
             <h2>{capsule.name}</h2>
           </div>
           {typeof capsule.intensity === "number" && <span className="intensity-badge" aria-label={t("intensity", { value: capsule.intensity })}>{capsule.intensity}<small>/13</small></span>}
