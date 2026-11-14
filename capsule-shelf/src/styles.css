@@ -214,6 +214,18 @@ h1 { margin: 0; color: var(--ink); font-size: clamp(28px, 3.5vw, 40px); font-wei
 .intensity-badge small { color: #92958a; font-size: 8px; font-weight: 500; }
 .capsule-flavor { min-height: 32px; margin: 5px 0 13px; color: #777d74; font-size: 13px; line-height: 1.45; }
 .capsule-cup-size { margin: -9px 0 12px; color: #8a7358; font-size: 11px; font-weight: 600; letter-spacing: .015em; }
+.coffee-profile { margin: -5px 0 10px; border-top: 1px solid #eee9df; border-bottom: 1px solid #eee9df; }
+.coffee-profile > summary { display: flex; align-items: center; justify-content: space-between; min-height: 34px; color: #59665b; font-size: 11px; font-weight: 650; cursor: pointer; list-style: none; }
+.coffee-profile > summary::-webkit-details-marker { display: none; }
+.coffee-profile[open] > summary .disclosure-chevron { transform: rotate(180deg); }
+.coffee-profile__details { padding: 0 0 10px; }
+.coffee-profile__aroma { margin: 0 0 9px; color: #73786e; font-size: 12px; line-height: 1.45; }
+.coffee-profile__aroma span { color: #5c665b; font-weight: 650; }
+.coffee-profile__metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin: 0; }
+.coffee-profile__metrics > div { min-width: 0; padding: 5px 6px; border-radius: 6px; background: #f7f6f1; }
+.coffee-profile__metrics dt { color: #85897e; font-size: 9px; line-height: 1.25; }
+.coffee-profile__metrics dd { margin: 2px 0 0; color: #465346; font-size: 12px; font-weight: 650; font-variant-numeric: tabular-nums; }
+.coffee-profile__note { margin: 8px 0 0; color: #92958a; font-size: 10px; line-height: 1.4; }
 .capsule-recipes { margin: -7px 0 8px; }
 .capsule-recipe-toggle { display: inline-flex; align-items: center; gap: 8px; padding: 3px 0; border: 0; color: #526958; background: transparent; font-size: 12px; font-weight: 600; cursor: pointer; }
 .capsule-recipe-toggle:hover { color: #344238; }

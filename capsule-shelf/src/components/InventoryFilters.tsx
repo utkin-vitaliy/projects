@@ -1,9 +1,7 @@
 import type { InventoryFilter } from "../features/inventory/useInventory";
 import type { CategoryFilter } from "../features/inventory/useInventory";
-import type { Capsule } from "../domain/capsules";
-import { useLocale } from "../i18n/locale";
-
-type CapsuleSort = "catalog" | "intensity-asc" | "intensity-desc";
+import type { Capsule, CapsuleSort, CapsuleSortMetric } from "../domain/capsules";
+import { useLocale, type MessageKey } from "../i18n/locale";
 
 type Props = {
   value: InventoryFilter;
@@ -20,6 +18,15 @@ type Props = {
 };
 
 const categoryKeys = ["limited", "italian", "decaffeinated", "world", "origins", "flavoured", "heritage"] as const;
+const sortableMetrics: [CapsuleSortMetric, MessageKey, MessageKey][] = [
+  ["intensity", "intensityLowToHigh", "intensityHighToLow"],
+  ["caffeine", "caffeineLowToHigh", "caffeineHighToLow"],
+  ["bitterness", "bitternessLowToHigh", "bitternessHighToLow"],
+  ["acidity", "acidityLowToHigh", "acidityHighToLow"],
+  ["body", "bodyLowToHigh", "bodyHighToLow"],
+  ["roasting", "roastingLowToHigh", "roastingHighToLow"],
+  ["coffeeGrams", "coffeeGramsLowToHigh", "coffeeGramsHighToLow"],
+];
 
 export function InventoryFilters({ value, onChange, category, onCategoryChange, search, onSearchChange, catalog, favoriteCount, lowStockCount, sort, onSortChange }: Props) {
   const { t } = useLocale();
@@ -64,8 +71,12 @@ export function InventoryFilters({ value, onChange, category, onCategoryChange, 
           <span>{t("sortBy")}</span>
           <select aria-label={t("sortCapsulesAria")} onChange={(event) => onSortChange(event.target.value as CapsuleSort)} value={sort}>
             <option value="catalog">{t("sortCatalog")}</option>
-            <option value="intensity-asc">{t("intensityLowToHigh")}</option>
-            <option value="intensity-desc">{t("intensityHighToLow")}</option>
+            {sortableMetrics.map(([metric, lowToHigh, highToLow]) => (
+              <optgroup key={metric} label={t(metric === "coffeeGrams" ? "coffeeAmount" : metric === "intensity" ? "intensityLabel" : metric)}>
+                <option value={`${metric}-asc`}>{t(lowToHigh)}</option>
+                <option value={`${metric}-desc`}>{t(highToLow)}</option>
+              </optgroup>
+            ))}
           </select>
         </label>
       </div>

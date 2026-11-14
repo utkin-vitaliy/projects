@@ -1,4 +1,5 @@
 import type { Capsule, CapsuleCategory, CapsuleCupSize } from "../domain/capsules";
+import { applyCapsuleCoffeeProfile } from "./capsuleProfiles";
 
 export const vertuoCatalogUrl = "https://www.nespresso.com/ca/en/order/capsules/vertuo";
 const productUrls: Record<string, string> = {
@@ -224,7 +225,7 @@ function officialImage(file: string): string {
   return `${imageBase}/${imageAssets[file] ?? ""}?imdensity=1&impolicy=small&imwidth=400`;
 }
 
-export const vertuoCapsules: Capsule[] = varieties.map(([id, name, flavor, size, millilitres, category = "world", intensity, imageName]) => ({
+export const vertuoCapsules: Capsule[] = varieties.map(([id, name, flavor, size, millilitres, category = "world", intensity, imageName]) => applyCapsuleCoffeeProfile({
   id: `vertuo-${id}`,
   system: "vertuo",
   name,

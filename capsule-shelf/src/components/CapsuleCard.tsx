@@ -91,6 +91,28 @@ export function CapsuleCard({ capsule, entry = createEmptyInventoryEntry(), lowS
         </div>
         <p className="capsule-flavor">{capsule.flavor}</p>
         {capsule.cupSize && <p className="capsule-cup-size">{t(cupSizeMessage[capsule.cupSize.type])} · {capsule.cupSize.millilitres} ml</p>}
+        {capsule.coffeeProfile && (
+          <details className="coffee-profile">
+            <summary>
+              <span>{t("coffeeProfile")}</span>
+              <span aria-hidden="true" className="disclosure-chevron"><svg viewBox="0 0 16 16"><path d="m4 6 4 4 4-4" /></svg></span>
+            </summary>
+            <div className="coffee-profile__details">
+              {capsule.coffeeProfile.aromaticProfile && <p className="coffee-profile__aroma"><span>{t("aromaticProfile")}:</span> {capsule.coffeeProfile.aromaticProfile}</p>}
+              <dl className="coffee-profile__metrics">
+                {typeof capsule.intensity === "number" && <div><dt>{t("intensityLabel")}</dt><dd>{capsule.intensity}/13</dd></div>}
+                {typeof capsule.coffeeProfile.bitterness === "number" && <div><dt>{t("bitterness")}</dt><dd>{capsule.coffeeProfile.bitterness}/5</dd></div>}
+                {typeof capsule.coffeeProfile.acidity === "number" && <div><dt>{t("acidity")}</dt><dd>{capsule.coffeeProfile.acidity}/5</dd></div>}
+                {typeof capsule.coffeeProfile.body === "number" && <div><dt>{t("body")}</dt><dd>{capsule.coffeeProfile.body}/5</dd></div>}
+                {typeof capsule.coffeeProfile.roasting === "number" && <div><dt>{t("roasting")}</dt><dd>{capsule.coffeeProfile.roasting}/5</dd></div>}
+                {typeof capsule.coffeeProfile.caffeineMg === "number" && <div><dt>{t("caffeine")}</dt><dd>{capsule.coffeeProfile.caffeineMg} mg</dd></div>}
+                {typeof capsule.coffeeProfile.coffeeGrams === "number" && <div><dt>{t("coffeeGrams")}</dt><dd>{capsule.coffeeProfile.coffeeGrams} g</dd></div>}
+                {capsule.coffeeProfile.includesRobusta && <div><dt>{t("includesRobusta")}</dt><dd>✓</dd></div>}
+              </dl>
+              <p className="coffee-profile__note">{t("profileSourceNote")}</p>
+            </div>
+          </details>
+        )}
 
         {recipeIds.length > 0 && (
           <div className="capsule-recipes">

@@ -4,10 +4,12 @@ import { InventoryFilters } from "./components/InventoryFilters";
 import { InventorySummary } from "./components/InventorySummary";
 import { capsules as originalCatalog } from "./data/capsules";
 import { vertuoCapsules, vertuoCatalogUrl } from "./data/vertuoCapsules";
+import { matchesAromaticProfile } from "./data/capsuleProfiles";
 import { useInventory } from "./features/inventory/useInventory";
 import { serializeInventory } from "./storage/inventoryStorage";
 import { localizeCapsule } from "./i18n/capsuleContent";
 import { LocaleProvider, useLocale, type Locale, type MessageKey } from "./i18n/locale";
+import type { CapsuleSort, CapsuleSortMetric } from "./domain/capsules";
 import { recipeIds } from "./data/recipeIndex";
 import { DEFAULT_INVENTORY_FILTERS, DEFAULT_RECIPE_FILTERS, parseUserSettings, serializeUserSettings, type CoffeeSystem, type InventoryFilter, type InventoryFilterPreferences, type RecipeEdits, type RecipeFilter, type RecipeFilterPreferences, type RecipeTextOverride, type UserSettings } from "./storage/userSettings";
 import { settingsStorageKey, type SettingsNamespace } from "./storage/settingsStorage";
@@ -20,7 +22,6 @@ const RecipesPage = lazy(() => import("./components/RecipesPage").then(({ Recipe
 type ConnectedGoogleAccount = GoogleAccount & { accessToken: string; fileId: string };
 const USER_SETTINGS_STORAGE_KEY = "capsule-shelf:user-settings:v1";
 const allCapsules = [...originalCatalog, ...vertuoCapsules];
-type CapsuleSort = "catalog" | "intensity-asc" | "intensity-desc";
 
 const feedbackFormUrls: Record<Locale, string> = {
   en: "https://github.com/utkin-vitaliy/projects/issues/new?template=feedback-en.yml",
@@ -186,19 +187,26 @@ function CapsuleShelfApp({ account, rememberedAccount, namespace, onAccountChang
       .filter((capsule) => !query || (["en", "ru", "fr"] as const).some((searchLocale) => {
         const translatedCapsule = localizeCapsule(capsule, searchLocale);
         return normalizeSearch(translatedCapsule.name).includes(query)
-          || normalizeSearch(translatedCapsule.flavor).includes(query);
+          || normalizeSearch(translatedCapsule.flavor).includes(query)
+          || matchesAromaticProfile(capsule.coffeeProfile?.aromaticProfile, query);
       }));
     if (capsuleSort === "catalog") return matchingCapsules;
-    const direction = capsuleSort === "intensity-asc" ? 1 : -1;
+    const [metric, order] = capsuleSort.split("-") as [CapsuleSortMetric, "asc" | "desc"];
+    const direction = order === "asc" ? 1 : -1;
     return matchingCapsules
       .map((capsule, index) => ({ capsule, index }))
       .sort((left, right) => {
-        const leftIntensity = left.capsule.intensity;
-        const rightIntensity = right.capsule.intensity;
-        if (leftIntensity === undefined && rightIntensity === undefined) return left.index - right.index;
-        if (leftIntensity === undefined) return 1;
-        if (rightIntensity === undefined) return -1;
-        return (leftIntensity - rightIntensity) * direction || left.index - right.index;
+        const sortValue = (capsule: typeof left.capsule) => {
+          if (metric === "intensity") return capsule.intensity;
+          if (metric === "caffeine") return capsule.coffeeProfile?.caffeineMg;
+          return capsule.coffeeProfile?.[metric];
+        };
+        const leftValue = sortValue(left.capsule);
+        const rightValue = sortValue(right.capsule);
+        if (leftValue === undefined && rightValue === undefined) return left.index - right.index;
+        if (leftValue === undefined) return 1;
+        if (rightValue === undefined) return -1;
+        return (leftValue - rightValue) * direction || left.index - right.index;
       })
       .map(({ capsule }) => capsule);
   }, [capsules, locale, capsuleSearch, capsuleSort]);

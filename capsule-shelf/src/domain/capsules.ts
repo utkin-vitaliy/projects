@@ -1,6 +1,19 @@
 export type CapsuleRating = "like" | "neutral" | "dislike" | null;
 export type CapsuleCategory = "limited" | "italian" | "decaffeinated" | "world" | "origins" | "flavoured" | "heritage";
 export type CapsuleCupSize = "ristretto" | "espresso" | "doubleEspresso" | "granLungo" | "coffee" | "alto";
+export type CapsuleSortMetric = "intensity" | "caffeine" | "bitterness" | "acidity" | "body" | "roasting" | "coffeeGrams";
+export type CapsuleSort = "catalog" | `${CapsuleSortMetric}-${"asc" | "desc"}`;
+
+export type CapsuleCoffeeProfile = {
+  aromaticProfile?: string;
+  coffeeGrams?: number;
+  bitterness?: number;
+  acidity?: number;
+  body?: number;
+  roasting?: number;
+  caffeineMg?: number;
+  includesRobusta?: boolean;
+};
 
 export type CapsuleNote = {
   rating: CapsuleRating;
@@ -16,6 +29,7 @@ export type Capsule = {
   name: string;
   flavor: string;
   intensity?: number;
+  coffeeProfile?: CapsuleCoffeeProfile;
   cupSize?: { type: CapsuleCupSize; millilitres: number };
   category: CapsuleCategory;
   imageUrl: string;

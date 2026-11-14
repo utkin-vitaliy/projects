@@ -61,6 +61,8 @@ Apple/iCloud sync is not included.
 
 The catalogs are manually maintained from the [Nespresso Canada Original catalog](https://www.nespresso.com/ca/en/order/capsules/original) and [Vertuo catalog](https://www.nespresso.com/ca/en/order/capsules/vertuo). Product availability can change; Capsule Shelf does not automatically sync catalog updates from Nespresso.
 
+Capsule tasting data (aromatic profile, intensity, bitterness, acidity, body, roast, coffee weight, robusta presence, and caffeine) is transcribed from Alvin Bunk's [independent capsule charts](https://alvinbunk.wordpress.com/category/nespresso/), which cite Nespresso Taiwan as their data source. Caffeine values are milligrams per capsule and may differ from the quantity extracted into a prepared drink. Blank or unknown source values remain undisplayed; these charts are not official Nespresso Canada specifications.
+
 Capsule and recipe photographs are bundled locally under [`public/images`](public/images/README.md), so the deployed app does not depend on Nespresso image servers at runtime. Additional recipe-book photographs are documented under [`public/recipe-book`](public/recipe-book/README.md). Product names, images, and trademarks belong to their respective owners.
 
 Capsule Shelf is an independent personal project and is not affiliated with, endorsed by, or sponsored by Nestlé Nespresso S.A.

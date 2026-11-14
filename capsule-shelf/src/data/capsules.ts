@@ -1,4 +1,5 @@
 import type { Capsule } from "../domain/capsules";
+import { applyCapsuleCoffeeProfile } from "./capsuleProfiles";
 
 const canadaCatalog = "https://www.nespresso.com/ca/en/order/capsules/original";
 const image = (_media: string, file: string) => `${import.meta.env.BASE_URL}images/capsules/${encodeURIComponent(file)}`;
@@ -55,4 +56,4 @@ export const capsules: Capsule[] = [
   capsule("vaniglia", "Vaniglia", "Аромат ванили", "flavoured", "vaniglia-coffee-capsules", image("17432222531614", "C-1062-Responsive-PLP.png")),
   capsule("cioccolatino", "Cioccolatino", "Аромат тёмного шоколада", "flavoured", "cioccolatino-coffee-capsules", image("17431322361886", "C-1060-Responsive-PLP.png")),
   capsule("scuro", "Scuro", "Интенсивный профиль для молочных рецептов", "flavoured", "scuro-coffee-capsule", image("16654104068126", "scuro-2x.png"), 8),
-];
+].map(applyCapsuleCoffeeProfile);
