@@ -71,7 +71,7 @@ export function CapsuleCard({ capsule, entry = createEmptyInventoryEntry(), lowS
         {!imageFailed ? (
           <img
             alt={capsule.name}
-            className={capsule.imageFit === "contain" ? "capsule-image capsule-image--contain" : "capsule-image"}
+            className={`capsule-image${capsule.imageFit === "contain" ? " capsule-image--contain" : ""}${capsule.imageBackground === "white" ? " capsule-image--white-background" : ""}`}
             loading="lazy"
             onError={() => setImageFailed(true)}
             referrerPolicy="no-referrer"
@@ -83,7 +83,7 @@ export function CapsuleCard({ capsule, entry = createEmptyInventoryEntry(), lowS
             <span>{t("imageUnavailable")}</span>
           </div>
         )}
-        <a aria-label={t("sourceLink", { name: capsule.name })} className="photo-source" href={capsule.sourceUrl} rel="noreferrer" target="_blank" title={t("sourceTitle")}>
+        <a aria-label={t(capsule.brand ? "brandSourceLink" : "sourceLink", { name: capsule.name, brand: capsule.brand ?? "Nespresso" })} className="photo-source" href={capsule.sourceUrl} rel="noreferrer" target="_blank" title={t(capsule.brand ? "brandSourceTitle" : "sourceTitle", { brand: capsule.brand ?? "Nespresso" })}>
           <svg aria-hidden="true" viewBox="0 0 16 16"><path d="M9 3h4v4M13 3 7 9" /><path d="M11 9v3a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h3" /></svg>
         </a>
         <button
@@ -101,7 +101,7 @@ export function CapsuleCard({ capsule, entry = createEmptyInventoryEntry(), lowS
       <div className="capsule-card__content">
         <div className="capsule-title-row">
           <div>
-            <p className="capsule-family">{capsule.collection ? t(collectionMessage[capsule.collection]) : capsule.system === "vertuo" ? t("capsuleFamilyVertuo") : t("capsuleFamily")}</p>
+            <p className="capsule-family">{capsule.collection ? t(collectionMessage[capsule.collection]) : capsule.brand ?? (capsule.system === "vertuo" ? t("capsuleFamilyVertuo") : t("capsuleFamily"))}</p>
             <h2>{capsule.name}</h2>
           </div>
           {typeof capsule.intensity === "number" && <span className="intensity-badge" aria-label={t("intensity", { value: capsule.intensity })}>{capsule.intensity}<small>/13</small></span>}

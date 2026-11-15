@@ -1,5 +1,5 @@
 export type CapsuleRating = "like" | "neutral" | "dislike" | null;
-export type CapsuleCategory = "limited" | "italian" | "decaffeinated" | "world" | "origins" | "flavoured" | "heritage";
+export type CapsuleCategory = "limited" | "italian" | "decaffeinated" | "world" | "origins" | "flavoured" | "heritage" | "thirdParty";
 export type CapsuleCupSize = "ristretto" | "espresso" | "doubleEspresso" | "granLungo" | "coffee" | "alto";
 export type CapsuleCollection = "ispirazione" | "worldExplorations" | "classics" | "masterOrigin" | "revivingOrigins" | "limitedEdition" | "baristaCreations" | "starbucks" | "blueBottle" | "coffeePlus" | "perfectOverIce" | "decaffeinatedCoffees" | "longCups" | "shortCups";
 export type CapsuleSortMetric = "intensity" | "caffeine" | "bitterness" | "acidity" | "body" | "roasting" | "coffeeGrams";
@@ -28,6 +28,7 @@ export type Capsule = {
   id: string;
   system?: "original" | "vertuo";
   name: string;
+  brand?: string;
   flavor: string;
   intensity?: number;
   coffeeProfile?: CapsuleCoffeeProfile;
@@ -36,6 +37,7 @@ export type Capsule = {
   category: CapsuleCategory;
   imageUrl: string;
   imageFit?: "cover" | "contain";
+  imageBackground?: "white";
   sourceUrl: string;
 };
 

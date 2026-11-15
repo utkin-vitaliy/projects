@@ -25,7 +25,8 @@ async function waitForReady() {
 }
 
 async function addCapsules(name: string, amount: number) {
-  const input = await screen.findByRole("spinbutton", { name: `Количество капсул ${name}` }) as HTMLInputElement;
+  const inputs = await screen.findAllByRole("spinbutton", { name: `Количество капсул ${name}` }) as HTMLInputElement[];
+  const input = inputs[0];
   const next = Number(input.value) + amount;
   fireEvent.change(input, { target: { value: String(next) } });
   fireEvent.blur(input);
@@ -440,11 +441,27 @@ describe("Capsule Shelf dashboard", () => {
     await waitForReady();
     const category = screen.getByRole("combobox", { name: "Категория сортов" });
     expect(within(category).getAllByRole("option").map((option) => option.textContent)).toEqual([
-      "Все категории", "Italian espressos", "World Explorations", "Classics", "Master Origin", "Reviving Origins", "Limited Edition", "Barista Creations",
+      "Все категории", "Italian espressos", "World Explorations", "Classics", "Master Origin", "Reviving Origins", "Limited Edition", "Barista Creations", "Другие бренды",
     ]);
     fireEvent.change(category, { target: { value: "masterOrigin" } });
     const names = screen.getAllByRole("article").map((article) => within(article).getByRole("heading", { level: 2 }).textContent);
     expect(names).toEqual(["Colombia", "India", "Indonesia - Fairtrade", "Nicaragua"]);
+  });
+
+  it("filters Original capsules by manufacturer brand", async () => {
+    render(<App />);
+    await waitForReady();
+
+    const brand = screen.getByRole("combobox", { name: "Фильтр по бренду" });
+    expect(within(brand).getAllByRole("option").map((option) => option.textContent)).toEqual([
+      "Все бренды", "Café AGGA", "Caffè Aroma", "Caffè Borbone", "illy", "L’OR", "Lavazza", "McCafé", "Nespresso", "Starbucks", "Tim Hortons",
+    ]);
+
+    fireEvent.change(brand, { target: { value: "Starbucks" } });
+
+    expect(screen.getAllByRole("article").map((article) => within(article).getByRole("heading", { level: 2 }).textContent)).toEqual([
+      "Espresso Roast", "Blonde Espresso Roast",
+    ]);
   });
 
   it("composes category with favorites and shows an empty message when they do not intersect", async () => {
@@ -476,7 +493,7 @@ describe("Capsule Shelf dashboard", () => {
     await addCapsules("Arpeggio", 10);
     fireEvent.click(screen.getByRole("button", { name: "Добавить Arpeggio в избранное" }));
     await addCapsules("Ristretto", 5);
-    fireEvent.click(screen.getByRole("button", { name: "Добавить Ristretto в избранное" }));
+    fireEvent.click(screen.getAllByRole("button", { name: "Добавить Ristretto в избранное" })[0]);
     const names = screen.getAllByRole("article").map((article) => within(article).getByRole("heading", { level: 2 }).textContent);
     expect(names.slice(0, 3)).toEqual(["Arpeggio", "Ristretto", "Ispirazione Napoli"]);
   });

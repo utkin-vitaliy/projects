@@ -49,21 +49,24 @@ describe("Nespresso Original recipes", () => {
       ["pistachio-latte-milkshake", "Фисташковый кофейный милкшейк"],
       ["sweet-hazelnut-coffee-float", "Кофейный флоат с фундуком"],
     ]);
-    expect(recipes).toHaveLength(67);
+    expect(recipes).toHaveLength(75);
     expect(recipes.find(({ id }) => id === "flat-white")?.difficulty).toBe("Средняя");
   });
 
-  it("uses only official Nespresso Canada sources and Original capsules", () => {
+  it("uses the recipe publisher source and only Original capsules", () => {
     for (const recipe of recipes) {
-      expect(new URL(recipe.sourceUrl).hostname).toBe("www.nespresso.com");
-      expect(recipe.sourceUrl).toMatch(/\/recipes\/(ca\/en|ru\/ru)\/|\/ncp\/res\/(generated\/recipes|uploads\/recipes)\/|\/static\/us\/solutions\/b2b\/documents\//);
+      expect(new URL(recipe.sourceUrl).protocol).toBe("https:");
+      if (!recipe.sourceName) {
+        expect(new URL(recipe.sourceUrl).hostname).toBe("www.nespresso.com");
+        expect(recipe.sourceUrl).toMatch(/\/recipes\/(ca\/en|ru\/ru)\/|\/ncp\/res\/(generated\/recipes|uploads\/recipes)\/|\/static\/us\/solutions\/b2b\/documents\//);
+      }
       expect(recipe.line).toBe("Original");
       expect(recipe.capsule).not.toMatch(/Vertuo|Altissio/i);
     }
   });
 
   it("provides ingredients and Russian preparation steps for every recipe", () => {
-    expect(recipes).toHaveLength(67);
+    expect(recipes).toHaveLength(75);
     for (const recipe of recipes) {
       expect(recipe.ingredients.length).toBeGreaterThan(0);
       expect(recipe.steps.length).toBeGreaterThan(0);
@@ -74,9 +77,9 @@ describe("Nespresso Original recipes", () => {
     }
   });
 
-  it("includes a descriptive official Nespresso photo for each recipe", () => {
+  it("includes a descriptive photo reference for each recipe", () => {
     for (const recipe of recipes) {
-      expect(recipe.imageUrl).toMatch(/(?:^|\/)(?:images\/recipes|recipe-book)\/.+\.(?:jpe?g|png|webp)$/);
+      expect(recipe.imageUrl).toMatch(/^(?:https:\/\/|.*(?:images\/recipes|recipe-book)\/.+\.(?:jpe?g|png|webp)$)/);
       expect(recipe.imageAlt.trim().length).toBeGreaterThan(15);
     }
   });

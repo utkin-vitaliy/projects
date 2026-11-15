@@ -58,6 +58,7 @@ function CapsuleShelfApp({ account, rememberedAccount, namespace, onAccountChang
   const [pendingRecipeId, setPendingRecipeId] = useState<string | null>(null);
   const [pendingCapsuleFocusId, setPendingCapsuleFocusId] = useState<string | null>(null);
   const [capsuleSearch, setCapsuleSearch] = useState("");
+  const [capsuleBrand, setCapsuleBrand] = useState("all");
   const [capsuleSort, setCapsuleSort] = useState<CapsuleSort>("catalog");
   const [favoriteRecipeIds, setFavoriteRecipeIds] = useState<string[]>([]);
   const [recipeEdits, setRecipeEdits] = useState<RecipeEdits>({});
@@ -184,11 +185,13 @@ function CapsuleShelfApp({ account, rememberedAccount, namespace, onAccountChang
     const query = normalizeSearch(capsuleSearch);
     const matchingCapsules = capsules
       .map((capsule) => localizeCapsule(capsule, locale))
+      .filter((capsule) => capsuleBrand === "all" || (capsule.brand ?? "Nespresso") === capsuleBrand)
       .filter((capsule) => !query || (["en", "ru", "fr"] as const).some((searchLocale) => {
         const translatedCapsule = localizeCapsule(capsule, searchLocale);
         return normalizeSearch(translatedCapsule.name).includes(query)
           || normalizeSearch(translatedCapsule.flavor).includes(query)
-          || matchesAromaticProfile(capsule.coffeeProfile?.aromaticProfile, query);
+          || matchesAromaticProfile(capsule.coffeeProfile?.aromaticProfile, query)
+          || normalizeSearch(translatedCapsule.brand ?? "").includes(query);
       }));
     if (capsuleSort === "catalog") return matchingCapsules;
     const [metric, order] = capsuleSort.split("-") as [CapsuleSortMetric, "asc" | "desc"];
@@ -209,12 +212,13 @@ function CapsuleShelfApp({ account, rememberedAccount, namespace, onAccountChang
         return (leftValue - rightValue) * direction || left.index - right.index;
       })
       .map(({ capsule }) => capsule);
-  }, [capsules, locale, capsuleSearch, capsuleSort]);
+  }, [capsules, locale, capsuleSearch, capsuleSort, capsuleBrand]);
 
   useEffect(() => {
     setFilter(filterPreferencesRef.current[coffeeSystem] ?? "all");
     setCategoryFilter("all");
     setCapsuleSearch("");
+    setCapsuleBrand("all");
   }, [coffeeSystem, setFilter, setCategoryFilter]);
 
   function selectInventoryFilter(nextFilter: InventoryFilter) {
@@ -563,7 +567,7 @@ function CapsuleShelfApp({ account, rememberedAccount, namespace, onAccountChang
             <p className="catalog-hint">{t("catalogHint")}</p>
           </div>
         </div>
-        <InventoryFilters catalog={selectedCatalog} category={categoryFilter} favoriteCount={selectedCatalog.filter(({ id }) => inventory[id]?.favorite).length} lowStockCount={lowStockIds.length} onCategoryChange={setCategoryFilter} onChange={selectInventoryFilter} onSearchChange={setCapsuleSearch} onSortChange={setCapsuleSort} search={capsuleSearch} sort={capsuleSort} value={filter} />
+        <InventoryFilters brand={capsuleBrand} onBrandChange={setCapsuleBrand} catalog={selectedCatalog} category={categoryFilter} favoriteCount={selectedCatalog.filter(({ id }) => inventory[id]?.favorite).length} lowStockCount={lowStockIds.length} onCategoryChange={setCategoryFilter} onChange={selectInventoryFilter} onSearchChange={setCapsuleSearch} onSortChange={setCapsuleSort} search={capsuleSearch} sort={capsuleSort} value={filter} />
         <CapsuleGrid
           catalog={localizedCapsules}
           inventory={inventory}

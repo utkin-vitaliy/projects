@@ -37,6 +37,11 @@ const recipeReferences: readonly RecipeReference[] = [
   ["vertuo-reverso-intenso", "vertuo", ["vertuo-bianco-forte"]], ["vertuo-symphony-golden-dragon", "vertuo", ["vertuo-melozio"]],
   ["vertuo-sweet-active-delight", "vertuo", ["vertuo-active-vitamin-b6"]], ["vertuo-almond-coffee", "vertuo", ["vertuo-odacio"]],
   ["vertuo-gourmandise-coffee", "vertuo", ["vertuo-melozio"]],
+  ["starbucks-caffe-americano", "original", ["starbucks-espresso-roast"]],
+  ["starbucks-sparkling-espresso-mint", "original", ["starbucks-espresso-roast"]],
+  ["starbucks-hazelnut-bianco", "original", ["starbucks-espresso-roast"]],
+  ["lavazza-espresso-martini", "original", ["lavazza-qualita-rossa"]],
+  ["lor-speculoos-tiramisu", "original", ["lor-ristretto"]],
 ];
 
 export const recipeIds = recipeReferences.map(([id]) => id);

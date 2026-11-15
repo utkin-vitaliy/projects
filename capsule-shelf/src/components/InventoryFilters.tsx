@@ -11,13 +11,15 @@ type Props = {
   search: string;
   onSearchChange: (value: string) => void;
   catalog: Capsule[];
+  brand: string;
+  onBrandChange: (brand: string) => void;
   favoriteCount: number;
   lowStockCount: number;
   sort: CapsuleSort;
   onSortChange: (sort: CapsuleSort) => void;
 };
 
-const categoryKeys = ["limited", "italian", "decaffeinated", "world", "origins", "flavoured", "heritage"] as const;
+const categoryKeys = ["limited", "italian", "decaffeinated", "world", "origins", "flavoured", "heritage", "thirdParty"] as const;
 const collectionKeys: CapsuleCollection[] = ["ispirazione", "worldExplorations", "classics", "masterOrigin", "revivingOrigins", "limitedEdition", "baristaCreations", "starbucks", "blueBottle", "coffeePlus", "perfectOverIce", "decaffeinatedCoffees", "longCups", "shortCups"];
 const collectionMessages: Record<CapsuleCollection, MessageKey> = {
   ispirazione: "collectionIspirazione",
@@ -45,7 +47,7 @@ const sortableMetrics: [CapsuleSortMetric, MessageKey, MessageKey][] = [
   ["coffeeGrams", "coffeeGramsLowToHigh", "coffeeGramsHighToLow"],
 ];
 
-export function InventoryFilters({ value, onChange, category, onCategoryChange, search, onSearchChange, catalog, favoriteCount, lowStockCount, sort, onSortChange }: Props) {
+export function InventoryFilters({ value, onChange, category, onCategoryChange, search, onSearchChange, catalog, brand, onBrandChange, favoriteCount, lowStockCount, sort, onSortChange }: Props) {
   const { t } = useLocale();
   const filters = [
     { id: "all" as const, label: t("allVarieties") },
@@ -55,8 +57,12 @@ export function InventoryFilters({ value, onChange, category, onCategoryChange, 
   const usesCollections = catalog.some(({ collection }) => collection !== undefined);
   const populatedCategories = new Set(catalog.map(({ category: itemCategory, collection }) => collection ?? itemCategory));
   const categories = usesCollections
-    ? collectionKeys.filter((itemCollection) => populatedCategories.has(itemCollection))
+    ? [...collectionKeys.filter((itemCollection) => populatedCategories.has(itemCollection)), ...(populatedCategories.has("thirdParty") ? ["thirdParty" as const] : [])]
     : categoryKeys.filter((itemCategory) => populatedCategories.has(itemCategory));
+  const hasThirdPartyBrands = catalog.some(({ category }) => category === "thirdParty");
+  const brands = hasThirdPartyBrands
+    ? ["Nespresso", ...new Set(catalog.filter(({ category }) => category === "thirdParty").map(({ brand }) => brand).filter((itemBrand): itemBrand is string => Boolean(itemBrand)))].sort((a, b) => a.localeCompare(b))
+    : [];
   return (
     <div className="filter-controls">
       <div className="filter-tabs" role="group" aria-label={t("filterAria")}>
@@ -80,6 +86,13 @@ export function InventoryFilters({ value, onChange, category, onCategoryChange, 
         <input aria-label={t("searchCapsules")} onChange={(event) => onSearchChange(event.target.value)} placeholder={t("searchCapsules")} type="search" value={search} />
       </label>
       <div className="capsule-filter-selects">
+        {brands.length > 0 && <label className="brand-filter">
+          <span>{t("brandFilter")}</span>
+          <select aria-label={t("brandFilterAria")} onChange={(event) => onBrandChange(event.target.value)} value={brand}>
+            <option value="all">{t("allBrands")}</option>
+            {brands.map((itemBrand) => <option key={itemBrand} value={itemBrand}>{itemBrand === "Nespresso" ? t("nespressoBrand") : itemBrand}</option>)}
+          </select>
+        </label>}
         <label className="category-filter">
           <span>{t("category")}</span>
           <select aria-label={t("categoryAria")} onChange={(event) => onCategoryChange(event.target.value as CategoryFilter)} value={category}>
