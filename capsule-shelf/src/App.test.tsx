@@ -33,6 +33,21 @@ async function addCapsules(name: string, amount: number) {
 }
 
 describe("Capsule Shelf dashboard", () => {
+  it("sorts stock quantities numerically and updates the order after editing stock", async () => {
+    render(<App />);
+    await waitForReady();
+    for (const [name, quantity] of [["Arpeggio", 101], ["Ristretto", 13], ["Ispirazione Napoli", 11], ["Kazaar", 93], ["Ispirazione Roma", 101]] as const) {
+      await addCapsules(name, quantity);
+    }
+    const stock = () => screen.getAllByRole("spinbutton", { name: /^Количество капсул / }).map((input) => Number((input as HTMLInputElement).value));
+    fireEvent.change(screen.getByRole("combobox", { name: "Сортировка капсул" }), { target: { value: "quantity-desc" } });
+    expect(stock().slice(0, 5)).toEqual([101, 101, 93, 13, 11]);
+    await addCapsules("Ristretto", 100);
+    expect(stock().slice(0, 5)).toEqual([113, 101, 101, 93, 11]);
+    fireEvent.change(screen.getByRole("combobox", { name: "Сортировка капсул" }), { target: { value: "quantity-asc" } });
+    expect(stock()).toEqual([...stock()].sort((a, b) => a - b));
+  });
+
   it("uses the browser's preferred supported language when no language has been saved", async () => {
     localStorage.removeItem("capsule-shelf:locale:v1");
     vi.spyOn(window.navigator, "languages", "get").mockReturnValue(["fr-CA", "en-CA"]);

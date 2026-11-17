@@ -200,6 +200,7 @@ function CapsuleShelfApp({ account, rememberedAccount, namespace, onAccountChang
       .map((capsule, index) => ({ capsule, index }))
       .sort((left, right) => {
         const sortValue = (capsule: typeof left.capsule) => {
+          if (metric === "quantity") return inventory[capsule.id]?.quantity ?? 0;
           if (metric === "intensity") return capsule.intensity;
           if (metric === "caffeine") return capsule.coffeeProfile?.caffeineMg;
           return capsule.coffeeProfile?.[metric];
@@ -212,7 +213,7 @@ function CapsuleShelfApp({ account, rememberedAccount, namespace, onAccountChang
         return (leftValue - rightValue) * direction || left.index - right.index;
       })
       .map(({ capsule }) => capsule);
-  }, [capsules, locale, capsuleSearch, capsuleSort, capsuleBrand]);
+  }, [capsules, locale, capsuleSearch, capsuleSort, capsuleBrand, inventory]);
 
   useEffect(() => {
     setFilter(filterPreferencesRef.current[coffeeSystem] ?? "all");

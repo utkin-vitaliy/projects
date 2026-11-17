@@ -38,6 +38,7 @@ const collectionMessages: Record<CapsuleCollection, MessageKey> = {
   shortCups: "collectionShortCups",
 };
 const sortableMetrics: [CapsuleSortMetric, MessageKey, MessageKey][] = [
+  ["quantity", "quantityLowToHigh", "quantityHighToLow"],
   ["intensity", "intensityLowToHigh", "intensityHighToLow"],
   ["caffeine", "caffeineLowToHigh", "caffeineHighToLow"],
   ["bitterness", "bitternessLowToHigh", "bitternessHighToLow"],
