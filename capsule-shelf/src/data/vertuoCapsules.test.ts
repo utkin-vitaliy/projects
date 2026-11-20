@@ -10,10 +10,12 @@ describe("Nespresso Canada Vertuo catalog", () => {
     expect(new Set(ids).size).toBe(ids.length);
     expect(ids.every((id) => id.startsWith("vertuo-"))).toBe(true);
     expect(vertuoCapsules.every(({ sourceUrl }) =>
-      /^https:\/\/www\.nespresso\.com\/ca\/en\/order\/capsules\/vertuo\/[a-z0-9-]+$/.test(sourceUrl),
+      /^https:\/\/www\.nespresso\.com\/ca\/en\/order\/capsules\/vertuo\/[a-z0-9-]+$/.test(sourceUrl)
+      || /^https:\/\/www\.starbucksathome\.com\/ca\/en-ca\/(products\/[a-z0-9-]+|node\/625)$/.test(sourceUrl),
     )).toBe(true);
     expect(vertuoCapsules.every(({ imageUrl }) =>
-      /^https:\/\/www\.nespresso\.com\/ecom\/medias\/sys_master\/public\/[^/]+\/[^?]+\?/.test(imageUrl),
+      /^https:\/\/www\.nespresso\.com\/ecom\/medias\/sys_master\/public\/[^/]+\/[^?]+\?/.test(imageUrl)
+      || /^\/images\/capsules\/third-party\/vertuo-starbucks-[a-z-]+\.png$/.test(imageUrl),
     )).toBe(true);
     expect(ids).toEqual(expect.arrayContaining([
       "vertuo-crystal-spark",

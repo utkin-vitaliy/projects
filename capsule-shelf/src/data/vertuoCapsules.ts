@@ -3,6 +3,12 @@ import { applyCapsuleCoffeeProfile } from "./capsuleProfiles";
 
 export const vertuoCatalogUrl = "https://www.nespresso.com/ca/en/order/capsules/vertuo";
 const productUrls: Record<string, string> = {
+  "starbucks-sunsera-blend": "https://www.starbucksathome.com/ca/en-ca/products/starbucks-sunsera-blend-nespresso-vertuo",
+  "starbucks-pumpkin-spice": "https://www.starbucksathome.com/ca/en-ca/products/starbucks-pumpkin-spice-nespresso-vertuo",
+  "starbucks-iced-double-espresso": "https://www.starbucksathome.com/ca/en-ca/products/iced-double-espresso",
+  "starbucks-iced-double-espresso-vanilla": "https://www.starbucksathome.com/ca/en-ca/products/iced-double-vanilla",
+  "starbucks-peppermint-mocha": "https://www.starbucksathome.com/ca/en-ca/products/starbucks-peppermint-mocha-vertuo",
+  "starbucks-cinnamon-dolce": "https://www.starbucksathome.com/ca/en-ca/node/625",
   "crystal-spark": "https://www.nespresso.com/ca/en/order/capsules/vertuo/crystal-spark-double-espresso-coffee-capsules",
   "hazelnut-brownie": "https://www.nespresso.com/ca/en/order/capsules/vertuo/hazelnut-brownie-coffee-capsules",
   "blueberry-cheesecake": "https://www.nespresso.com/ca/en/order/capsules/vertuo/blueberry-cheesecake-coffee-capsules",
@@ -144,6 +150,12 @@ const imageAssets: Record<string, string> = {
 type VertuoSeed = [id: string, name: string, flavor: string, size: CapsuleCupSize, ml: number, category?: CapsuleCategory, intensity?: number, imageName?: string];
 
 const varieties: VertuoSeed[] = [
+  ["starbucks-sunsera-blend", "Starbucks® Sunsera Blend", "Светлая обжарка с цитрусами и жареным миндалём", "coffee", 230, "world"],
+  ["starbucks-pumpkin-spice", "Starbucks® Pumpkin Spice", "Тыквенные ноты с корицей и мускатным орехом", "coffee", 230, "limited"],
+  ["starbucks-iced-double-espresso", "Starbucks® Iced Double Espresso", "Мягкий сладкий эспрессо для льда с цитрусовыми нотами", "doubleEspresso", 80, "world"],
+  ["starbucks-iced-double-espresso-vanilla", "Starbucks® Iced Double Espresso Vanilla", "Бархатистый двойной эспрессо для льда со сладкой ванилью", "doubleEspresso", 80, "flavoured"],
+  ["starbucks-peppermint-mocha", "Starbucks® Peppermint Mocha", "Шоколадные ноты и прохладная перечная мята", "coffee", 230, "limited"],
+  ["starbucks-cinnamon-dolce", "Starbucks® Cinnamon Dolce", "Мягкая обжарка с корицей и коричневым сахаром", "coffee", 230, "flavoured"],
   ["crystal-spark", "Double Espresso Crystal Spark", "Бисквитные и фруктовые ноты с оттенком какао", "doubleEspresso", 80, "limited", 6, "crystal_spark_double_espresso"],
   ["hazelnut-brownie", "Hazelnut Brownie", "Брауни, обжаренный фундук и ореховые ноты", "coffee", 230, "limited", undefined, "hazelnut_brownie"],
   ["blueberry-cheesecake", "Blueberry Cheesecake", "Черника, чизкейк и карамель", "coffee", 230, "limited", undefined, "blueberry_cheesecake"],
@@ -221,6 +233,15 @@ const varieties: VertuoSeed[] = [
   ["blue-bottle-bold-blend", "Blue Bottle Bold Blend", "Сладкая карамель, орехи и солодовые ноты", "coffee", 230, "world", 5, "blue_bottle_bold_blend"],
 ];
 
+const starbucksCanadaImages: Record<string, string> = {
+  "starbucks-sunsera-blend": `${import.meta.env.BASE_URL}images/capsules/third-party/vertuo-starbucks-sunsera-blend.png`,
+  "starbucks-pumpkin-spice": `${import.meta.env.BASE_URL}images/capsules/third-party/vertuo-starbucks-pumpkin-spice.png`,
+  "starbucks-iced-double-espresso": `${import.meta.env.BASE_URL}images/capsules/third-party/vertuo-starbucks-iced-double-espresso.png`,
+  "starbucks-iced-double-espresso-vanilla": `${import.meta.env.BASE_URL}images/capsules/third-party/vertuo-starbucks-iced-double-espresso-vanilla.png`,
+  "starbucks-peppermint-mocha": `${import.meta.env.BASE_URL}images/capsules/third-party/vertuo-starbucks-peppermint-mocha.png`,
+  "starbucks-cinnamon-dolce": `${import.meta.env.BASE_URL}images/capsules/third-party/vertuo-starbucks-cinnamon-dolce.png`,
+};
+
 function officialImage(file: string): string {
   return `${imageBase}/${imageAssets[file] ?? ""}?imdensity=1&impolicy=small&imwidth=400`;
 }
@@ -247,7 +268,7 @@ export const vertuoCapsules: Capsule[] = varieties.map(([id, name, flavor, size,
   collection: getVertuoCollection(id, category, size),
   category,
   sourceUrl: productUrls[id] ?? vertuoCatalogUrl,
-  imageUrl: officialImage(imageName ?? id.replaceAll("-", "_")),
+  imageUrl: starbucksCanadaImages[id] ?? officialImage(imageName ?? id.replaceAll("-", "_")),
   imageFit: "contain",
   intensity,
   cupSize: { type: size, millilitres },

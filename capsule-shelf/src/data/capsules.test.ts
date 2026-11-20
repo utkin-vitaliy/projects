@@ -11,7 +11,7 @@ describe("Original-compatible capsule catalog", () => {
     const ids = capsules.map(({ id }) => id);
     expect(new Set(ids).size).toBe(ids.length);
     expect(ids).toEqual(expect.arrayContaining(originalIds));
-    expect(capsules.length).toBe(81);
+    expect(capsules.length).toBe(120);
   });
 
   it("assigns every product a valid category and product source link", () => {
@@ -34,7 +34,7 @@ describe("Original-compatible capsule catalog", () => {
     expect(byId.nocciola.category).toBe("flavoured");
     expect(byId.cosi.category).toBe("heritage");
     expect(byId.arpeggio.category).toBe("italian");
-    expect(capsules.filter(({ category }) => category === "thirdParty")).toHaveLength(39);
+    expect(capsules.filter(({ category }) => category === "thirdParty")).toHaveLength(78);
     expect(capsules.filter(({ category }) => category === "thirdParty").map(({ brand }) => brand)).toEqual(expect.arrayContaining(["Starbucks", "Tim Hortons", "Lavazza", "illy", "McCafé", "L’OR", "Caffè Aroma", "Caffè Borbone", "Café AGGA"]));
     expect(capsules.filter(({ brand }) => brand === "Caffè Aroma").map(({ id }) => id)).toEqual(expect.arrayContaining(["caffe-aroma-barista", "caffe-aroma-intenso", "caffe-aroma-cremoso", "caffe-aroma-decaf"]));
     expect(capsules.filter(({ brand }) => brand === "Caffè Borbone").map(({ id }) => id)).toEqual(expect.arrayContaining(["borbone-crema-classica", "borbone-gold", "borbone-blue", "borbone-nocciolino", "borbone-espresso-intenso", "borbone-crema-superiore", "borbone-100-arabica", "borbone-aluminum-decaf", "borbone-respresso-red", "borbone-respresso-black", "borbone-respresso-dek", "borbone-ginseng"]));

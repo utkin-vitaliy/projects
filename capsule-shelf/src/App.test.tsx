@@ -475,6 +475,7 @@ describe("Capsule Shelf dashboard", () => {
     fireEvent.change(brand, { target: { value: "Starbucks" } });
 
     expect(screen.getAllByRole("article").map((article) => within(article).getByRole("heading", { level: 2 }).textContent)).toEqual([
+      "Pike Place Roast", "Decaf Espresso Roast", "Single-Origin Colombia", "Smooth Caramel",
       "Espresso Roast", "Blonde Espresso Roast",
     ]);
   });
